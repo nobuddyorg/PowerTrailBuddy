@@ -17,7 +17,9 @@ function hemispherePart(
   const rest = thousandths % THOUSANDTHS_PER_DEGREE;
   const minutes = Math.floor(rest / THOUSANDTHS_PER_MINUTE);
   const fraction = rest % THOUSANDTHS_PER_MINUTE;
-  const hemisphere = value < 0 && thousandths > 0 ? negative : positive;
+  // Signed and rounded like the digits, so a value that prints as 0° 00.000′ is never south or west.
+  const hemisphere =
+    Math.round(value * THOUSANDTHS_PER_DEGREE) < 0 ? negative : positive;
   return `${hemisphere} ${String(degrees).padStart(degreeDigits, '0')}° ${String(minutes).padStart(2, '0')}.${String(fraction).padStart(3, '0')}′`;
 }
 

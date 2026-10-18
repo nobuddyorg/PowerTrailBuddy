@@ -2,7 +2,11 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { makeCache, makeMarks, renderWithProviders } from '../fixtures.test-support';
+import {
+  makeCache,
+  makeMarks,
+  renderWithProviders,
+} from '../fixtures.test-support';
 import { CacheDetails } from '.';
 
 const CACHE = makeCache({
@@ -24,7 +28,10 @@ const CACHE = makeCache({
   ],
 });
 
-function renderDetails(overrides: Partial<Parameters<typeof CacheDetails>[0]> = {}, marks = makeMarks()) {
+function renderDetails(
+  overrides: Partial<Parameters<typeof CacheDetails>[0]> = {},
+  marks = makeMarks(),
+) {
   const onOpenTrail = vi.fn();
   const view = renderWithProviders(
     <CacheDetails cache={CACHE} onOpenTrail={onOpenTrail} {...overrides} />,
@@ -34,7 +41,10 @@ function renderDetails(overrides: Partial<Parameters<typeof CacheDetails>[0]> = 
 }
 
 function stubClipboard(writeText: (text: string) => Promise<void>) {
-  Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+  Object.defineProperty(navigator, 'clipboard', {
+    value: { writeText },
+    configurable: true,
+  });
 }
 
 beforeEach(() => {
@@ -48,9 +58,16 @@ afterEach(() => {
 describe('CacheDetails', () => {
   it('shows the imported name as text, with code, type, rating, size and owner', () => {
     renderDetails();
-    expect(screen.getByRole('heading', { name: '<i>Old Oak</i>' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: '<i>Old Oak</i>' }),
+    ).toBeInTheDocument();
     expect(screen.getByText('GCSU42')).toBeInTheDocument();
-    for (const fact of ['Traditional', 'D 1.5 / T 2', 'Size: Small', 'by Nobody Real']) {
+    for (const fact of [
+      'Traditional',
+      'D 1.5 / T 2',
+      'Size: Small',
+      'by Nobody Real',
+    ]) {
       expect(screen.getByText(fact)).toBeInTheDocument();
     }
   });
@@ -67,7 +84,10 @@ describe('CacheDetails', () => {
 
   it.each([
     [{ available: false }, 'Disabled'],
-    [{ recentLogs: [{ type: 'maintenance' as const, date: '2026-05-01' }] }, 'Needs maintenance'],
+    [
+      { recentLogs: [{ type: 'maintenance' as const, date: '2026-05-01' }] },
+      'Needs maintenance',
+    ],
   ])('names the doubtful health of %o', (overrides, label) => {
     renderDetails({ cache: { ...CACHE, ...overrides } });
     expect(screen.getByTestId('health-badge')).toHaveTextContent(label);
@@ -90,13 +110,20 @@ describe('CacheDetails', () => {
       },
     });
     const logs = screen.getAllByTestId('recent-log');
-    expect(logs.map((log) => log.textContent)).toEqual(['DisabledMay 2, 2026', 'Other logMay 1, 2026']);
+    expect(logs.map((log) => log.textContent)).toEqual([
+      'DisabledMay 2, 2026',
+      'Other logMay 1, 2026',
+    ]);
   });
 
   it('names every log kind', () => {
     renderDetails();
     const list = screen.getByRole('list', { name: 'Latest logs' });
-    expect(within(list).getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+    expect(
+      within(list)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual([
       "Didn't find itMay 2, 2026",
       "Didn't find itMay 1, 2026",
       'Found itApr 20, 2026',
@@ -119,12 +146,17 @@ describe('CacheDetails', () => {
   it('says so when there is no hint', () => {
     renderDetails({ cache: { ...CACHE, hint: '' } });
     expect(screen.getByText('No hint.')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Show hint' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Show hint' }),
+    ).not.toBeInTheDocument();
   });
 
   it('links to the listing, a navigation app and walking directions', () => {
     renderDetails();
-    expect(screen.getByRole('link', { name: 'Cache page' })).toHaveAttribute('href', 'https://coord.info/GCSU42');
+    expect(screen.getByRole('link', { name: 'Cache page' })).toHaveAttribute(
+      'href',
+      'https://coord.info/GCSU42',
+    );
     expect(screen.getByRole('link', { name: 'Navigate' })).toHaveAttribute(
       'href',
       'geo:48.135380,11.576120?q=48.135380,11.576120(GCSU42%20%3Ci%3EOld%20Oak%3C%2Fi%3E)',
@@ -140,10 +172,26 @@ describe('CacheDetails', () => {
     stubClipboard(writeText);
     renderDetails();
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Copy coordinates N 48° 08.123′ E 011° 34.567′' }));
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: 'Copy coordinates N 48° 08.123′ E 011° 34.567′',
+        }),
+      );
     });
     expect(writeText).toHaveBeenCalledWith('N 48° 08.123′ E 011° 34.567′');
-    expect(screen.getByTestId('toast')).toHaveTextContent('Copied: N 48° 08.123′ E 011° 34.567′');
+    expect(screen.getByTestId('toast')).toHaveTextContent(
+      'Copied: N 48° 08.123′ E 011° 34.567′',
+    );
+  });
+
+  it('says so when the browser has no clipboard, outside a secure context', async () => {
+    renderDetails();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Copy coordinates/ }));
+    });
+    expect(screen.getByTestId('toast')).toHaveTextContent(
+      'Copying is not allowed here.',
+    );
   });
 
   it('says so when the browser refuses to copy', async () => {
@@ -152,12 +200,16 @@ describe('CacheDetails', () => {
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /Copy coordinates/ }));
     });
-    expect(screen.getByTestId('toast')).toHaveTextContent('Copying is not allowed here.');
+    expect(screen.getByTestId('toast')).toHaveTextContent(
+      'Copying is not allowed here.',
+    );
   });
 
   it('shows how far and which way the cache is from the user', () => {
     renderDetails({ position: { latitude: 48.13538, longitude: 11.56612 } });
-    expect(screen.getByTestId('cache-distance')).toHaveTextContent('740 m away, to the east');
+    expect(screen.getByTestId('cache-distance')).toHaveTextContent(
+      '740 m away, to the east',
+    );
   });
 
   it('opens the trail the cache belongs to', () => {
@@ -168,7 +220,9 @@ describe('CacheDetails', () => {
 
   it('has no trail link for a cache on no trail', () => {
     renderDetails();
-    expect(screen.queryByRole('button', { name: /Part of trail/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Part of trail/ }),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -177,7 +231,9 @@ describe('marking a cache', () => {
     const { marks } = renderDetails();
     fireEvent.click(screen.getByRole('button', { name: 'Mark as found' }));
     expect(marks.markFound).toHaveBeenCalledWith('GCSU42');
-    expect(screen.getByTestId('toast')).toHaveTextContent('GCSU42 marked as found');
+    expect(screen.getByTestId('toast')).toHaveTextContent(
+      'GCSU42 marked as found',
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
     expect(marks.unmarkFound).toHaveBeenCalledWith('GCSU42');
     expect(screen.queryByTestId('toast')).not.toBeInTheDocument();
@@ -185,14 +241,20 @@ describe('marking a cache', () => {
 
   it('takes back a find marked here', () => {
     const { marks } = renderDetails({}, makeMarks({ found: ['GCSU42'] }));
-    fireEvent.click(screen.getByRole('button', { name: 'Not found after all' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Not found after all' }),
+    );
     expect(marks.unmarkFound).toHaveBeenCalledWith('GCSU42');
-    expect(screen.getByTestId('toast')).toHaveTextContent('GCSU42 no longer marked as found');
+    expect(screen.getByTestId('toast')).toHaveTextContent(
+      'GCSU42 no longer marked as found',
+    );
   });
 
   it('offers no found mark for a cache the Pocket Query already lists as found', () => {
     renderDetails({ cache: { ...CACHE, found: true } });
-    expect(screen.queryByRole('button', { name: 'Mark as found' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Mark as found' }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Ignore' })).toBeInTheDocument();
   });
 
@@ -209,6 +271,8 @@ describe('marking a cache', () => {
     const { marks } = renderDetails({}, makeMarks({ ignored: ['GCSU42'] }));
     fireEvent.click(screen.getByRole('button', { name: 'Stop ignoring' }));
     expect(marks.unignore).toHaveBeenCalledWith('GCSU42');
-    expect(screen.getByTestId('toast')).toHaveTextContent('GCSU42 is back in the trails');
+    expect(screen.getByTestId('toast')).toHaveTextContent(
+      'GCSU42 is back in the trails',
+    );
   });
 });

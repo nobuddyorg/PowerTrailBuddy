@@ -26,9 +26,6 @@ export const ICON_BUTTON_CLASSES =
 export const FIELD_CLASSES =
   'w-full min-h-11 rounded-xl px-3 py-2 bg-card text-card-foreground ring-1 ring-inset ring-border focus:outline-2 focus:outline-primary aria-[invalid=true]:ring-destructive';
 
-export const CARD_CLASSES =
-  'rounded-2xl bg-card text-card-foreground shadow-soft ring-1 ring-border/60';
-
 /** A toggle chip; `aria-pressed` styles the pressed state. */
 export const CHIP_CLASSES =
   'inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium ring-1 ring-inset ring-border bg-card hover:bg-muted aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:ring-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50';

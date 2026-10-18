@@ -56,10 +56,8 @@ export function Modal({
   }, [onClose]);
 
   useEffect(() => {
-    const opener =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : undefined;
+    // An SVG element focuses alike, so either kind gets its focus back.
+    const opener = document.activeElement as HTMLElement | null;
     const panel = panelRef.current!;
     // The first field or action, not the close button: that is what the dialog was opened for.
     const [close, ...rest] = focusablesIn(panel);
@@ -100,6 +98,7 @@ export function Modal({
             type="button"
             onClick={onClose}
             aria-label={t('common.close')}
+            data-testid="dialog-close"
             className="flex h-11 w-11 items-center justify-center rounded-xl hover:bg-muted"
           >
             <Icon name="close" />

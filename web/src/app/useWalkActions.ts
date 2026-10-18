@@ -13,7 +13,7 @@ import {
   type WalkOutcome,
   type WalkState,
 } from './lib/walk/walk';
-import type { DataCore } from './useAppState';
+import type { DataCore } from './dataCore';
 
 export interface WalkStart {
   /** Walk the trail backwards. */

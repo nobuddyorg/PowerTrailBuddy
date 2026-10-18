@@ -1,6 +1,6 @@
 export type SheetSnap = 'peek' | 'half' | 'full';
 
-export const SHEET_SNAPS: readonly SheetSnap[] = ['peek', 'half', 'full'];
+const SHEET_SNAPS: readonly SheetSnap[] = ['peek', 'half', 'full'];
 
 /** The share of the viewport's height the sheet covers at each snap point. */
 export const SNAP_FRACTION: Record<SheetSnap, number> = {
@@ -9,7 +9,7 @@ export const SNAP_FRACTION: Record<SheetSnap, number> = {
   full: 0.92,
 };
 
-/** The snap point closest to a height the user dragged to. */
+/** The snap point closest to a height the user dragged to; the lower one on a tie. */
 export function nearestSnap(fraction: number): SheetSnap {
   return SHEET_SNAPS.reduce((best, snap) =>
     Math.abs(SNAP_FRACTION[snap] - fraction) <

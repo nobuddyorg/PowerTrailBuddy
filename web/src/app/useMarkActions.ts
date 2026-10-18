@@ -3,7 +3,7 @@
 import { useCallback } from 'react';
 
 import { saveIgnored, saveLocallyFound } from './data/store';
-import type { DataCore } from './useAppState';
+import type { DataCore } from './dataCore';
 
 function withCode(codes: ReadonlySet<string>, code: string): Set<string> {
   return new Set(codes).add(code);

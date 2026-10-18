@@ -21,6 +21,12 @@ describe('nearestSnap', () => {
     expect(nearestSnap(fraction)).toBe(expected);
   });
 
+  it('settles exactly midway on the lower snap point', () => {
+    expect(nearestSnap((SNAP_FRACTION.peek + SNAP_FRACTION.half) / 2)).toBe(
+      'peek',
+    );
+  });
+
   it('settles each snap point on itself', () => {
     for (const [snap, fraction] of Object.entries(SNAP_FRACTION)) {
       expect(nearestSnap(fraction)).toBe(snap);

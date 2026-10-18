@@ -8,7 +8,7 @@ function score(cache: Geocache, query: string): number {
   const name = cache.name.toLowerCase();
   if (code === query) return 0;
   if (code.startsWith(query)) return 1;
-  if (name.split(/\s+/).some((word) => word.startsWith(query))) return 2;
+  if (name.split(/\s/).some((word) => word.startsWith(query))) return 2;
   if (name.includes(query)) return 3;
   return Infinity;
 }

@@ -39,6 +39,14 @@ describe('trailColor', () => {
     expect(trailColor(2)).toBe(TRAIL_COLORS[1]);
     expect(trailColor(TRAIL_COLORS.length + 1)).toBe(TRAIL_COLORS[0]);
   });
+
+  it('tells eight trails apart, each in a colour of its own', () => {
+    const colors = Array.from({ length: 8 }, (_, index) =>
+      trailColor(index + 1),
+    );
+    for (const color of colors) expect(color).toMatch(/^#[0-9a-f]{6}$/);
+    expect(new Set(colors).size).toBe(8);
+  });
 });
 
 describe('overviewContent', () => {
@@ -89,10 +97,10 @@ describe('overviewContent', () => {
     expect(parking).toEqual([{ latitude: 47.6, longitude: 9.6 }]);
   });
 
-  it('treats an unknown selection as none', () => {
-    expect(
-      overview({ selectedTrailId: 'gone' }).lines.map(({ tone }) => tone),
-    ).toEqual(['trail', 'trail']);
+  it('treats an unknown selection as none, with no parking shown', () => {
+    const content = overview({ selectedTrailId: 'gone' });
+    expect(content.lines.map(({ tone }) => tone)).toEqual(['trail', 'trail']);
+    expect(content.parking).toEqual([]);
   });
 
   it('labels a marker with code and name as given, markup and all', () => {
@@ -189,6 +197,24 @@ describe('overviewContent', () => {
       overview({ trails: [trail], caches: trail.caches, selectedTrailId: 'P' })
         .parking,
     ).toEqual([spot]);
+  });
+
+  it('shows every distinct parking spot of the selected trail', () => {
+    const spots = [
+      { latitude: 47.7, longitude: 9.7 },
+      { latitude: 47.71, longitude: 9.7 },
+    ];
+    const trail = makeTrail({
+      id: 'P',
+      caches: makeCaches(2, 'GCSUP').map((cache, index) => ({
+        ...cache,
+        parking: spots[index],
+      })),
+    });
+    expect(
+      overview({ trails: [trail], caches: trail.caches, selectedTrailId: 'P' })
+        .parking,
+    ).toEqual(spots);
   });
 });
 

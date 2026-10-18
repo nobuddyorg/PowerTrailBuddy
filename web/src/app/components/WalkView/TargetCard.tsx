@@ -112,7 +112,8 @@ export function TargetCard({
       )}
       <div className="space-y-1">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          {t('walk.next')} · {target.code}
+          {t('walk.next')} ·{' '}
+          <span data-testid="walk-target-code">{target.code}</span>
         </p>
         <h2 id="walk-target-name" className="text-lg font-bold leading-tight">
           {target.name}
@@ -135,6 +136,7 @@ export function TargetCard({
         <button
           type="button"
           onClick={() => onRecord(target.code, 'found')}
+          data-testid="walk-found"
           className={buttonClasses('primary', 'col-span-3 min-h-14 text-base')}
         >
           <Icon name="check" className="h-6 w-6" />
@@ -143,6 +145,7 @@ export function TargetCard({
         <button
           type="button"
           onClick={() => onRecord(target.code, 'dnf')}
+          data-testid="walk-dnf"
           className={buttonClasses('secondary')}
         >
           <Icon name="dnf" />
@@ -151,6 +154,7 @@ export function TargetCard({
         <button
           type="button"
           onClick={() => onRecord(target.code, 'skipped')}
+          data-testid="walk-skip"
           className={buttonClasses('secondary')}
         >
           <Icon name="skip" />
@@ -160,6 +164,7 @@ export function TargetCard({
           type="button"
           onClick={onUndo}
           disabled={!canUndo}
+          data-testid="walk-undo"
           className={buttonClasses('ghost')}
         >
           <Icon name="undo" />

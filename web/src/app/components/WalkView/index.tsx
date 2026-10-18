@@ -52,8 +52,9 @@ export function WalkView(props: WalkViewProps) {
   const { t } = useI18n();
   const labels = useMapLabels();
   const [finishedEarly, setFinishedEarly] = useState(false);
-  const targetCode = nextCode(walk);
-  const done = targetCode === undefined || finishedEarly;
+  const openCode = nextCode(walk);
+  const targetCode = finishedEarly ? undefined : openCode;
+  const done = targetCode === undefined;
 
   useWakeLock(!done);
   const compass = useCompass(!done);
@@ -76,30 +77,26 @@ export function WalkView(props: WalkViewProps) {
     [walk.codes, byCode],
   );
   const walkCodes = useMemo(() => new Set(walk.codes), [walk.codes]);
-  const target = targetCode === undefined ? undefined : byCode.get(targetCode);
+  const target = byCode.get(targetCode ?? '');
   const located = location.status === 'located' ? location : undefined;
   const position = located?.position;
   const guide = useWalkGuide({
-    target: done ? undefined : target,
+    target,
     location,
     compassHeading: compass.heading,
   });
 
   const progress = walkProgress(walk);
   const pace = walkPace(walk, new Date(now).toISOString());
-  const start =
-    byCode.get(walk.history[0] ?? targetCode ?? '') ?? walkCaches[0];
-  const remainingMinutes =
-    start && !done
-      ? remainingWalkMinutes({
-          position,
-          remaining: walkCaches.filter(
-            (cache) => !Object.hasOwn(walk.outcomes, cache.code),
-          ),
-          returnTo: start,
-          settings,
-        })
-      : 0;
+  // Done caches stay in front of the walk's codes, so the first is where it began.
+  const remainingMinutes = remainingWalkMinutes({
+    position,
+    remaining: walkCaches.filter(
+      (cache) => !Object.hasOwn(walk.outcomes, cache.code),
+    ),
+    returnTo: walkCaches[0],
+    settings,
+  });
 
   const content = useMemo(
     () =>
@@ -109,7 +106,7 @@ export function WalkView(props: WalkViewProps) {
           ? caches.filter((cache) => !walkCodes.has(cache.code))
           : [],
         walk,
-        targetCode: done ? '' : (targetCode ?? ''),
+        targetCode: targetCode ?? '',
         position,
       }),
     [
@@ -118,7 +115,6 @@ export function WalkView(props: WalkViewProps) {
       caches,
       walkCodes,
       walk,
-      done,
       targetCode,
       position,
     ],
@@ -129,8 +125,8 @@ export function WalkView(props: WalkViewProps) {
     [walkCaches, done],
   );
   const follow = useMemo(
-    () => (following && position && target && !done ? [position, target] : []),
-    [following, position, target, done],
+    () => (following && position && target ? [position, target] : []),
+    [following, position, target],
   );
   const mapPosition = useMemo<MapPosition | undefined>(
     () =>
@@ -177,6 +173,7 @@ export function WalkView(props: WalkViewProps) {
               <button
                 type="button"
                 onClick={props.onReverse}
+                data-testid="walk-reverse"
                 aria-label={t('walk.reverse')}
                 className={buttonClasses('ghost', 'px-3')}
               >
@@ -185,6 +182,7 @@ export function WalkView(props: WalkViewProps) {
               <button
                 type="button"
                 onClick={() => setFinishedEarly(true)}
+                data-testid="walk-finish"
                 className={buttonClasses('secondary')}
               >
                 <Icon name="flag" />
@@ -194,18 +192,7 @@ export function WalkView(props: WalkViewProps) {
           )}
         </div>
 
-        {done || !target ? (
-          <WalkSummary
-            walk={walk}
-            progress={progress}
-            pace={pace}
-            canResume={targetCode !== undefined}
-            canUndo={walk.history.length > 0}
-            onResume={() => setFinishedEarly(false)}
-            onUndo={props.onUndo}
-            onDone={props.onEnd}
-          />
-        ) : (
+        {target ? (
           <TargetCard
             target={target}
             guide={guide}
@@ -215,6 +202,17 @@ export function WalkView(props: WalkViewProps) {
             onEnableCompass={compass.requestPermission}
             onRecord={props.onRecord}
             onUndo={props.onUndo}
+          />
+        ) : (
+          <WalkSummary
+            walk={walk}
+            progress={progress}
+            pace={pace}
+            canResume={openCode !== undefined}
+            canUndo={walk.history.length > 0}
+            onResume={() => setFinishedEarly(false)}
+            onUndo={props.onUndo}
+            onDone={props.onEnd}
           />
         )}
         <WalkStats

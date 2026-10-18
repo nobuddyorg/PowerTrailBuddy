@@ -188,7 +188,7 @@
       "relaxed": "Entspannt",
       "custom": "Eigene",
       "hint": "{name}: Abstand und Trailgröße wie voreingestellt.",
-      "customHint": "Dein eigener Abstand und deine eigene Trailgröße."
+      "customHint": "{name}: dein eigener Abstand und deine eigene Trailgröße."
     },
     "trailGroup": "Trails finden",
     "walkGroup": "Laufen",

@@ -33,7 +33,10 @@ export function cacheTypeLabel(t: Translate, type: CacheType): string {
 }
 
 /** What a doubtful health means for the walker. */
-export function healthLabel(t: Translate, health: Exclude<CacheHealth, 'ok'>): string {
+export function healthLabel(
+  t: Translate,
+  health: Exclude<CacheHealth, 'ok'>,
+): string {
   switch (health) {
     case 'disabled':
       return t('health.disabled');

@@ -18,12 +18,22 @@ describe('ImportButton', () => {
   it('accepts Pocket Query archives and GPX files, several at once', () => {
     render(<ImportButton label="Import" onFiles={() => {}} disabled={false} />);
     const input = screen.getByLabelText('Import');
-    expect(input).toHaveAttribute('accept', '.zip,.gpx,application/zip,application/x-zip-compressed,application/gpx+xml');
+    expect(input).toHaveAttribute(
+      'accept',
+      '.zip,.gpx,application/zip,application/x-zip-compressed,application/gpx+xml',
+    );
     expect(input).toHaveAttribute('multiple');
   });
 
   it('can be disabled while an import runs', () => {
-    render(<ImportButton label="Importing" onFiles={() => {}} disabled variant="secondary" />);
+    render(
+      <ImportButton
+        label="Importing"
+        onFiles={() => {}}
+        disabled
+        variant="secondary"
+      />,
+    );
     expect(screen.getByLabelText('Importing')).toBeDisabled();
   });
 });

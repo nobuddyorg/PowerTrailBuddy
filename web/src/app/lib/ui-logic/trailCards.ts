@@ -4,8 +4,8 @@ import { distanceToTrail } from '../trails/nearby';
 import type { Trail } from '../trails/types';
 import type { TrailFilter, TrailSort } from './trailSort';
 
-export const SHORT_WALK_METERS = 5000;
-export const QUICK_WALK_MINUTES = 120;
+const SHORT_WALK_METERS = 5000;
+const QUICK_WALK_MINUTES = 120;
 export const NEAR_METERS = 10_000;
 
 export interface TrailCard {
@@ -39,7 +39,7 @@ function keeps(card: TrailCard, filter: TrailFilter): boolean {
 function sortKey(card: TrailCard, sort: TrailSort): number {
   switch (sort) {
     case 'rate':
-      return card.rank;
+      return -card.trail.cachesPerHour;
     case 'caches':
       return -card.trail.caches.length;
     case 'nearest':
@@ -59,9 +59,12 @@ export function arrangeTrails(
     if (position) card.distanceMeters = distanceToTrail(trail, position);
     return card;
   });
-  return cards
-    .filter((card) => filters.every((filter) => keeps(card, filter)))
-    .sort((a, b) => sortKey(a, sort) - sortKey(b, sort) || a.rank - b.rank);
+  return (
+    cards
+      .filter((card) => filters.every((filter) => keeps(card, filter)))
+      // Array sort is stable and the cards come in rank order, so ties keep it.
+      .sort((a, b) => sortKey(a, sort) - sortKey(b, sort))
+  );
 }
 
 export interface HealthSummary {

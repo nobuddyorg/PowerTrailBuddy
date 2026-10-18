@@ -39,9 +39,7 @@ export function formatDuration(minutes: number, locale: string): string {
 
 /** A difficulty or terrain rating: "1,5" or "2", never "2,0". */
 export function formatRating(rating: number, locale: string): string {
-  return new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(
-    rating,
-  );
+  return new Intl.NumberFormat(locale).format(rating);
 }
 
 /** Always one decimal, so a list of rates lines up: "12,0", "9,5". */

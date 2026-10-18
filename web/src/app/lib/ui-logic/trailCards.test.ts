@@ -72,6 +72,16 @@ describe('arrangeTrails', () => {
     );
   });
 
+  it('sorts by rate even when the trails come in another order', () => {
+    const slow = makeTrail({ id: 'slow', cachesPerHour: 4 });
+    const fast = makeTrail({ id: 'fast', cachesPerHour: 9 });
+    const cards = arrangeTrails([slow, fast], { sort: 'rate', filters: [] });
+    expect(cards.map(({ trail, rank }) => [trail.id, rank])).toEqual([
+      ['fast', 2],
+      ['slow', 1],
+    ]);
+  });
+
   it('measures each trail from the user to its nearest cache and sorts by it', () => {
     const cards = arrangeTrails(TRAILS, {
       sort: 'nearest',

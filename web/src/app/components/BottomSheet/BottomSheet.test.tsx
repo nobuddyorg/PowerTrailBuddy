@@ -21,7 +21,10 @@ const handle = () => screen.getByTestId('sheet-handle');
 
 beforeEach(() => {
   localStorage.setItem('lang', 'en');
-  Object.defineProperty(window, 'innerHeight', { value: 1000, configurable: true });
+  Object.defineProperty(window, 'innerHeight', {
+    value: 1000,
+    configurable: true,
+  });
 });
 
 describe('BottomSheet', () => {

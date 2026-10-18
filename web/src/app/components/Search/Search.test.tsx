@@ -31,7 +31,9 @@ describe('CacheSearch', () => {
 
   it('says when nothing matches', () => {
     renderWithI18n(<CacheSearch caches={CACHES} onSelect={() => {}} />);
-    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'zebra' } });
+    fireEvent.change(screen.getByRole('searchbox'), {
+      target: { value: 'zebra' },
+    });
     expect(screen.getByText('No cache matches.')).toBeInTheDocument();
   });
 });

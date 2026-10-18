@@ -20,6 +20,16 @@ describe('searchCaches', () => {
     expect(codes('gcsu1')).toEqual(['GCSU1', 'GCSU12']);
   });
 
+  it('puts the exact code first even when another name sorts before it', () => {
+    const near = [
+      makeCache({ code: 'GCSU77', name: 'Alpha' }),
+      makeCache({ code: 'GCSU7', name: 'Zulu' }),
+    ];
+    expect(
+      searchCaches(near, { query: 'gcsu7' }).map((cache) => cache.code),
+    ).toEqual(['GCSU7', 'GCSU77']);
+  });
+
   it('ranks a name word starting with the text above the text inside a word', () => {
     expect(codes('oak')).toEqual(['GCSU1', 'GCSU2', 'GCSU12', 'GCSUX9']);
   });

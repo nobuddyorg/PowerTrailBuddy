@@ -29,8 +29,9 @@ export function CacheLinks({ cache }: { cache: Geocache }) {
   const toast = useToast();
   const coordinates = formatCoordinates(cache);
   const copy = () => {
-    navigator.clipboard
-      .writeText(coordinates)
+    // Inside a promise, so a browser without a clipboard (not a secure context) also lands in catch.
+    Promise.resolve()
+      .then(() => navigator.clipboard.writeText(coordinates))
       .then(() => toast.show(t('toast.copied', { coordinates })))
       .catch(() => toast.show(t('toast.copyFailed')));
   };
@@ -38,6 +39,7 @@ export function CacheLinks({ cache }: { cache: Geocache }) {
     <div className="grid grid-cols-4 gap-2" data-testid="cache-links">
       <a
         href={cachePageUrl(cache.code)}
+        data-testid="cache-page-link"
         target="_blank"
         rel="noopener noreferrer"
         className={LINK_CLASSES}
@@ -46,12 +48,14 @@ export function CacheLinks({ cache }: { cache: Geocache }) {
       </a>
       <a
         href={geoUri(cache, `${cache.code} ${cache.name}`)}
+        data-testid="cache-navigate-link"
         className={LINK_CLASSES}
       >
         <LinkContent icon="navigate" label={t('cache.navigate')} />
       </a>
       <a
         href={walkingDirectionsUrl(cache)}
+        data-testid="cache-directions-link"
         target="_blank"
         rel="noopener noreferrer"
         className={LINK_CLASSES}
@@ -61,6 +65,7 @@ export function CacheLinks({ cache }: { cache: Geocache }) {
       <button
         type="button"
         onClick={copy}
+        data-testid="copy-coordinates"
         className={LINK_CLASSES}
         aria-label={t('cache.copyLabel', { coordinates })}
       >

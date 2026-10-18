@@ -52,7 +52,7 @@ function fieldLabel(t: Translate, name: NumericField): string {
   }
 }
 
-function presetLabel(t: Translate, preset: PresetName | 'custom'): string {
+function presetLabel(t: Translate, preset: PresetName): string {
   switch (preset) {
     case 'standard':
       return t('settings.preset.standard');
@@ -60,8 +60,6 @@ function presetLabel(t: Translate, preset: PresetName | 'custom'): string {
       return t('settings.preset.classic');
     case 'relaxed':
       return t('settings.preset.relaxed');
-    case 'custom':
-      return t('settings.preset.custom');
   }
 }
 
@@ -179,6 +177,7 @@ export function SettingsDialog({
                 key={name}
                 type="button"
                 aria-pressed={preset === name}
+                data-testid={`preset-${name}`}
                 onClick={() => choosePreset(name)}
                 className={CHIP_CLASSES}
               >
@@ -191,7 +190,9 @@ export function SettingsDialog({
             className="text-xs text-muted-foreground"
           >
             {preset === 'custom'
-              ? t('settings.preset.customHint')
+              ? t('settings.preset.customHint', {
+                  name: t('settings.preset.custom'),
+                })
               : t('settings.preset.hint', { name: presetLabel(t, preset) })}
           </p>
         </fieldset>
@@ -220,6 +221,7 @@ export function SettingsDialog({
               >
                 <input
                   type="checkbox"
+                  data-testid={`cache-type-${type}`}
                   checked={draft.cacheTypes.includes(type)}
                   onChange={(event) =>
                     toggleType(type, event.currentTarget.checked)
@@ -250,6 +252,7 @@ export function SettingsDialog({
           <button
             type="button"
             onClick={() => setDraft(toDraft(DEFAULT_TRAIL_SETTINGS, locale))}
+            data-testid="settings-reset"
             className={buttonClasses('ghost', 'mr-auto')}
           >
             {t('settings.resetDefaults')}
@@ -264,6 +267,7 @@ export function SettingsDialog({
           <button
             type="submit"
             disabled={!valid}
+            data-testid="settings-apply"
             className={buttonClasses('primary')}
           >
             {t('settings.apply')}
@@ -277,6 +281,7 @@ export function SettingsDialog({
             <button
               type="button"
               onClick={onResetLocallyFound}
+              data-testid="reset-locally-found"
               disabled={locallyFoundCount === 0}
               className={buttonClasses('secondary')}
             >

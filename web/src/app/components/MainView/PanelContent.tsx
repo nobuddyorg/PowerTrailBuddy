@@ -17,7 +17,7 @@ import type { PanelView } from './usePanel';
 interface PanelContentProps {
   app: AppState;
   view: PanelView;
-  canGoBack: boolean;
+  backToList: boolean;
   onBack: () => void;
   trails: readonly Trail[];
   cards: readonly TrailCard[];
@@ -82,10 +82,11 @@ export function PanelContent(props: PanelContentProps) {
         <button
           type="button"
           onClick={onBack}
+          data-testid="cache-back"
           className={buttonClasses('ghost', '-ml-2')}
         >
           <Icon name="back" />
-          {props.canGoBack ? t('common.back') : t('panel.toList')}
+          {props.backToList ? t('panel.toList') : t('common.back')}
         </button>
         <CacheDetails
           cache={cache}

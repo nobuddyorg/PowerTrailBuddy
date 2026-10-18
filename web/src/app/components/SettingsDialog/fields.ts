@@ -72,10 +72,11 @@ export function toDraft(settings: TrailSettings, locale: string): Draft {
   return { cacheTypes: [...settings.cacheTypes], values };
 }
 
-// Within a millionth of a step: 0.1 + 0.2 must still count as a multiple of 0.1.
+// To a millionth of a step: 0.1 + 0.2 must still count as a multiple of 0.1.
+const STEP_PRECISION = 1e6;
+
 function isMultiple(value: number, step: number): boolean {
-  const ratio = value / step;
-  return Math.abs(ratio - Math.round(ratio)) < 1e-6;
+  return Math.round((value / step) * STEP_PRECISION) % STEP_PRECISION === 0;
 }
 
 /** What is wrong with a typed value, or undefined when it is a valid setting. */
@@ -112,15 +113,8 @@ export function draftSettings(draft: Draft): TrailSettings {
   return { ...numbers, cacheTypes };
 }
 
-/** The preset the typed gap and trail size match; 'custom' while either is invalid or matches none. */
+/** The preset the typed gap and trail size match; 'custom' while either matches none, unreadable text included. */
 export function draftPreset(draft: Draft): PresetName | 'custom' {
-  const gap = NUMERIC_FIELDS.find((spec) => spec.name === 'maxGapMeters')!;
-  const size = NUMERIC_FIELDS.find((spec) => spec.name === 'minCaches')!;
-  if (
-    fieldError(draft.values.maxGapMeters, gap) ||
-    fieldError(draft.values.minCaches, size)
-  )
-    return 'custom';
   return presetOf({
     ...DEFAULT_TRAIL_SETTINGS,
     maxGapMeters: parseDecimal(draft.values.maxGapMeters),

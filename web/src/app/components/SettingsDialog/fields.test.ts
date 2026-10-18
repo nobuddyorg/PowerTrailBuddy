@@ -59,6 +59,23 @@ describe('NUMERIC_FIELDS', () => {
   });
 });
 
+describe('CACHE_TYPES', () => {
+  it('offers every cache type once, traditional first', () => {
+    expect(CACHE_TYPES).toEqual([
+      'traditional',
+      'multi',
+      'mystery',
+      'letterbox',
+      'wherigo',
+      'earthcache',
+      'virtual',
+      'webcam',
+      'event',
+      'other',
+    ]);
+  });
+});
+
 describe('fieldError', () => {
   it.each([
     ['maxDifficulty', '1', undefined],

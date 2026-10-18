@@ -20,16 +20,15 @@ import {
   type ImportInfo,
   type UiPreferences,
 } from './data/store';
+import type { DataCore, StoredData } from './dataCore';
 import { withBasePath } from './env';
 import { importFiles, type ImportedFile } from './lib/geocache/importFiles';
 import { mergeCaches } from './lib/geocache/mergeCaches';
-import type { Geocache } from './lib/geocache/types';
 import {
   isSharedLaunch,
   withoutSharedParam,
 } from './lib/navigation/sharedLaunch';
 import { DEFAULT_TRAIL_SETTINGS, type TrailSettings } from './lib/trails/types';
-import type { WalkState } from './lib/walk/walk';
 import { useMarkActions } from './useMarkActions';
 import { useWalkActions } from './useWalkActions';
 
@@ -40,23 +39,6 @@ export interface ImportSummary {
   /** Caches read from this import, before merging with what was there. */
   cacheCount: number;
   files: ImportedFile[];
-}
-
-export interface StoredData {
-  caches: Geocache[];
-  settings: TrailSettings;
-  locallyFound: ReadonlySet<string>;
-  ignored: ReadonlySet<string>;
-  walk: WalkState | undefined;
-  preferences: UiPreferences;
-  importInfo: ImportInfo | undefined;
-}
-
-/** What the action hooks share: the latest data, a way to change it, and a way to store a change. */
-export interface DataCore {
-  current: () => StoredData;
-  update: (next: Partial<StoredData>) => void;
-  persist: (write: Promise<void>) => void;
 }
 
 const EMPTY_DATA: StoredData = {

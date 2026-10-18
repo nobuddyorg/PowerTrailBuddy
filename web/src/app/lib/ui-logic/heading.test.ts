@@ -105,5 +105,6 @@ describe('headingChanged', () => {
     expect(headingChanged(359, 0.5, 2)).toBe(false);
     expect(headingChanged(1, 358, 2)).toBe(true);
     expect(headingChanged(102, 100, 2)).toBe(true);
+    expect(headingChanged(1, 359.5, 2)).toBe(false);
   });
 });

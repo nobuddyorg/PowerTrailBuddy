@@ -188,7 +188,7 @@
       "relaxed": "Relaxed",
       "custom": "Custom",
       "hint": "{name}: gap and trail size as the preset sets them.",
-      "customHint": "Your own gap and trail size."
+      "customHint": "{name}: your own gap and trail size."
     },
     "trailGroup": "Finding trails",
     "walkGroup": "Walking",

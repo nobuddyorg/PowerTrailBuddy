@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { cacheTypeLabel, directionName, healthLabel, logTypeLabel, type Translate } from './labels';
+import {
+  cacheTypeLabel,
+  directionName,
+  healthLabel,
+  logTypeLabel,
+  type Translate,
+} from './labels';
 
 // Echoes the key, so each test reads which translation a value maps to.
 const t = ((key: string) => key) as Translate;

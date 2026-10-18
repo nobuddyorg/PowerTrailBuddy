@@ -52,7 +52,7 @@ export function visitEntries(walk: WalkState): VisitEntry[] {
 }
 
 /** Under this, finds per hour swing wildly: one quick find reads as hundreds an hour. */
-export const MIN_PACE_MINUTES = 10;
+const MIN_PACE_MINUTES = 10;
 
 /** True once enough time has passed for finds per hour to mean something. */
 export function paceKnown({

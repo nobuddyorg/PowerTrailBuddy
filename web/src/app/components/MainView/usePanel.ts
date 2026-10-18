@@ -38,7 +38,6 @@ export function usePanel() {
       ),
     [],
   );
-  const home = useCallback(() => setStack([LIST]), []);
-
-  return { view, canGoBack: stack.length > 1, open, back, home };
+  // Straight above the list, back is the way to every trail rather than to another view.
+  return { view, backToList: stack.length === 2, open, back };
 }

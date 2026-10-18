@@ -147,7 +147,7 @@ export function overviewContent(input: OverviewInput): MapContent {
       ...lines.filter((line) => line.tone === 'selected'),
     ],
     badges,
-    parking: parkingOf(selectedTrail?.caches ?? []),
+    parking: selectedTrail ? parkingOf(selectedTrail.caches) : [],
   };
 }
 

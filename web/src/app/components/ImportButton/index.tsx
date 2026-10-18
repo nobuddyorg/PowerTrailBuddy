@@ -38,7 +38,8 @@ export function ImportButton({
         data-testid="import-input"
         className="sr-only"
         onChange={(event) => {
-          const files = [...(event.currentTarget.files ?? [])];
+          // A file input always has a FileList; null is for other input types.
+          const files = [...event.currentTarget.files!];
           // Cleared, so choosing the same file again still fires a change.
           event.currentTarget.value = '';
           onFiles(files);

@@ -2,7 +2,10 @@ import { render, type RenderOptions } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';
 import { vi } from 'vitest';
 
+import { DEFAULT_PREFERENCES } from '../data/store';
 import { I18nProvider } from '../i18n/I18nProvider';
+import { DEFAULT_TRAIL_SETTINGS } from '../lib/trails/types';
+import type { AppState } from '../useAppState';
 import { CacheMarksProvider } from './CacheDetails/marks';
 import { ToastProvider } from './Toast/ToastProvider';
 
@@ -48,4 +51,34 @@ export function renderWithProviders(
     </I18nProvider>
   );
   return { marks, ...render(ui, { wrapper: Wrapper }) };
+}
+
+/** The app's state with the given data and every action a spy, for a screen tested without storage. */
+export function makeApp(overrides: Partial<AppState> = {}): AppState {
+  return {
+    ready: true,
+    caches: [],
+    settings: DEFAULT_TRAIL_SETTINGS,
+    walk: undefined,
+    preferences: DEFAULT_PREFERENCES,
+    importInfo: undefined,
+    importing: false,
+    lastImport: undefined,
+    error: undefined,
+    importFiles: vi.fn(() => Promise.resolve()),
+    importSample: vi.fn(() => Promise.resolve()),
+    applySettings: vi.fn(),
+    setPreferences: vi.fn(),
+    clearData: vi.fn(() => Promise.resolve()),
+    ...makeMarks(),
+    resetLocallyFound: vi.fn(),
+    startWalk: vi.fn(),
+    recordOutcome: vi.fn(),
+    undoOutcome: vi.fn(),
+    reverseWalk: vi.fn(),
+    endWalk: vi.fn(),
+    dismissImport: vi.fn(),
+    dismissError: vi.fn(),
+    ...overrides,
+  };
 }

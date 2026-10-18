@@ -19,13 +19,13 @@ describe('nearestParking', () => {
   });
 
   it('keeps the first of two equally close spots', () => {
-    const twin = { latitude: 47.499, longitude: 9.5 };
+    const twin = { ...near };
     expect(
       nearestParking(
         [makeCache({ parking: near }), makeCache({ parking: twin })],
         start,
       ),
-    ).toEqual(near);
+    ).toBe(near);
   });
 
   it('has none when no cache lists one', () => {

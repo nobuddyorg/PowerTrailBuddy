@@ -50,7 +50,7 @@ export function WalkStats({
         <div
           className="h-full rounded-full bg-primary motion-safe:transition-[width]"
           style={{
-            width: `${progress.total === 0 ? 0 : (progress.done / progress.total) * 100}%`,
+            width: `${(progress.done / Math.max(progress.total, 1)) * 100}%`,
           }}
         />
       </div>

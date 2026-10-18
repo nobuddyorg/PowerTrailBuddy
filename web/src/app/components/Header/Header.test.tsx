@@ -8,12 +8,21 @@ import { Header } from '.';
 function renderHeader(walking = false) {
   const onOpenData = vi.fn();
   const onOpenSettings = vi.fn();
-  renderWithI18n(<Header walking={walking} onOpenData={onOpenData} onOpenSettings={onOpenSettings} />);
+  renderWithI18n(
+    <Header
+      walking={walking}
+      onOpenData={onOpenData}
+      onOpenSettings={onOpenSettings}
+    />,
+  );
   return { onOpenData, onOpenSettings };
 }
 
 function offerInstall(prompt = vi.fn().mockResolvedValue(undefined)) {
-  const event = Object.assign(new Event('beforeinstallprompt', { cancelable: true }), { prompt });
+  const event = Object.assign(
+    new Event('beforeinstallprompt', { cancelable: true }),
+    { prompt },
+  );
   act(() => {
     window.dispatchEvent(event);
   });
@@ -21,7 +30,10 @@ function offerInstall(prompt = vi.fn().mockResolvedValue(undefined)) {
 }
 
 function setOnline(online: boolean) {
-  Object.defineProperty(navigator, 'onLine', { value: online, configurable: true });
+  Object.defineProperty(navigator, 'onLine', {
+    value: online,
+    configurable: true,
+  });
   act(() => {
     window.dispatchEvent(new Event(online ? 'online' : 'offline'));
   });
@@ -38,17 +50,27 @@ afterEach(() => {
 describe('Header', () => {
   it('names the app', () => {
     renderHeader();
-    expect(screen.getByTestId('home-title')).toHaveTextContent('PowerTrailBuddy');
+    expect(screen.getByTestId('home-title')).toHaveTextContent(
+      'PowerTrailBuddy',
+    );
   });
 
   it('switches the language and marks the current one', () => {
     renderHeader();
     const german = screen.getByRole('button', { name: 'DE' });
-    expect(screen.getByRole('button', { name: 'EN' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'EN' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
     fireEvent.click(german);
-    expect(screen.getByRole('button', { name: 'DE' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'DE' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
     expect(localStorage.getItem('lang')).toBe('de');
-    expect(screen.getByRole('button', { name: 'Einstellungen' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Einstellungen' }),
+    ).toBeInTheDocument();
   });
 
   it('opens the data and settings dialogs', () => {
@@ -61,8 +83,12 @@ describe('Header', () => {
 
   it('keeps data and settings out of the way during a walk', () => {
     renderHeader(true);
-    expect(screen.queryByRole('button', { name: 'Your data' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Settings' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Your data' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Settings' }),
+    ).not.toBeInTheDocument();
   });
 
   it('shows when the device is offline', () => {
@@ -76,12 +102,16 @@ describe('Header', () => {
 
   it('offers to install once the browser does, and shows the prompt only once', () => {
     renderHeader();
-    expect(screen.queryByRole('button', { name: 'Install app' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Install app' }),
+    ).not.toBeInTheDocument();
     const { event, prompt } = offerInstall();
     expect(event.defaultPrevented).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: 'Install app' }));
     expect(prompt).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole('button', { name: 'Install app' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Install app' }),
+    ).not.toBeInTheDocument();
   });
 
   it('tolerates a prompt the browser refuses', async () => {
@@ -90,7 +120,9 @@ describe('Header', () => {
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Install app' }));
     });
-    expect(screen.queryByRole('button', { name: 'Install app' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Install app' }),
+    ).not.toBeInTheDocument();
   });
 
   it('drops the offer once the app is installed', () => {
@@ -99,6 +131,8 @@ describe('Header', () => {
     act(() => {
       window.dispatchEvent(new Event('appinstalled'));
     });
-    expect(screen.queryByRole('button', { name: 'Install app' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Install app' }),
+    ).not.toBeInTheDocument();
   });
 });

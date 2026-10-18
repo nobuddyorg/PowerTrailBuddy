@@ -1,10 +1,21 @@
 // @vitest-environment jsdom
-import { act, fireEvent, render, renderHook, screen } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+} from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { I18nProvider } from '../../i18n/I18nProvider';
 import { useCacheMarks } from '../CacheDetails/marks';
-import { TOAST_MS, TOAST_WITH_ACTION_MS, ToastProvider, useToast } from './ToastProvider';
+import {
+  TOAST_MS,
+  TOAST_WITH_ACTION_MS,
+  ToastProvider,
+  useToast,
+} from './ToastProvider';
 
 function Trigger({ onUndo }: { onUndo: () => void }) {
   const toast = useToast();
@@ -13,7 +24,12 @@ function Trigger({ onUndo }: { onUndo: () => void }) {
       <button type="button" onClick={() => toast.show('Plain')}>
         plain
       </button>
-      <button type="button" onClick={() => toast.show('With action', { label: 'Undo it', onAction: onUndo })}>
+      <button
+        type="button"
+        onClick={() =>
+          toast.show('With action', { label: 'Undo it', onAction: onUndo })
+        }
+      >
         action
       </button>
     </>
@@ -91,7 +107,11 @@ describe('ToastProvider', () => {
 
   it('refuses to be used outside its provider, as do the cache marks', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    expect(() => renderHook(() => useToast())).toThrow('useToast must be used within a ToastProvider');
-    expect(() => renderHook(() => useCacheMarks())).toThrow('useCacheMarks must be used within a CacheMarksProvider');
+    expect(() => renderHook(() => useToast())).toThrow(
+      'useToast must be used within a ToastProvider',
+    );
+    expect(() => renderHook(() => useCacheMarks())).toThrow(
+      'useCacheMarks must be used within a CacheMarksProvider',
+    );
   });
 });

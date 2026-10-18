@@ -151,7 +151,7 @@ export function MainView({
     <PanelContent
       app={app}
       view={view}
-      canGoBack={panel.canGoBack}
+      backToList={panel.backToList}
       onBack={panel.back}
       trails={trails}
       cards={cards}

@@ -18,9 +18,14 @@ describe('ImportSummary', () => {
   it('sums up a clean import in one line and goes by itself', () => {
     const onDismiss = vi.fn();
     renderWithI18n(
-      <ImportSummary summary={{ cacheCount: 1, files: [{ name: 'pq.zip', cacheCount: 1 }] }} onDismiss={onDismiss} />,
+      <ImportSummary
+        summary={{ cacheCount: 1, files: [{ name: 'pq.zip', cacheCount: 1 }] }}
+        onDismiss={onDismiss}
+      />,
     );
-    expect(screen.getByTestId('import-summary')).toHaveTextContent('Imported 1 cache from 1 file.');
+    expect(screen.getByTestId('import-summary')).toHaveTextContent(
+      'Imported 1 cache from 1 file.',
+    );
     expect(screen.queryByTestId('import-file')).not.toBeInTheDocument();
     act(() => {
       vi.advanceTimersByTime(SUMMARY_MS);
@@ -44,8 +49,12 @@ describe('ImportSummary', () => {
         onDismiss={onDismiss}
       />,
     );
-    expect(screen.getByTestId('import-summary')).toHaveTextContent('Imported 812 caches from 4 files.');
-    expect(screen.getAllByTestId('import-file').map((item) => item.textContent)).toEqual([
+    expect(screen.getByTestId('import-summary')).toHaveTextContent(
+      'Imported 812 caches from 4 files.',
+    );
+    expect(
+      screen.getAllByTestId('import-file').map((item) => item.textContent),
+    ).toEqual([
       'notes.txt: not a geocache .zip or .gpx file',
       'broken.gpx: the file is damaged and could not be read',
       'huge.zip: too large (more than 50 files or 100 MB unpacked)',

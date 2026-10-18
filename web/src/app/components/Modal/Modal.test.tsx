@@ -76,8 +76,22 @@ describe('Modal', () => {
     renderWithI18n(<Opener />);
     fireEvent.click(screen.getByRole('button', { name: 'open' }));
     screen.getByRole('button', { name: 'Close' }).focus();
-    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Tab', shiftKey: true });
+    fireEvent.keyDown(screen.getByRole('dialog'), {
+      key: 'Tab',
+      shiftKey: true,
+    });
     expect(screen.getByRole('button', { name: 'Last' })).toHaveFocus();
+  });
+});
+
+describe('Modal without controls of its own', () => {
+  it('focuses its close button', () => {
+    renderWithI18n(
+      <Modal title="Info" onClose={() => {}}>
+        <p>Nothing to choose.</p>
+      </Modal>,
+    );
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus();
   });
 });
 
@@ -86,7 +100,13 @@ describe('ConfirmDialog', () => {
     const onConfirm = vi.fn();
     const onCancel = vi.fn();
     renderWithI18n(
-      <ConfirmDialog title="Clear?" message="All gone." confirmLabel="Clear" onConfirm={onConfirm} onCancel={onCancel} />,
+      <ConfirmDialog
+        title="Clear?"
+        message="All gone."
+        confirmLabel="Clear"
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />,
     );
     const dialog = screen.getByRole('alertdialog', { name: 'Clear?' });
     expect(dialog).toHaveAccessibleDescription('All gone.');

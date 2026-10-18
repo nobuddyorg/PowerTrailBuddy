@@ -1,7 +1,7 @@
 import type { Coordinates, Geocache } from '../geocache/types';
 import { distanceMeters } from '../trails/geo';
 
-/** Of the parking spots the caches list, the one closest to `point`; undefined when none lists one. */
+/** Of the parking spots the caches list, the one closest to `point`, the first listed on a tie; undefined when none lists one. */
 export function nearestParking(
   caches: readonly Geocache[],
   point: Coordinates,

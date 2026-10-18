@@ -19,11 +19,17 @@ describe('downloadFile', () => {
     const revokeObjectURL = vi.fn();
     Object.assign(URL, { createObjectURL, revokeObjectURL });
     const clicks: HTMLAnchorElement[] = [];
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
       clicks.push(this);
     });
 
-    downloadFile({ name: 'trail.gpx', data: '<gpx/>', type: 'application/gpx+xml' });
+    downloadFile({
+      name: 'trail.gpx',
+      data: '<gpx/>',
+      type: 'application/gpx+xml',
+    });
 
     expect(clicks).toHaveLength(1);
     expect(clicks[0].download).toBe('trail.gpx');

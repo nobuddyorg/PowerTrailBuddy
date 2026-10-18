@@ -25,7 +25,8 @@ const DRAG_THRESHOLD_PX = 6;
 interface Drag {
   startY: number;
   startFraction: number;
-  moved: boolean;
+  /** Where the drag has taken the sheet; unset while the gesture is still a tap. */
+  fraction?: number;
 }
 
 function snapName(t: Translate, snap: SheetSnap): string {
@@ -61,34 +62,32 @@ export function BottomSheet({
 
   const onPointerDown = (event: PointerEvent<HTMLButtonElement>) => {
     event.currentTarget.setPointerCapture?.(event.pointerId);
-    drag.current = {
-      startY: event.clientY,
-      startFraction: fraction,
-      moved: false,
-    };
+    drag.current = { startY: event.clientY, startFraction: fraction };
   };
 
   const onPointerMove = (event: PointerEvent<HTMLButtonElement>) => {
     const current = drag.current;
     if (!current) return;
     const movedPixels = current.startY - event.clientY;
-    if (!current.moved && Math.abs(movedPixels) < DRAG_THRESHOLD_PX) return;
-    current.moved = true;
-    setDragged(
-      draggedFraction({
-        startFraction: current.startFraction,
-        movedPixels,
-        viewportHeight: window.innerHeight,
-      }),
-    );
+    if (
+      current.fraction === undefined &&
+      Math.abs(movedPixels) < DRAG_THRESHOLD_PX
+    )
+      return;
+    current.fraction = draggedFraction({
+      startFraction: current.startFraction,
+      movedPixels,
+      viewportHeight: window.innerHeight,
+    });
+    setDragged(current.fraction);
   };
 
   const onPointerEnd = () => {
     const current = drag.current;
     drag.current = undefined;
-    if (!current?.moved) return;
+    if (current?.fraction === undefined) return;
     justDragged.current = true;
-    if (dragged !== undefined) onSnapChange(nearestSnap(dragged));
+    onSnapChange(nearestSnap(current.fraction));
     setDragged(undefined);
   };
 

@@ -99,8 +99,9 @@ const WALK: WalkState = {
   outcomes: {
     GC0TEST: { outcome: 'found', at: '2026-05-01T08:10:00.000Z' },
     GC0TEST2: { outcome: 'dnf', at: '2026-05-01T08:20:00.000Z' },
+    GC0TEST3: { outcome: 'skipped', at: '2026-05-01T08:25:00.000Z' },
   },
-  history: ['GC0TEST', 'GC0TEST2'],
+  history: ['GC0TEST', 'GC0TEST2', 'GC0TEST3'],
 };
 
 beforeEach(() => {
@@ -131,13 +132,10 @@ describe('caches', () => {
   });
 
   it('gives a cache stored by an older build an empty owner, hint and log list', async () => {
-    const {
-      placedBy: _owner,
-      hint: _hint,
-      recentLogs: _logs,
-      parking: _parking,
-      ...older
-    } = CACHE;
+    const laterFields = new Set(['placedBy', 'hint', 'recentLogs', 'parking']);
+    const older = Object.fromEntries(
+      Object.entries(CACHE).filter(([key]) => !laterFields.has(key)),
+    );
     storeRaw('caches', [older, 'junk', null]);
 
     expect(await loadCaches()).toEqual([
