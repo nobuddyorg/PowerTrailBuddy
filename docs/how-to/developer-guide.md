@@ -78,7 +78,8 @@ npm run test:mutation
 
 Stryker mutates exactly the files in [`mutation-targets.mjs`](../../web/mutation-targets.mjs),
 which `vitest.config.mts` also reads for its per-file 100% coverage floors, so
-the two cannot drift. There is no `Stryker disable` or `/* v8 ignore */` in
+the two cannot drift. It runs the suite through `vitest.mutation.config.mts`,
+which leaves out the `*.performance.test.ts` timing tests. There is no `Stryker disable` or `/* v8 ignore */` in
 `src/`; a survivor is a missing assertion or dead code to delete.
 
 Runs are incremental: Stryker keeps every mutant's result in
@@ -158,19 +159,37 @@ grep -rn 'getByTestId\|getByRole\|locator(' web/e2e --include=*.spec.ts
 - The `tiles` fixture (automatic) answers every `tile.openstreetmap.org`
   request with a blank PNG; `collectForeignRequests` in `e2e/helpers.ts`
   fails a test that contacts any other origin.
-- Import fixtures are small synthetic `.gpx` and `.zip` files under
-  `web/e2e/fixtures/`, set on the file input through the page object.
-- Geolocation: `test.use({ geolocation: {...}, permissions: ['geolocation'] })`,
-  or no permission to test the fallback.
-- The share sheet cannot be driven; a spec POSTs `multipart/form-data` to
-  `share-target/` once the service worker controls the page.
+- The `pageProblems` fixture (automatic) fails a test on any uncaught error
+  or console error in the page, so a rejected background promise cannot hide
+  behind a passing assertion. `failMapTiles` in `e2e/helpers.ts` takes the
+  tile server down for the one spec that checks the app without it.
+- Import fixtures are generated, not committed: `e2e/pocketQuery.ts` writes a
+  synthetic Pocket Query (two trails, three caches the default settings leave
+  out, a parking area in the `-wpts.gpx`) and zips it with JSZip, as bytes.
+  Generated rather than checked in as TEST_STRATEGY §8 suggests, so the specs
+  know every code and coordinate they assert on (`QUICK_TRAIL`, `LONG_TRAIL`,
+  `offset()`). The page objects set the files on the import input.
+- Geolocation: `placeDevice(context, position)` grants the permission and sets
+  the position, `moveDevice` walks it somewhere else, `denyLocation` refuses
+  the permission for the fallback (both engines deny every permission an empty
+  grant leaves out).
+- Downloads (`Export GPX`, `Export field notes`) are read with
+  `downloadedBytes(download)`; the specs assert the file name and content.
+- The share sheet cannot be driven; `share-target.spec.ts` POSTs
+  `multipart/form-data` to `share-target/` from inside the page once the
+  service worker controls it, then opens where the redirect led.
+- `bottom-sheet.spec.ts` sets a phone-sized viewport for every project, as the
+  sheet exists only below the wide layout.
 
 ### The e2e coverage report
 
 With `E2E_COVERAGE_SOURCEMAPS=true` for both `npm run build` and
 `npm run e2e`, the Chromium projects collect JS/CSS coverage through
 Playwright's `page.coverage` and write `web/coverage-e2e/`. CI's `e2e` job does
-this; the floor in `e2e/coverage.ts` is set once the app's journeys exist.
+this, and fails below the floor in `e2e/coverage.ts`
+([Configuration](../reference/configuration.md#coverage-and-mutation-thresholds)).
+To find what no journey reaches, read the function coverage per file in
+`web/coverage-e2e/index.html`, not the line coverage.
 
 ## Deploy to GitHub Pages
 

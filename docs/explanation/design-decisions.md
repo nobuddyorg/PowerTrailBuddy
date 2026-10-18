@@ -26,6 +26,12 @@ nothing can break when the site changes its HTML, and there is nothing to
 rate-limit or ban. This is a hard rule in [CLAUDE.md](../../CLAUDE.md), not a
 v1 shortcut.
 
+The same rule decides how a walk is logged: the app never logs anything on
+the user's behalf. It writes the finds and DNFs as **field notes**
+(`geocache_visits.txt`), the format geocaching.com's own **Drafts** upload
+reads, and the user uploads the file themselves. A trail leaves the app the
+same way, as a GPX file for another navigation app.
+
 ## Why e-mail or download, and the 1,000-cache ceiling
 
 A Pocket Query returns at most 1,000 caches. Results up to 500 caches are also
@@ -116,6 +122,16 @@ kept as small named functions so `sw.test.ts` can extract and test them from
 the source text; shell caches are prefixed `powertrailbuddy-shell-` so the
 cleanup can never delete the `powertrailbuddy-shared-files` cache a share is
 waiting in.
+
+## Why there is only a light theme
+
+The map is most of the screen, and OpenStreetMap's standard tiles are light.
+A dark header, panel and bottom sheet around a bright map read as two apps
+glued together and make the map look glaring, while dark tiles would mean a
+second tile server, against the one-outside-request rule. So `globals.css`
+defines one light palette (forest green for trails and actions, orange for the
+walk's current target), `layout.tsx` declares `color-scheme: light` and one
+`theme-color`, and nothing reacts to `prefers-color-scheme`.
 
 ## Why mutation testing is scoped to a list of files
 

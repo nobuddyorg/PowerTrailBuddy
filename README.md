@@ -28,14 +28,24 @@ hour. Then it guides you through one, cache by cache, on a map.
 - **Import only, nothing leaves your device**: open a Pocket Query `.zip`
   or `.gpx` file, or share it to the app from your phone's e-mail or files
   app. No login, no server, no tracking; the only thing fetched from the
-  internet is the map.
-- **Trail finder** with your own limits: cache types, difficulty and
-  terrain, the largest gap between caches, the smallest trail worth
-  walking, the longest walk.
-- **Walking estimate** per trail: distance, time, caches per hour, whether
-  it is a line or an area.
-- **Guided walk**: next cache, distance and direction, mark found or skip;
-  progress is kept if you close the app.
+  internet is the map. **Try with sample data** shows the app before you have
+  a Pocket Query.
+- **Trail finder** with your own limits, or a preset: cache types,
+  difficulty and terrain, the largest gap between caches, the smallest trail
+  worth walking, the longest walk.
+- **Ranked trails** with distance, time, caches per hour, line or area, how
+  far away they are, and warnings for caches with recent DNFs, maintenance
+  requests or a disabled listing; sort, filter and search.
+- **Trail and cache details**: the nearest parking, the caches in walking
+  order either way round, the latest logs and the hint, and links to the cache
+  page, your navigation app and Google Maps walking directions.
+- **Guided walk**: the next cache with distance, a compass arrow and a
+  "you're close" alert; found, not found, skip and undo; reverse or finish
+  early; progress kept if you close the app.
+- **Exports**: field notes to log a whole walk at once through
+  geocaching.com's Drafts upload, and a trail as GPX for another navigation
+  app.
+- **Mark found or ignore** caches in the app, so they leave every trail.
 - **Installable** on Android and iOS as an app that works offline once
   loaded.
 - **Bilingual**: German and English.
