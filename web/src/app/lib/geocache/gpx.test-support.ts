@@ -3,7 +3,7 @@ import JSZip from 'jszip';
 import type { CacheType, Geocache, RecentLogType } from './types';
 
 /** One `<groundspeak:log>`; a field left out is left out of the document. */
-export interface LogSpec {
+interface LogSpec {
   type?: string;
   date?: string;
 }

@@ -20,7 +20,8 @@ const TYPE_TEXT: Readonly<Record<CacheType, string>> = {
 };
 
 // Everything XML 1.0 cannot carry: C0 controls but tab, LF and CR; lone surrogates; U+FFFE and U+FFFF.
-const NOT_XML_CHARACTER = /[^\t\n\r -퟿-�\u{10000}-\u{10FFFF}]/gu;
+const NOT_XML_CHARACTER =
+  /[^\t\n\r\u0020-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/gu;
 
 function escapeXml(text: string): string {
   return text

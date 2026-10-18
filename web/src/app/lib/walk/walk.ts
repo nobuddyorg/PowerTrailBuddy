@@ -2,7 +2,7 @@ import type { Trail } from '../trails/types';
 
 export type WalkOutcome = 'found' | 'dnf' | 'skipped';
 
-export interface RecordedOutcome {
+interface RecordedOutcome {
   outcome: WalkOutcome;
   /** ISO date-time. */
   at: string;
