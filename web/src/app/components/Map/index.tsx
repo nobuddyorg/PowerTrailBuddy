@@ -148,6 +148,7 @@ export default function MapView({
   useEffect(() => {
     let cancelled = false;
     let map: LeafletMap | undefined;
+    let zoomAnimating = false;
     void (async () => {
       // Imported here: Leaflet touches window on import, which the static prerender has none of.
       const L = (await import('leaflet')).default;
@@ -169,6 +170,8 @@ export default function MapView({
         attribution: `&copy; <a href="https://www.openstreetmap.org/copyright">${attribution}</a>`,
       }).addTo(map);
       map.on('dragstart', () => callbacks.current.onUserPan?.());
+      map.on('zoomanim', () => (zoomAnimating = true));
+      map.on('moveend', () => (zoomAnimating = false));
       setLoaded({
         L,
         map,
@@ -182,8 +185,11 @@ export default function MapView({
     })();
     return () => {
       cancelled = true;
-      map?.remove();
       setLoaded(undefined);
+      const removed = map;
+      // Leaflet 1.9 ends a zoom animation on a timer that remove() leaves running, which then reads the removed pane.
+      if (zoomAnimating) removed?.once('moveend', () => removed.remove());
+      else removed?.remove();
     };
   }, []);
 
