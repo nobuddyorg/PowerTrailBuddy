@@ -1,0 +1,8 @@
+.e2e-serve
+out
+coverage
+coverage-e2e
+reports
+test-results
+playwright-report
+.stryker-tmp

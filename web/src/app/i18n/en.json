@@ -1,0 +1,9 @@
+{
+  "brand": {
+    "name": "PowerTrailBuddy"
+  },
+  "page": {
+    "tagline": "Find power trails in your Pocket Queries and walk them",
+    "intro": "Import a Pocket Query (.zip) or GPX file to get started."
+  }
+}

@@ -1,0 +1,73 @@
+# PowerTrailBuddy
+
+Find the power trails hiding in your own Pocket Queries, and walk them. 🥾
+
+![Node.js](https://img.shields.io/badge/node-%3E%3D22-brightgreen?logo=nodedotjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/language-TypeScript-3178C6?logo=typescript&logoColor=white)
+![Next.js](https://img.shields.io/badge/framework-Next.js-black?logo=nextdotjs&logoColor=white)
+![Leaflet](https://img.shields.io/badge/maps-Leaflet-199900?logo=leaflet&logoColor=white)
+![GitHub Pages](https://img.shields.io/badge/hosting-GitHub%20Pages-blue?logo=github)
+![Vitest](https://img.shields.io/badge/tested%20with-Vitest-6E9F18?logo=vitest&logoColor=white)
+![Playwright](https://img.shields.io/badge/e2e-Playwright-2EAD33)
+![Stryker](https://img.shields.io/badge/mutation-Stryker-e74c3c)
+
+## Motivation
+
+A **power trail** is a chain of quick geocaches laid out along a path, a
+few hundred metres apart. They are great for a walk with a high find rate,
+but you only notice one when you already happen to be standing on it.
+
+PowerTrailBuddy looks at the caches in your own Geocaching.com **Pocket
+Query** and finds the clusters and chains worth walking: it links caches
+that are close to each other, puts them in a sensible walking order, splits
+long chains into walks of a length you choose, and ranks them by caches per
+hour. Then it guides you through one, cache by cache, on a map.
+
+## Features
+
+- **Import only, nothing leaves your device**: open a Pocket Query `.zip`
+  or `.gpx` file, or share it to the app from your phone's e-mail or files
+  app. No login, no server, no tracking; the only thing fetched from the
+  internet is the map.
+- **Trail finder** with your own limits: cache types, difficulty and
+  terrain, the largest gap between caches, the smallest trail worth
+  walking, the longest walk.
+- **Walking estimate** per trail: distance, time, caches per hour, whether
+  it is a line or an area.
+- **Guided walk**: next cache, distance and direction, mark found or skip;
+  progress is kept if you close the app.
+- **Installable** on Android and iOS as an app that works offline once
+  loaded.
+- **Bilingual**: German and English.
+
+## Using PowerTrailBuddy
+
+1. On geocaching.com, create a **Pocket Query** for the area you want to
+   walk (up to 1,000 caches; Traditional caches only works best).
+2. Download its `.zip`, or open the e-mail it sends you.
+3. Open PowerTrailBuddy and import the file — or, on Android, **share** the
+   file to PowerTrailBuddy.
+
+Step by step: [Getting started](docs/tutorials/getting-started.md). Every
+task: [User guide](docs/how-to/user-guide.md).
+
+PowerTrailBuddy is not affiliated with Groundspeak / Geocaching HQ. It only
+reads files you downloaded yourself.
+
+## Documentation
+
+Full docs live in [`docs/`](docs/README.md), organised by
+[Diátaxis](https://diataxis.fr):
+
+- **Tutorial**: [Getting started](docs/tutorials/getting-started.md)
+- **How-to**: [User guide](docs/how-to/user-guide.md) · [Developer guide](docs/how-to/developer-guide.md)
+- **Reference**: [Architecture](docs/reference/architecture.md) · [Configuration](docs/reference/configuration.md) · [Risk model](docs/reference/risk-model.md)
+- **Explanation**: [Design decisions](docs/explanation/design-decisions.md)
+
+Testing methodology: [TEST_STRATEGY.md](TEST_STRATEGY.md).
+
+## Contributing
+
+PowerTrailBuddy is a personal hobby project and doesn't accept outside pull
+requests, issues or feature requests. Want to change something? Fork it:
+[CONTRIBUTING.md](CONTRIBUTING.md) has local setup and the checks CI runs.

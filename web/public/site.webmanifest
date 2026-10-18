@@ -1,0 +1,10 @@
+{
+  "name": "PowerTrailBuddy",
+  "short_name": "PowerTrailBuddy",
+  "start_url": "./",
+  "scope": "./",
+  "icons": [],
+  "display": "standalone",
+  "background_color": "#f3f5ef",
+  "theme_color": "#f3f5ef"
+}
