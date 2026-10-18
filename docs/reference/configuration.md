@@ -19,7 +19,7 @@ dialog refuses values outside the same ranges before Apply.
 | `minCaches` | `10` | 2–1000 (1) | Groups and walks with fewer caches are not trails |
 | `maxWalkKilometers` | `10` | 1–100 | Longer chains are split into several walks no longer than this (walking distance, return included) |
 | `walkingSpeedKmh` | `4` | 1–10 | Speed for the time estimate |
-| `minutesPerCache` | `3` | 0–60 | Time spent at each cache: search, log, back on the path |
+| `minutesPerCache` | `3` | 1–60 | Time spent at each cache: search, log, back on the path |
 | `detourFactor` | `1.3` | 1–3 | Straight-line distance × this ≈ distance on real paths |
 
 Presets (`lib/ui-logic/presets.ts`) set only the gap and the trail size:
@@ -30,6 +30,8 @@ Derived per trail ([Architecture](architecture.md#libtrailstypests)):
 `walkMeters = (pathMeters + returnMeters) × detourFactor`;
 `durationMinutes = walkMeters / 1000 / walkingSpeedKmh × 60 + caches ×
 minutesPerCache`; `cachesPerHour = caches / durationMinutes × 60`.
+The floor of 1 minute per cache keeps `durationMinutes` positive, and so the
+rate finite, even for caches that share one spot.
 
 Caches the Pocket Query marks as found, disabled (`available = false`) or
 archived, and caches marked found or ignored in the app, never count.

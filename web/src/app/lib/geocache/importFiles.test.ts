@@ -188,6 +188,30 @@ describe('importFiles: zip archives', () => {
     });
   });
 
+  it('skips the metadata entries a Mac adds when it compresses a folder', async () => {
+    const appleDouble = new Uint8Array([0x00, 0x05, 0x16, 0x07, 0x00, 0x02]);
+    const file = await zipFile({
+      'pq/1234567.gpx': gpx,
+      '__MACOSX/pq/._1234567.gpx': appleDouble,
+      '__MACOSX/pq/notes.gpx': appleDouble,
+      'pq/._extra.gpx': appleDouble,
+      '._top.gpx': appleDouble,
+    });
+    expect(await importFiles([file])).toEqual({
+      caches,
+      files: [{ name: 'pocket-query.zip', cacheCount: 3 }],
+    });
+  });
+
+  it('reads a GPX entry whose name only contains the metadata markers', async () => {
+    const more = [syntheticCache(4)];
+    const file = await zipFile({
+      'my__MACOSX/a._b.gpx': gpx,
+      'x__MACOSX._.gpx': gpxOf(more),
+    });
+    expect((await importFiles([file])).caches).toEqual([...caches, ...more]);
+  });
+
   it('reads an entry whose name climbs out of the archive like any other', async () => {
     const file = await zipFile({ '../../../etc/caches.gpx': gpx });
     expect((await importFiles([file])).caches).toEqual(caches);

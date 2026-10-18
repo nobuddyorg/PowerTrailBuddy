@@ -50,6 +50,11 @@ function fail(code: number) {
   );
 }
 
+// A PermissionStatus: its state, and a `change` event when the user changes it.
+function permissionStatus(state: PermissionState) {
+  return Object.assign(new EventTarget(), { state });
+}
+
 beforeEach(() => {
   geolocation.watchPosition.mockClear();
   geolocation.clearWatch.mockClear();
@@ -106,6 +111,57 @@ describe('useGeolocation', () => {
     expect(result.current.location).toEqual({ status: 'unavailable' });
   });
 
+  it('watches again when started after a refusal, as once allowed in the site settings', () => {
+    const { result } = renderHook(() => useGeolocation());
+    act(() => result.current.start());
+    fail(1);
+    act(() => result.current.start());
+    expect(result.current.location).toEqual({ status: 'waiting' });
+    expect(geolocation.watchPosition).toHaveBeenCalledTimes(2);
+    expect(geolocation.clearWatch).toHaveBeenCalledWith(7);
+    fix({});
+    expect(result.current.location.status).toBe('located');
+  });
+
+  it('watches again when started after the device could not find the position', () => {
+    const { result } = renderHook(() => useGeolocation());
+    act(() => result.current.start());
+    fail(2);
+    act(() => result.current.start());
+    expect(result.current.location).toEqual({ status: 'waiting' });
+    expect(geolocation.watchPosition).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not watch twice when started again while waiting', () => {
+    const { result } = renderHook(() => useGeolocation());
+    act(() => result.current.start());
+    act(() => result.current.start());
+    expect(geolocation.watchPosition).toHaveBeenCalledTimes(1);
+  });
+
+  it('starts by itself once the permission turns granted, until unmounted', async () => {
+    const permission = permissionStatus('denied');
+    provide('permissions', { query: () => Promise.resolve(permission) });
+    const { result, unmount } = renderHook(() => useGeolocation());
+    await act(() => Promise.resolve());
+    permission.state = 'prompt';
+    act(() => {
+      permission.dispatchEvent(new Event('change'));
+    });
+    expect(geolocation.watchPosition).not.toHaveBeenCalled();
+    permission.state = 'granted';
+    act(() => {
+      permission.dispatchEvent(new Event('change'));
+    });
+    expect(result.current.location).toEqual({ status: 'waiting' });
+    expect(geolocation.watchPosition).toHaveBeenCalledTimes(1);
+    unmount();
+    act(() => {
+      permission.dispatchEvent(new Event('change'));
+    });
+    expect(geolocation.watchPosition).toHaveBeenCalledTimes(1);
+  });
+
   it('is unavailable on a device without geolocation', () => {
     Reflect.deleteProperty(navigator, 'geolocation');
     const { result } = renderHook(() => useGeolocation());
@@ -115,7 +171,7 @@ describe('useGeolocation', () => {
 
   it('starts by itself when the permission was granted before', async () => {
     provide('permissions', {
-      query: () => Promise.resolve({ state: 'granted' }),
+      query: () => Promise.resolve(permissionStatus('granted')),
     });
     const { result } = renderHook(() => useGeolocation());
     await waitFor(() =>
@@ -126,7 +182,7 @@ describe('useGeolocation', () => {
 
   it('does not ask on a first visit, nor when the permission check fails', async () => {
     provide('permissions', {
-      query: () => Promise.resolve({ state: 'prompt' }),
+      query: () => Promise.resolve(permissionStatus('prompt')),
     });
     const first = renderHook(() => useGeolocation());
     provide('permissions', {
@@ -139,13 +195,13 @@ describe('useGeolocation', () => {
   });
 
   it('starts nothing after unmounting before the permission answer', async () => {
-    let answer: (status: { state: string }) => void = () => {};
+    let answer: (status: EventTarget & { state: string }) => void = () => {};
     provide('permissions', {
       query: () => new Promise((resolve) => (answer = resolve)),
     });
     const { unmount } = renderHook(() => useGeolocation());
     unmount();
-    answer({ state: 'granted' });
+    answer(permissionStatus('granted'));
     await act(() => Promise.resolve());
     expect(geolocation.watchPosition).not.toHaveBeenCalled();
   });

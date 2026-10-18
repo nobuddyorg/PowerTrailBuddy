@@ -20,8 +20,9 @@ import { App } from '.';
 
 vi.mock('idb-keyval', () => import('../../memoryIdb.test-support'));
 vi.mock('../Map', () => import('../Map/mapStub.test-support'));
+const shared = vi.hoisted(() => ({ files: [] as File[] }));
 vi.mock('../../data/sharedFiles', () => ({
-  takeSharedFiles: () => Promise.resolve([]),
+  takeSharedFiles: () => Promise.resolve(shared.files),
 }));
 
 const SAMPLE_DIR = join(process.cwd(), 'public', 'sample');
@@ -41,6 +42,8 @@ const watchPosition = vi.fn(() => 1);
 const button = (name: string | RegExp) => screen.getByRole('button', { name });
 
 beforeEach(() => {
+  shared.files = [];
+  window.history.replaceState(null, '', '/');
   localStorage.setItem('lang', 'en');
   memoryIdb.reset();
   Object.defineProperty(navigator, 'geolocation', {
@@ -113,6 +116,30 @@ describe('App', () => {
       target: { files: [fileOf(gpxOf(CACHES), 'pq.gpx')] },
     });
     expect(await screen.findByTestId('trail-card')).toBeInTheDocument();
+  });
+
+  it('asks before importing a share, and imports it on Import', async () => {
+    shared.files = [fileOf(gpxOf(CACHES), 'shared.gpx')];
+    window.history.replaceState(null, '', '/?shared=1');
+    renderApp();
+    const dialog = await screen.findByRole('alertdialog', {
+      name: 'Import the shared files?',
+    });
+    expect(dialog).toHaveTextContent('shared.gpx');
+    expect(screen.queryByTestId('trail-card')).not.toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Import' }));
+    expect(await screen.findByTestId('trail-card')).toBeInTheDocument();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('imports nothing from a share the user cancels', async () => {
+    shared.files = [fileOf(gpxOf(CACHES), 'shared.gpx')];
+    window.history.replaceState(null, '', '/?shared=1');
+    renderApp();
+    const dialog = await screen.findByRole('alertdialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(screen.getByTestId('empty-state')).toBeInTheDocument();
   });
 
   it('shows the trails in stored data, with settings and data a tap away', async () => {

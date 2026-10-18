@@ -46,10 +46,13 @@ export async function failMapTiles(page: Page) {
   await page.route(TILE_HOST, (route) => route.abort('connectionfailed'));
 }
 
-/** Every request the page made that left the origin under test, tiles excepted. */
-export function collectForeignRequests(page: Page, origin: string): string[] {
+/** Every request the context's pages and workers made that left the origin under test, tiles excepted. */
+export function collectForeignRequests(
+  context: BrowserContext,
+  origin: string,
+): string[] {
   const foreign: string[] = [];
-  page.on('request', (request) => {
+  context.on('request', (request) => {
     const url = request.url();
     if (url.startsWith('data:') || url.startsWith('blob:')) return;
     if (TILE_HOST.test(url)) return;

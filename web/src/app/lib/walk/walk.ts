@@ -58,10 +58,7 @@ export function startWalk(trail: Trail, at: string): WalkState {
   };
 }
 
-/**
- * Starts the open part of the walk at `code`: reversed when it is the last open cache,
- * else rotated, as a round trip may start anywhere. A code that is not open is ignored.
- */
+/** Reversed when `code` is the last open cache, else rotated (a round trip starts anywhere); unknown codes change nothing. */
 export function orientWalk(state: WalkState, code: string): WalkState {
   return withOpenCodes(state, (open) => {
     const index = open.indexOf(code);

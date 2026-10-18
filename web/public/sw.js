@@ -1,4 +1,4 @@
-// Cache-first for hashed `_next/static/**`, network-first for the app shell (pages, manifest, logo, favicons), one cache per build, plus the share target (docs/reference/architecture.md).
+// Precached on install, then cache-first for hashed `_next/static/**`, network-first for the app shell (pages, manifest, logo, favicons), one cache per build, plus the share target (docs/reference/architecture.md).
 
 // Shell caches only: the share target's cache must survive a new build.
 const CACHE_PREFIX = 'powertrailbuddy-shell-';
@@ -48,6 +48,25 @@ const SHELL_FILES = [
   '/favicon-32x32.png',
   '/apple-touch-icon.png',
 ];
+
+// scripts/precache-manifest.mjs writes it after `next build`: every hashed asset, the lazily loaded ones too.
+const PRECACHE_MANIFEST = '/precache-manifest.json';
+
+// Revalidated, not taken from the HTTP cache: an old build's page or list would name assets the host no longer has.
+function freshRequest(path) {
+  const url = new URL(`${WORKER.basePath}${path}`, WORKER.origin);
+  return new Request(url, { cache: 'no-cache' });
+}
+
+// A worker installs with the whole shell or not at all, so the first visit, and each deploy, works offline.
+async function precacheShell(cacheName) {
+  const response = await fetch(freshRequest(PRECACHE_MANIFEST));
+  if (!response.ok)
+    throw new Error(`Precache manifest: HTTP ${response.status}`);
+  const assets = await response.json();
+  const cache = await caches.open(cacheName);
+  await cache.addAll(['/', ...SHELL_FILES, ...assets].map(freshRequest));
+}
 
 function isAppShellRequest(pathname, mode) {
   return (
@@ -141,8 +160,8 @@ async function networkFirst(request) {
     if (response.ok) void cache.put(request, response.clone());
     return response;
   } catch (error) {
-    // Offline: the last shell this build served, so the app still opens.
-    const cached = await cache.match(request);
+    // Offline: the last shell this build served; the page under any query, as after a share's `?shared=1`.
+    const cached = await cache.match(request, { ignoreSearch: true });
     if (cached) return cached;
     throw error;
   }
@@ -163,9 +182,9 @@ const STRATEGIES = {
   'network-first': networkFirst,
 };
 
-self.addEventListener('install', () => {
+self.addEventListener('install', (event) => {
   // Pages already serves only the new build, so waiting for old tabs to close protects nothing.
-  self.skipWaiting();
+  event.waitUntil(precacheShell(CACHE_NAME).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (event) => {

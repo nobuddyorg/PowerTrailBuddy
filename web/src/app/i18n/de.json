@@ -250,6 +250,11 @@
     "message": "Damit werden alle importierten Caches, deine Einstellungen, die als gefunden markierten und ignorierten Caches und eine laufende Tour aus diesem Browser entfernt.",
     "confirm": "Daten löschen"
   },
+  "shared": {
+    "title": "Geteilte Dateien importieren?",
+    "message": "Ihre Caches kommen zu den vorhandenen hinzu und ersetzen die mit demselben Code. Importiere nur Dateien, die du selbst geteilt hast.",
+    "confirm": "Importieren"
+  },
   "map": {
     "region": "Karte",
     "attribution": "OpenStreetMap-Mitwirkende",

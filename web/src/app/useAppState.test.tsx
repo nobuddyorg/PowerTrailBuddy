@@ -149,13 +149,41 @@ describe('importing', () => {
     expect(result.current.caches).toHaveLength(3);
   });
 
-  it('imports the files shared to the app and tidies the address', async () => {
+  // Any website can post a form to the share target, so a share is imported only once the user agrees.
+  it('takes the files shared to the app and asks first, tidying the address', async () => {
     shared.take.mockResolvedValue([pqFile(CACHES, 'shared.gpx')]);
     window.history.replaceState(null, '', '/?shared=1');
     const { result } = await renderReady();
-    await waitFor(() => expect(result.current.caches).toHaveLength(3));
+    await waitFor(() =>
+      expect(result.current.pendingShare.map((file) => file.name)).toEqual([
+        'shared.gpx',
+      ]),
+    );
     expect(window.location.search).toBe('');
+    expect(result.current.caches).toEqual([]);
+    expect(storedValue('caches')).toBeUndefined();
+  });
+
+  it('imports the shared files once the user agrees', async () => {
+    shared.take.mockResolvedValue([pqFile(CACHES, 'shared.gpx')]);
+    window.history.replaceState(null, '', '/?shared=1');
+    const { result } = await renderReady();
+    await waitFor(() => expect(result.current.pendingShare).toHaveLength(1));
+    await act(() => result.current.acceptShare());
+    expect(result.current.caches).toHaveLength(3);
     expect(result.current.lastImport?.files[0].name).toBe('shared.gpx');
+    expect(result.current.pendingShare).toEqual([]);
+  });
+
+  it('drops the shared files, importing nothing, when the user declines', async () => {
+    shared.take.mockResolvedValue([pqFile(CACHES, 'shared.gpx')]);
+    window.history.replaceState(null, '', '/?shared=1');
+    const { result } = await renderReady();
+    await waitFor(() => expect(result.current.pendingShare).toHaveLength(1));
+    act(() => result.current.declineShare());
+    expect(result.current.pendingShare).toEqual([]);
+    expect(result.current.caches).toEqual([]);
+    expect(result.current.lastImport).toBeUndefined();
   });
 
   it('says so when the share delivered no file', async () => {

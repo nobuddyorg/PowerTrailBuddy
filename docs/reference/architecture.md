@@ -123,9 +123,10 @@ Files are read one after another; the extension decides, case-insensitively.
 
 - Any single file over **100 MiB** (`MAX_IMPORT_BYTES`) is `too-large` before
   it is read; a file the browser cannot read is `unreadable`.
-- `.zip` through jszip: every `.gpx` entry that is not a directory is parsed;
-  other entries, nested zips included, are ignored, and an archive with no
-  `.gpx` entry is `unsupported`. More than **50 entries**
+- `.zip` through jszip: every `.gpx` entry that is not a directory is parsed,
+  except the AppleDouble metadata a Mac adds (anything under `__MACOSX/`, any
+  name starting `._`); other entries, nested zips included, are ignored, and an
+  archive with no `.gpx` entry is `unsupported`. More than **50 entries**
   (`MAX_ARCHIVE_ENTRIES`), or GPX entries whose declared uncompressed sizes
   add up to more than 100 MiB, is `too-large`, checked before inflating. Each
   entry is inflated as a stream and stopped as it grows past its declared
@@ -315,13 +316,24 @@ to this table in the same change.
 Registration happens only in a production build (`NODE_ENV === 'production'`),
 so `next dev` never pins its changing chunks.
 
+- **Precache**: `npm run build` runs `scripts/precache-manifest.mjs` after
+  `next build`, which writes `out/precache-manifest.json`: every file under
+  `_next/static/` (source maps left out), the lazily loaded map chunk and
+  Leaflet's images included. On `install` the worker fetches that list and
+  adds `<base>/`, the shell files below and every listed asset to its build's
+  cache, all revalidated (`cache: 'no-cache'`) so an old build's page or list
+  never slips in. Only then does it take over (`skipWaiting`); if any file is
+  missing, the install fails and the old worker and its cache stay. So the
+  app opens offline after a single visit, and after each deploy.
 - **Caching**: cache-first for hashed `/_next/static/**`, network-first for
   navigations and the files every page links by URL (the manifest,
   `logo.svg`, `favicon.ico`, `favicon-32x32.png`, `apple-touch-icon.png`),
-  one shell cache per build; on activation it
-  deletes every `powertrailbuddy-shell-*` cache but the current one. The
-  prefix spares the shared-files cache and other sites' caches on the shared
-  `github.io` origin. Cross-origin requests (map tiles) are never intercepted.
+  one shell cache per build. Offline, a navigation is answered by the kept
+  page whatever its query, so the share target's `?shared=1` landing opens
+  too. On activation it deletes every `powertrailbuddy-shell-*` cache but
+  the current one. The prefix spares the shared-files cache and other sites'
+  caches on the shared `github.io` origin. Cross-origin requests (map tiles)
+  are never intercepted.
 - **Share target**: the manifest declares
 
   ```json
@@ -341,7 +353,11 @@ so `next dev` never pins its changing chunks.
   intercepts that POST, stores each file in `powertrailbuddy-shared-files` at
   `<base>/shared-file/<index>/<encodeURIComponent(name)>` with its content
   type, and answers `303` to `<base>/?shared=1`. The page sees `shared=1`,
-  removes the query parameter, calls `takeSharedFiles()` and imports them.
+  removes the query parameter and calls `takeSharedFiles()`, which empties
+  the cache. It then names the files and imports them only once the user
+  taps **Import**; **Cancel** drops them. Any website can post a form to the
+  share target, and the worker cannot tell such a post from a real share, so
+  nothing shared is imported without that tap.
 - **Share limits**: text fields sent along are ignored. More than **20 files**
   or more than **100 MB** in total is refused whole, never trimmed. A share
   replaces an earlier one the page never took. A file name that a URL would

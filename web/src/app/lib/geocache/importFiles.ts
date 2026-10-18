@@ -115,6 +115,20 @@ function textOf(entry: ArchiveEntry): Promise<string> {
   });
 }
 
+/** Finder's Compress adds an AppleDouble `._` twin of every file, under `__MACOSX/`; neither is GPX. */
+function isMacMetadata(name: string): boolean {
+  const baseName = name.slice(name.lastIndexOf('/') + 1);
+  return name.startsWith('__MACOSX/') || baseName.startsWith('._');
+}
+
+function isGpxEntry(entry: ArchiveEntry): boolean {
+  return (
+    !entry.dir &&
+    extensionOf(entry.name) === 'gpx' &&
+    !isMacMetadata(entry.name)
+  );
+}
+
 async function archiveOf(bytes: Uint8Array): Promise<JSZip> {
   try {
     return await JSZip.loadAsync(bytes);
@@ -129,9 +143,7 @@ async function contentOfArchive(bytes: Uint8Array): Promise<GpxContent> {
   const entries = Object.values(archive.files) as unknown as ArchiveEntry[];
   if (entries.length > MAX_ARCHIVE_ENTRIES)
     throw new ImportFailure('too-large');
-  const gpxEntries = entries.filter(
-    (entry) => !entry.dir && extensionOf(entry.name) === 'gpx',
-  );
+  const gpxEntries = entries.filter(isGpxEntry);
   if (gpxEntries.length === 0) throw new ImportFailure('unsupported');
   const declared = gpxEntries.reduce(
     (total, entry) => total + entry._data.uncompressedSize,

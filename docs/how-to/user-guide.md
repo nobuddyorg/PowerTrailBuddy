@@ -58,17 +58,21 @@ it read from how many files, and why it refused a file:
   any file over 100 MB.
 
 Importing again adds to what is already there: a cache imported twice is
-kept once, the newer file's details winning. Re-import a fresh run of the
-same query to catch disabled or archived caches. Parking areas in the
-`*-wpts.gpx` of a Pocket Query are attached to their caches.
+kept once, the newer file's details winning. Importing never removes a cache:
+one a fresh run of the query leaves out, because it was archived, disabled or
+found online since, stays as it was until you ignore it or delete your data.
+Parking areas in the `*-wpts.gpx` of a Pocket Query are attached to their
+caches.
 
 ## Share a file to the app (Android)
 
 Install the app first ([below](#install-the-app)); Android only offers
 installed web apps in the share sheet. Then, in your e-mail or files app,
-share the `.zip` or `.gpx` and pick **PowerTrailBuddy**. The app opens and
-imports it. A share of more than 20 files or 100 MB is refused; the app then
-says that no file arrived.
+share the `.zip` or `.gpx` and pick **PowerTrailBuddy**. The app opens,
+names the shared files and imports them when you tap **Import**; **Cancel**
+drops them. It asks because any website could send a file there. Sharing
+works offline too. A share of more than 20 files or 100 MB is refused; the
+app then says that no file arrived.
 
 iOS does not let web apps receive shared files; use **Import** there.
 

@@ -33,12 +33,10 @@ function cacheNames(page: Page) {
   return page.evaluate(() => caches.keys());
 }
 
-/** The first visit predates the worker, so the reload is what fills its cache. */
+// The worker installs with the whole shell, so a page it controls has everything cached already.
 async function openWithCachedShell(page: Page) {
-  const home = createPageTree(page).home;
-  await home.do.open();
+  await createPageTree(page).home.do.open();
   await waitForController(page);
-  await home.do.reload();
 }
 
 test.describe('the service worker', () => {
@@ -126,13 +124,34 @@ test.describe('the service worker', () => {
     await app.home.do.open();
     await waitForController(page);
     await app.emptyState.do.importFiles([await pocketQueryZip()]);
-    await app.home.do.reload();
 
     await context.setOffline(true);
     try {
       await app.home.do.reload();
       await expect(app.home.locators.offline).toBeVisible();
       await expect(app.trails.locators.count).toHaveText('2 trails');
+    } finally {
+      await context.setOffline(false);
+    }
+  });
+
+  // Only the empty first page loaded online: the map's lazily loaded code has to come from the install.
+  test('works offline after a single visit, map included', async ({
+    on,
+    page,
+    context,
+  }) => {
+    const app = on(page);
+    await app.home.do.open();
+    await waitForController(page);
+
+    await context.setOffline(true);
+    try {
+      await app.home.do.reload();
+      await expect(app.home.locators.offline).toBeVisible();
+      await app.emptyState.do.importFiles([await pocketQueryZip()]);
+      await expect(app.trails.locators.count).toHaveText('2 trails');
+      await expect(app.map()).toBeVisible();
     } finally {
       await context.setOffline(false);
     }

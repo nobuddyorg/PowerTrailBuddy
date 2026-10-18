@@ -7,6 +7,7 @@ import { initEmptyState } from './empty-state';
 import { initHome } from './home';
 import { initMap } from './map';
 import { initSettings } from './settings';
+import { initSharedImport } from './shared-import';
 import { initToast } from './toast';
 import { initTrailDetail } from './trail-detail';
 import { initTrailList } from './trail-list';
@@ -35,6 +36,9 @@ export function createPageTree(page: Page) {
     },
     get settings() {
       return initSettings(page);
+    },
+    get sharedImport() {
+      return initSharedImport(page);
     },
     get toast() {
       return initToast(page);

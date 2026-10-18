@@ -13,7 +13,7 @@ interface Range {
   step?: number;
 }
 
-// Every value here keeps findTrails finite: a positive speed, gap and walk length, and at least two caches.
+// Every value here keeps findTrails finite: a positive speed, gap, walk length and time per cache, and at least two caches.
 const RANGES: Record<NumericSetting, Range> = {
   maxDifficulty: { min: 1, max: 5, step: 0.5 },
   maxTerrain: { min: 1, max: 5, step: 0.5 },
@@ -21,7 +21,7 @@ const RANGES: Record<NumericSetting, Range> = {
   minCaches: { min: 2, max: 1000, step: 1 },
   maxWalkKilometers: { min: 1, max: 100 },
   walkingSpeedKmh: { min: 1, max: 10 },
-  minutesPerCache: { min: 0, max: 60 },
+  minutesPerCache: { min: 1, max: 60 },
   detourFactor: { min: 1, max: 3 },
 };
 

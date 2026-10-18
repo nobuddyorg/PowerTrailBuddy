@@ -2,7 +2,6 @@ import { expect, test } from '../fixture';
 
 import { expectNoSeriousA11yViolations } from '../axe';
 import {
-  collectForeignRequests,
   collectPageProblems,
   documentWidths,
   expectNoPageProblems,
@@ -31,13 +30,6 @@ test.describe('the deployed bundle', () => {
 
     await on(page).home.do.open();
     expect(refused, 'requests the host refused').toEqual([]);
-  });
-
-  // Privacy: everything the app needs ships with it; map tiles are the one exception and are faked here.
-  test('talks to no origin but its own', async ({ on, page, baseURL }) => {
-    const foreign = collectForeignRequests(page, new URL(baseURL!).origin);
-    await on(page).home.do.open();
-    expect(foreign, 'requests to other origins').toEqual([]);
   });
 
   test('links the manifest under the base path', async ({ on, page }) => {

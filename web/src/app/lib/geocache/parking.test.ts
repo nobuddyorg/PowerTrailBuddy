@@ -53,7 +53,7 @@ describe('withParking', () => {
 
   it('leaves a cache without parking when no area carries its code', () => {
     expect(
-      withParking([cache], [area('PK0ABD', 10.002), area('PK0AB', 10.003)]),
+      withParking([cache], [area('PK0ABX', 10.002), area('PK0AB', 10.003)]),
     ).toEqual([cache]);
   });
 

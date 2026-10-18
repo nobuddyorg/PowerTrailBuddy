@@ -32,7 +32,7 @@ export const NUMERIC_FIELDS: readonly FieldSpec[] = [
   { name: 'minCaches', min: 2, max: 1000, step: 1 },
   { name: 'maxWalkKilometers', min: 1, max: 100, step: 0 },
   { name: 'walkingSpeedKmh', min: 1, max: 10, step: 0 },
-  { name: 'minutesPerCache', min: 0, max: 60, step: 0 },
+  { name: 'minutesPerCache', min: 1, max: 60, step: 0 },
   { name: 'detourFactor', min: 1, max: 3, step: 0 },
 ];
 

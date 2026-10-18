@@ -1,9 +1,6 @@
 import type { Coordinates } from '../../lib/geocache/types';
 
-/**
- * How a cache is drawn: on a trail (in its colour), on the selected trail, outside any trail (dimmed),
- * disabled, found, with a doubtful health, the walk's done caches and its target.
- */
+/** How a cache is drawn; `faded` is an unselected trail while one is selected, `other` a cache on no trail. */
 export type MarkerTone =
   | 'trail'
   | 'selected'

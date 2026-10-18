@@ -33,15 +33,16 @@ export interface WaypointSpec {
   cache?: CacheSpec;
 }
 
-/**
- * The exporters the parser has to read alike:
- * `pocket-query` — GPX 1.0, groundspeak 1/0/1 straight under `<wpt>`, as geocaching.com writes it;
- * `pocket-query-legacy` — the same with groundspeak 1/0;
- * `gsak` — GPX 1.1, the cache inside `<extensions>` beside `gsak:` extras, fields in another order;
- * `opencaching` — an `oc:cache` element ahead of the groundspeak one.
- */
+/** The exporters the parser has to read alike. */
 export type GpxFlavour =
-  'pocket-query' | 'pocket-query-legacy' | 'gsak' | 'opencaching';
+  // GPX 1.0, groundspeak 1/0/1 straight under `<wpt>`, as geocaching.com writes it.
+  | 'pocket-query'
+  // The same with groundspeak 1/0.
+  | 'pocket-query-legacy'
+  // GPX 1.1, the cache inside `<extensions>` beside `gsak:` extras, fields in another order.
+  | 'gsak'
+  // An `oc:cache` element ahead of the groundspeak one.
+  | 'opencaching';
 
 export const TYPE_TEXT: Readonly<Record<CacheType, string>> = {
   traditional: 'Traditional Cache',

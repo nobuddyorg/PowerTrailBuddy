@@ -1,6 +1,8 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 
+import { findTrails } from '../lib/trails/findTrails';
+import { makeCache } from '../lib/trails/trails.test-support';
 import {
   DEFAULT_TRAIL_SETTINGS,
   type TrailSettings,
@@ -31,6 +33,20 @@ const VALID: TrailSettings = {
 };
 
 describe('sanitizeSettings', () => {
+  it('keeps the rate of a trail of caches at one spot finite, at the lowest settings', () => {
+    const atOneSpot = ['GCE1', 'GCE2', 'GCE3'].map((code) =>
+      makeCache({ code, type: 'event', latitude: 48.1, longitude: 11.5 }),
+    );
+    const lowest = sanitizeSettings({
+      cacheTypes: ['event'],
+      minCaches: 0,
+      minutesPerCache: 0,
+    });
+    const [trail] = findTrails(atOneSpot, lowest, new Set());
+    expect(trail.durationMinutes).toBeGreaterThan(0);
+    expect(Number.isFinite(trail.cachesPerHour)).toBe(true);
+  });
+
   it('keeps valid settings exactly as they are', () => {
     expect(sanitizeSettings(VALID)).toEqual(VALID);
   });
@@ -92,7 +108,8 @@ describe('sanitizeSettings', () => {
       ['maxWalkKilometers', 500, 100],
       ['walkingSpeedKmh', 0, 1],
       ['walkingSpeedKmh', 30, 10],
-      ['minutesPerCache', -5, 0],
+      ['minutesPerCache', -5, 1],
+      ['minutesPerCache', 0, 1],
       ['minutesPerCache', 120, 60],
       ['detourFactor', 0.5, 1],
       ['detourFactor', 4, 3],
@@ -113,7 +130,7 @@ describe('sanitizeSettings', () => {
       ['maxWalkKilometers', 100, 100],
       ['walkingSpeedKmh', 1, 1],
       ['walkingSpeedKmh', 10, 10],
-      ['minutesPerCache', 0, 0],
+      ['minutesPerCache', 1, 1],
       ['minutesPerCache', 60, 60],
       ['detourFactor', 1, 1],
       ['detourFactor', 3, 3],

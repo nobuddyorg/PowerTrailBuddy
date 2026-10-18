@@ -109,6 +109,8 @@ export function useAppState() {
   const [importing, setImporting] = useState(false);
   const [lastImport, setLastImport] = useState<ImportSummary>();
   const [error, setError] = useState<AppError>();
+  // Taken from the worker's cache already; imported only once the user agrees.
+  const [pendingShare, setPendingShare] = useState<readonly File[]>([]);
   // The latest data for actions that derive the next value and also store it, outside a state updater.
   const dataRef = useRef(data);
 
@@ -187,7 +189,7 @@ export function useAppState() {
         const shared = await takeSharedFiles();
         // The worker stores nothing for a share it refused, yet still redirects here.
         if (shared.length === 0) setError('share-empty');
-        else await importSelected(shared);
+        else setPendingShare(shared);
       } catch {
         setError('import-failed');
       }
@@ -195,7 +197,13 @@ export function useAppState() {
     return () => {
       cancelled = true;
     };
-  }, [importSelected, update]);
+  }, [update]);
+
+  const acceptShare = useCallback(async () => {
+    const files = pendingShare;
+    setPendingShare([]);
+    await importSelected(files);
+  }, [importSelected, pendingShare]);
 
   const applySettings = useCallback(
     (settings: TrailSettings) => {
@@ -230,6 +238,9 @@ export function useAppState() {
     importing,
     lastImport,
     error,
+    pendingShare,
+    acceptShare,
+    declineShare: useCallback(() => setPendingShare([]), []),
     importFiles: importSelected,
     importSample,
     applySettings,

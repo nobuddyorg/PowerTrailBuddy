@@ -1,0 +1,7 @@
+[files]
+# The sample's hints are German prose, which reads as misspelled English.
+extend-exclude = ["web/public/sample/*.gpx"]
+
+[default.extend-words]
+# German for "find", in the German page title the language spec expects.
+finde = "finde"

@@ -1,6 +1,9 @@
+import { expect } from '@playwright/test';
+
 import { test as base } from './coverage';
 
 import {
+  collectForeignRequests,
   collectPageProblems,
   expectNoPageProblems,
   fakeMapTiles,
@@ -12,6 +15,7 @@ export const test = base.extend<{
   on: typeof createPageTree;
   tiles: void;
   pageProblems: void;
+  foreignRequests: void;
 }>({
   // Named provide, not use: inside a property called on, `use` reads to react-hooks/rules-of-hooks as a hook.
   on: async ({}, provide) => {
@@ -34,6 +38,15 @@ export const test = base.extend<{
     },
     { auto: true },
   ],
+  // Automatic, so every journey (import, map, walk, share, export) proves that nothing leaves the device.
+  foreignRequests: [
+    async ({ context, baseURL }, provide) => {
+      const foreign = collectForeignRequests(context, new URL(baseURL!).origin);
+      await provide();
+      expect(foreign, 'requests to other origins').toEqual([]);
+    },
+    { auto: true },
+  ],
 });
 
-export { expect } from '@playwright/test';
+export { expect };

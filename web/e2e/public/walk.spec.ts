@@ -148,4 +148,26 @@ test.describe('walking without the location permission', () => {
     await app.walk.do.found();
     await expect(app.walk.locators.progress).toHaveText('1/11');
   });
+
+  // What the blocked message tells the user to do: allow it in the site settings, with no reload.
+  test('picks the position up once location is allowed', async ({
+    on,
+    page,
+    context,
+  }) => {
+    await denyLocation(context);
+    const app = on(page);
+    await app.home.do.open();
+    await app.emptyState.do.importFiles([await pocketQueryZip()]);
+    await app.trails.do.openTrail(0);
+    await app.trail.do.startWalk();
+    await expect(app.walk.locators.locationMessage).toHaveText(
+      /Location access is blocked/,
+    );
+
+    await placeDevice(context, offset(-200));
+
+    await expect(app.walk.locators.locationMessage).toBeHidden();
+    await expect(app.walk.locators.distance).toBeVisible();
+  });
 });

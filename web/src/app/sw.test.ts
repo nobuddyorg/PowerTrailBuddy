@@ -6,12 +6,7 @@ import {
   type FakeCacheStorage,
 } from './data/cacheStorage.test-support';
 import { SHARED_FILES_CACHE, takeSharedFiles } from './data/sharedFiles';
-import {
-  type FakeEvent,
-  loadWorker,
-  ORIGIN,
-  SCRIPT_URL,
-} from './sw.test-support';
+import { loadWorker, ORIGIN, SCRIPT_URL } from './sw.test-support';
 
 const SHELL_CACHE = 'powertrailbuddy-shell-b1';
 const MB = 1024 * 1024;
@@ -440,6 +435,19 @@ describe('networkFirst', () => {
     expect(await response.text()).toBe('kept');
   });
 
+  it('opens the kept page for a navigation that adds a query, as after a share', async () => {
+    const fake = installCaches();
+    await (
+      await fake.storage.open(SHELL_CACHE)
+    ).put(page, new Response('kept'));
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('offline')));
+    const { worker } = loadWorker();
+
+    const response = await worker.networkFirst(new Request(`${page}?shared=1`));
+
+    expect(await response.text()).toBe('kept');
+  });
+
   it('fails as the network did when offline with nothing kept', async () => {
     installCaches();
     const offline = new TypeError('offline');
@@ -451,12 +459,85 @@ describe('networkFirst', () => {
 });
 
 describe('lifecycle events', () => {
-  it('takes over at once on install', () => {
+  const base = `${ORIGIN}/PowerTrailBuddy`;
+  const SHELL = [
+    `${base}/`,
+    `${base}/site.webmanifest`,
+    `${base}/logo.svg`,
+    `${base}/favicon.ico`,
+    `${base}/favicon-32x32.png`,
+    `${base}/apple-touch-icon.png`,
+  ];
+  const ASSETS = ['/_next/static/chunks/app.js', '/_next/static/media/a.png'];
+
+  // The host: the precache manifest, then every file it and the shell name, unless `missing` says otherwise.
+  function serveBuild(missing: string[] = []) {
+    const fetched: Request[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (request: Request) => {
+        fetched.push(request);
+        if (missing.includes(request.url))
+          return new Response('', { status: 404 });
+        if (request.url === `${base}/precache-manifest.json`)
+          return Response.json(ASSETS);
+        return new Response(request.url);
+      }),
+    );
+    return fetched;
+  }
+
+  async function install() {
     const { self, listeners } = loadWorker();
+    let work: Promise<unknown> = Promise.resolve();
+    listeners.get('install')?.({
+      waitUntil: (promise) => {
+        work = promise;
+      },
+      respondWith: vi.fn(),
+    });
+    return { self, work };
+  }
 
-    listeners.get('install')?.({} as FakeEvent);
+  it('keeps the page, the shell and every asset of its build before taking over', async () => {
+    const fake = installCaches();
+    const fetched = serveBuild();
 
+    const { self, work } = await install();
+    await work;
+
+    expect(fake.urls(SHELL_CACHE)).toEqual([
+      ...SHELL,
+      ...ASSETS.map((asset) => `${base}${asset}`),
+    ]);
+    expect(await (await caches.match(`${base}/`))?.text()).toBe(`${base}/`);
+    // A page or list from the HTTP cache could name an older build's assets.
+    expect(fetched.map((request) => request.cache)).toEqual(
+      fetched.map(() => 'no-cache'),
+    );
     expect(self.skipWaiting).toHaveBeenCalledOnce();
+  });
+
+  it('does not install without the list of assets to keep', async () => {
+    const fake = installCaches();
+    serveBuild([`${base}/precache-manifest.json`]);
+
+    const { self, work } = await install();
+
+    await expect(work).rejects.toThrow('Precache manifest: HTTP 404');
+    expect(fake.urls(SHELL_CACHE)).toEqual([]);
+    expect(self.skipWaiting).not.toHaveBeenCalled();
+  });
+
+  it('does not install, keeping nothing, when one file of the shell is missing', async () => {
+    const fake = installCaches();
+    serveBuild([`${base}/_next/static/chunks/app.js`]);
+
+    const { self, work } = await install();
+
+    await expect(work).rejects.toThrow();
+    expect(fake.urls(SHELL_CACHE)).toEqual([]);
+    expect(self.skipWaiting).not.toHaveBeenCalled();
   });
 
   it("deletes only older builds' shell caches on activate, then claims open pages", async () => {

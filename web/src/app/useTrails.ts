@@ -19,10 +19,7 @@ const NO_INPUT: TrailInput = {
   locallyFound: new Set(),
 };
 
-/**
- * The trails for the current data, computed in a deferred render so a settings change or a found
- * mark never blocks the interaction that caused it; `pending` while the shown trails are stale.
- */
+/** Computed in a deferred render, so no settings change or found mark waits for it; `pending` while stale. */
 export function useTrails({ caches, settings, locallyFound }: TrailInput) {
   const input = useMemo(
     () => ({ caches, settings, locallyFound }),

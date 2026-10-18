@@ -117,7 +117,9 @@ time is needed.
 The worker has three small jobs — cache the shell per build, delete old
 builds' caches, receive shared files — and each is a few lines of the Cache
 API. A generated worker (Workbox and friends) would add a build plugin and a
-configuration layer larger than the worker itself. Its decision functions are
+configuration layer larger than the worker itself; the one thing it needs
+from the build, the list of hashed assets to precache, is a short script that
+`npm run build` runs after `next build`. Its decision functions are
 kept as small named functions so `sw.test.ts` can extract and test them from
 the source text; shell caches are prefixed `powertrailbuddy-shell-` so the
 cleanup can never delete the `powertrailbuddy-shared-files` cache a share is

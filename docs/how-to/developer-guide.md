@@ -46,9 +46,9 @@ coverage treats as test code.
 - **Size limits are tested with generated input**, not committed large files.
 - **No randomness, no clock** in code under test; pure logic takes what it
   needs as parameters.
-- Write repeated cases as plain `it()` calls in a `for` loop, not `it.each`:
-  Stryker's per-test filter does not match an `it.each` title, so a mutant
-  only it kills survives.
+- `it.each` is fine for repeated cases: the separator plugin in
+  `vitest.mutation.config.mts` makes Stryker's per-test filter match the
+  suite paths Vitest joins with `>`, `it.each` titles included.
 
 ```bash
 cd web
@@ -157,8 +157,10 @@ grep -rn 'getByTestId\|getByRole\|locator(' web/e2e --include=*.spec.ts
 ### Faked tiles, import fixtures, device APIs
 
 - The `tiles` fixture (automatic) answers every `tile.openstreetmap.org`
-  request with a blank PNG; `collectForeignRequests` in `e2e/helpers.ts`
-  fails a test that contacts any other origin.
+  request with a blank PNG. The `foreignRequests` fixture (automatic) fails
+  every test whose pages or service worker contacted any other origin, so
+  each journey (import, map, walk, share, export) checks that nothing leaves
+  the device.
 - The `pageProblems` fixture (automatic) fails a test on any uncaught error
   or console error in the page, so a rejected background promise cannot hide
   behind a passing assertion. `failMapTiles` in `e2e/helpers.ts` takes the

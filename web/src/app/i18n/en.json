@@ -250,6 +250,11 @@
     "message": "This removes every imported cache, your settings, the caches you marked found or ignored and any walk in progress from this browser.",
     "confirm": "Clear data"
   },
+  "shared": {
+    "title": "Import the shared files?",
+    "message": "Their caches join the ones already here and replace any with the same code. Import only files you shared yourself.",
+    "confirm": "Import"
+  },
   "map": {
     "region": "Map",
     "attribution": "OpenStreetMap contributors",

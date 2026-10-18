@@ -14,6 +14,7 @@ import { ImportSummary } from '../ImportSummary';
 import { MainView } from '../MainView';
 import { ErrorNotice } from '../Notice';
 import { SettingsDialog } from '../SettingsDialog';
+import { SharedImportDialog } from '../SharedImportDialog';
 import { ToastProvider } from '../Toast/ToastProvider';
 import { WalkView } from '../WalkView';
 
@@ -152,6 +153,13 @@ function Shell() {
             onResetLocallyFound={app.resetLocallyFound}
             onUnignore={app.unignore}
             onClose={close}
+          />
+        )}
+        {app.pendingShare.length > 0 && (
+          <SharedImportDialog
+            files={app.pendingShare}
+            onImport={() => void app.acceptShare()}
+            onCancel={app.declineShare}
           />
         )}
         {dialog === 'data' && (

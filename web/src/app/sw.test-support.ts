@@ -19,7 +19,7 @@ interface RequestShape {
   method: string;
   mode: string;
 }
-export interface FakeEvent {
+interface FakeEvent {
   request?: Request;
   respondWith: (response: Promise<Response>) => void;
   waitUntil: (work: Promise<unknown>) => void;
