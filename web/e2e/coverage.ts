@@ -12,12 +12,12 @@ const coverageReports = MCR({
   sourceFilter: '**/src/app/**',
 });
 
-// No floor until the app's journeys exist: set ~3pp under the first measured run, then raised by hand, never lowered (CLAUDE.md).
+// About 3pp under the first full run (chromium + mobile: 91.1 / 76.9 / 90.9 / 91.4); raised by hand, never lowered (CLAUDE.md).
 const COVERAGE_THRESHOLDS = {
-  statements: 0,
-  branches: 0,
-  functions: 0,
-  lines: 0,
+  statements: 88,
+  branches: 74,
+  functions: 88,
+  lines: 88,
 };
 
 // Only a run against a source-mapped local build collects; the deployed smoke run has no maps.

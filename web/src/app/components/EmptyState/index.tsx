@@ -98,7 +98,10 @@ export function EmptyState({
         <p className="text-xs font-semibold uppercase tracking-wide text-primary">
           {t('page.tagline')}
         </p>
-        <h2 className="text-2xl font-extrabold tracking-tight">
+        <h2
+          data-testid="empty-title"
+          className="text-2xl font-extrabold tracking-tight"
+        >
           {t('empty.title')}
         </h2>
         <p className="text-muted-foreground">{t('empty.lead')}</p>
@@ -134,6 +137,7 @@ export function EmptyState({
           type="button"
           onClick={onTrySample}
           disabled={importing}
+          data-testid="try-sample"
           className={buttonClasses('secondary', 'flex-1')}
         >
           <Icon name="sparkle" />

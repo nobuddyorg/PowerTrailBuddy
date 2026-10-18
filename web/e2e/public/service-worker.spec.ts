@@ -1,0 +1,140 @@
+import type { Page } from '@playwright/test';
+
+import { expect, test } from '../fixture';
+
+import { createPageTree } from '../pages';
+import { pocketQueryZip } from '../pocketQuery';
+
+// What sw.test.ts cannot reach from source: registration, scope, cache, offline.
+test.use({ locale: 'en-GB' });
+
+/** Controlling, not merely registered: an uncontrolled page's requests never reach the fetch handler. */
+async function waitForController(page: Page) {
+  await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
+}
+
+/** The cache of the build that registered the active worker (sw.js names it after `?build=`). */
+function currentCacheName(page: Page) {
+  return page.evaluate(async () => {
+    const { active } = await navigator.serviceWorker.ready;
+    return `powertrailbuddy-shell-${new URL(active!.scriptURL).searchParams.get('build')}`;
+  });
+}
+
+async function cachedUrls(page: Page) {
+  const cacheName = await currentCacheName(page);
+  return page.evaluate(async (name) => {
+    const cache = await caches.open(name);
+    return (await cache.keys()).map((request) => request.url);
+  }, cacheName);
+}
+
+function cacheNames(page: Page) {
+  return page.evaluate(() => caches.keys());
+}
+
+/** The first visit predates the worker, so the reload is what fills its cache. */
+async function openWithCachedShell(page: Page) {
+  const home = createPageTree(page).home;
+  await home.do.open();
+  await waitForController(page);
+  await home.do.reload();
+}
+
+test.describe('the service worker', () => {
+  test('registers itself under the path the app is served from', async ({
+    page,
+    baseURL,
+  }) => {
+    await page.goto('');
+    await waitForController(page);
+
+    const registration = await page.evaluate(async () => {
+      const ready = await navigator.serviceWorker.ready;
+      return { scope: ready.scope, scriptURL: ready.active!.scriptURL };
+    });
+
+    // A scope at the origin root is refused on a subdirectory host.
+    expect(registration.scope).toBe(baseURL);
+    const scriptURL = new URL(registration.scriptURL);
+    expect(`${scriptURL.origin}${scriptURL.pathname}`).toBe(
+      new URL('sw.js', baseURL).toString(),
+    );
+    // The build is what gives each deploy a worker, and a cache, of its own.
+    expect(scriptURL.searchParams.get('build')).toMatch(/^[\w-]{8,}$/);
+  });
+
+  test('keeps the hashed bundle and the shell, and nothing from anywhere else', async ({
+    page,
+  }) => {
+    await openWithCachedShell(page);
+
+    const urls = await cachedUrls(page);
+    expect(urls.some((url) => url.includes('/_next/static/'))).toBe(true);
+
+    // The page itself, and the files every page links by URL.
+    const shell = new URL('./', page.url()).toString();
+    const shellFile =
+      /^(|site\.webmanifest|logo\.svg|favicon\.ico|favicon-32x32\.png|apple-touch-icon\.png)$/;
+    const unexpected = urls.filter(
+      (url) =>
+        !url.startsWith(shell) ||
+        !(
+          url.startsWith(`${shell}_next/static/`) ||
+          shellFile.test(url.slice(shell.length))
+        ),
+    );
+    expect(unexpected, 'cached beyond the bundle and the shell').toEqual([]);
+    // The activate handler drops every shell cache but the current one.
+    expect(await cacheNames(page)).toEqual([await currentCacheName(page)]);
+  });
+
+  test("a new build's worker deletes the old builds' caches, and only those", async ({
+    page,
+    baseURL,
+  }) => {
+    await openWithCachedShell(page);
+    const previous = await currentCacheName(page);
+    await page.evaluate(async () => {
+      await caches.open('powertrailbuddy-shell-v1');
+      await caches.open('powertrailbuddy-shared-files');
+      await caches.open('another-site-on-this-origin');
+    });
+
+    await page.evaluate(async (scope) => {
+      await navigator.serviceWorker.register(
+        new URL('sw.js?build=e2e-next', scope).toString(),
+        { scope },
+      );
+    }, baseURL!);
+
+    await expect.poll(() => cacheNames(page)).not.toContain(previous);
+    const remaining = await cacheNames(page);
+    expect(remaining).not.toContain('powertrailbuddy-shell-v1');
+    // A share the page has not taken yet survives an update.
+    expect(remaining).toContain('powertrailbuddy-shared-files');
+    expect(remaining).toContain('another-site-on-this-origin');
+  });
+
+  // Why the worker exists: walking means patchy coverage, and the host sends no cache headers.
+  test('still opens the app, with its trails, with the network gone', async ({
+    on,
+    page,
+    context,
+  }) => {
+    const app = on(page);
+    await app.home.do.open();
+    await waitForController(page);
+    await app.emptyState.do.importFiles([await pocketQueryZip()]);
+    await app.home.do.reload();
+
+    await context.setOffline(true);
+    try {
+      await app.home.do.reload();
+      await expect(app.home.locators.offline).toBeVisible();
+      await expect(app.trails.locators.count).toHaveText('2 trails');
+    } finally {
+      await context.setOffline(false);
+    }
+  });
+});

@@ -78,6 +78,7 @@ export function ImportSummary({ summary, onDismiss }: ImportSummaryProps) {
         type="button"
         onClick={onDismiss}
         aria-label={t('common.dismiss')}
+        data-testid="import-summary-dismiss"
         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl hover:bg-card"
       >
         <Icon name="close" />

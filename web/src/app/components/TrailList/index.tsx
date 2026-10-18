@@ -81,7 +81,7 @@ export function TrailList({
         data-testid="trail-list"
         className="space-y-3 rounded-2xl bg-card p-4 text-sm shadow-soft"
       >
-        <h2 className="text-base font-semibold">
+        <h2 data-testid="trail-count" className="text-base font-semibold">
           {tCount('trails.title', { count: 0 })}
         </h2>
         <p className="text-muted-foreground">
@@ -90,6 +90,7 @@ export function TrailList({
         <button
           type="button"
           onClick={onOpenSettings}
+          data-testid="trails-open-settings"
           className={buttonClasses('secondary')}
         >
           {t('trails.openSettings')}
@@ -101,7 +102,7 @@ export function TrailList({
   return (
     <section data-testid="trail-list" aria-busy={pending} className="space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-base font-semibold">
+        <h2 data-testid="trail-count" className="text-base font-semibold">
           {tCount('trails.title', { count: trailCount })}
           {pending && (
             <span className="ml-2 text-sm font-normal text-muted-foreground">
@@ -114,6 +115,7 @@ export function TrailList({
         </label>
         <select
           id={sortId}
+          data-testid="trail-sort"
           value={sort}
           onChange={(event) =>
             onSortChange(event.currentTarget.value as TrailSort)
@@ -141,6 +143,7 @@ export function TrailList({
             key={filter}
             type="button"
             aria-pressed={filters.includes(filter)}
+            data-testid={`trail-filter-${filter}`}
             disabled={filter === 'near' && !located}
             onClick={() => toggle(filter)}
             className={CHIP_CLASSES}

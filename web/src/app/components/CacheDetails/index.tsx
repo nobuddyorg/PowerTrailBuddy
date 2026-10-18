@@ -37,7 +37,10 @@ export function CacheDetails({
       className="space-y-4"
     >
       <header className="space-y-1">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <p
+          data-testid="cache-code"
+          className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+        >
           {cache.code}
         </p>
         <h2
@@ -69,6 +72,7 @@ export function CacheDetails({
         <button
           type="button"
           onClick={() => onOpenTrail(trail.id)}
+          data-testid="cache-trail"
           className="flex min-h-11 w-full items-center justify-between rounded-xl bg-muted px-3 text-sm font-semibold hover:brightness-95"
         >
           <span className="flex items-center gap-2">

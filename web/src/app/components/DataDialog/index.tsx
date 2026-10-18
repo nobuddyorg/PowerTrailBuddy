@@ -23,11 +23,21 @@ interface DataDialogProps {
   onClose: () => void;
 }
 
-function Count({ label, value }: { label: string; value: number }) {
+function Count({
+  label,
+  value,
+  testId,
+}: {
+  label: string;
+  value: number;
+  testId: string;
+}) {
   return (
     <div className="rounded-xl bg-muted px-3 py-2">
       <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="text-lg font-bold">{value}</dd>
+      <dd data-testid={testId} className="text-lg font-bold">
+        {value}
+      </dd>
     </div>
   );
 }
@@ -43,13 +53,26 @@ export function DataDialog(props: DataDialogProps) {
     <Modal title={t('data.title')} onClose={props.onClose} testId="data-dialog">
       <div className="space-y-5">
         <dl className="grid grid-cols-2 gap-2">
-          <Count label={t('data.caches')} value={props.cacheCount} />
-          <Count label={t('data.trails')} value={props.trailCount} />
+          <Count
+            label={t('data.caches')}
+            value={props.cacheCount}
+            testId="data-caches"
+          />
+          <Count
+            label={t('data.trails')}
+            value={props.trailCount}
+            testId="data-trails"
+          />
           <Count
             label={t('data.locallyFound')}
             value={props.locallyFoundCount}
+            testId="data-locally-found"
           />
-          <Count label={t('data.ignored')} value={props.ignoredCount} />
+          <Count
+            label={t('data.ignored')}
+            value={props.ignoredCount}
+            testId="data-ignored"
+          />
         </dl>
         {importInfo && (
           <section className="space-y-1 text-sm">
@@ -78,6 +101,7 @@ export function DataDialog(props: DataDialogProps) {
           <button
             type="button"
             onClick={() => setConfirming(true)}
+            data-testid="clear-data"
             className={buttonClasses('secondary', 'w-full text-destructive')}
           >
             <Icon name="trash" />

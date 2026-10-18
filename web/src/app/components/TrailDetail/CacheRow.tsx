@@ -32,6 +32,7 @@ export function CacheRow({ cache, position, onOpenCache }: CacheRowProps) {
       <button
         type="button"
         aria-expanded={open}
+        data-testid="trail-cache-toggle"
         aria-controls={panelId}
         onClick={() => setOpen((current) => !current)}
         className="flex min-h-11 w-full items-center gap-3 px-3 py-2 text-left"
@@ -43,7 +44,10 @@ export function CacheRow({ cache, position, onOpenCache }: CacheRowProps) {
           <span className="block truncate text-sm font-semibold">
             {cache.name}
           </span>
-          <span className="block text-xs text-muted-foreground">
+          <span
+            data-testid="trail-cache-facts"
+            className="block text-xs text-muted-foreground"
+          >
             {cache.code} ·{' '}
             {t('cache.rating', {
               difficulty: formatRating(cache.difficulty, locale),
@@ -71,6 +75,7 @@ export function CacheRow({ cache, position, onOpenCache }: CacheRowProps) {
           <button
             type="button"
             onClick={() => onOpenCache(cache.code)}
+            data-testid="trail-cache-open"
             className={buttonClasses('secondary')}
           >
             <Icon name="pin" />

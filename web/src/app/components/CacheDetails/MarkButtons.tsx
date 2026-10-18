@@ -19,6 +19,7 @@ export function MarkButtons({ cache }: { cache: Geocache }) {
           <button
             type="button"
             onClick={() => marks.unmarkFound(cache.code)}
+            data-testid="unmark-found"
             className={buttonClasses('secondary')}
           >
             <Icon name="undo" />
@@ -28,6 +29,7 @@ export function MarkButtons({ cache }: { cache: Geocache }) {
           <button
             type="button"
             onClick={() => marks.markFound(cache.code)}
+            data-testid="mark-found"
             className={buttonClasses('soft')}
           >
             <Icon name="check" />
@@ -38,6 +40,7 @@ export function MarkButtons({ cache }: { cache: Geocache }) {
         <button
           type="button"
           onClick={() => marks.unignore(cache.code)}
+          data-testid="unignore-cache"
           className={buttonClasses('secondary')}
         >
           <Icon name="show" />
@@ -47,6 +50,7 @@ export function MarkButtons({ cache }: { cache: Geocache }) {
         <button
           type="button"
           onClick={() => marks.ignore(cache.code)}
+          data-testid="ignore-cache"
           className={buttonClasses('ghost')}
         >
           <Icon name="hide" />

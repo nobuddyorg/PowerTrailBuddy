@@ -72,6 +72,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             {toast.action && (
               <button
                 type="button"
+                data-testid="toast-action"
                 onClick={() => {
                   toast.action?.onAction();
                   setToast(undefined);

@@ -75,7 +75,11 @@ export function WalkSummary({
         <span className="grid h-14 w-14 place-items-center rounded-full bg-primary-soft text-primary">
           <Icon name="trophy" className="h-7 w-7" />
         </span>
-        <h2 id="walk-summary-title" className="text-xl font-bold">
+        <h2
+          id="walk-summary-title"
+          data-testid="walk-summary-title"
+          className="text-xl font-bold"
+        >
           {canResume ? t('summary.paused') : t('summary.title')}
         </h2>
         <p
@@ -102,6 +106,7 @@ export function WalkSummary({
           <button
             type="button"
             onClick={exportNotes}
+            data-testid="export-field-notes"
             className={buttonClasses('primary', 'w-full')}
           >
             <Icon name="download" />
@@ -135,6 +140,7 @@ export function WalkSummary({
           <button
             type="button"
             onClick={onResume}
+            data-testid="walk-resume"
             className={buttonClasses('secondary', 'flex-1')}
           >
             <Icon name="walk" />
@@ -145,6 +151,7 @@ export function WalkSummary({
           <button
             type="button"
             onClick={onUndo}
+            data-testid="summary-undo"
             className={buttonClasses('secondary', 'flex-1')}
           >
             <Icon name="undo" />
@@ -154,6 +161,7 @@ export function WalkSummary({
         <button
           type="button"
           onClick={onDone}
+          data-testid="walk-done"
           className={buttonClasses('soft', 'flex-1')}
         >
           <Icon name="list" />

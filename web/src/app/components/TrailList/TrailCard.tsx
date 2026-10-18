@@ -66,14 +66,19 @@ export function TrailCard({
       </span>
       <span className="min-w-0 flex-1 space-y-1">
         <span className="flex items-baseline justify-between gap-2">
-          <span className="font-semibold">{t('trails.name', { rank })}</span>
+          <span data-testid="trail-card-name" className="font-semibold">
+            {t('trails.name', { rank })}
+          </span>
           <span className="shrink-0 text-sm font-bold text-primary">
             {t('trails.perHour', {
               rate: formatRate(trail.cachesPerHour, locale),
             })}
           </span>
         </span>
-        <span className="block text-sm text-muted-foreground">
+        <span
+          data-testid="trail-card-summary"
+          className="block text-sm text-muted-foreground"
+        >
           {[
             tCount('trails.caches', { count: trail.caches.length }),
             formatDistance(trail.walkMeters, locale),

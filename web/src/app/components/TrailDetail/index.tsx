@@ -83,6 +83,7 @@ export function TrailDetail({
           type="button"
           onClick={onBack}
           aria-label={t('common.back')}
+          data-testid="trail-back"
           className="grid h-11 w-11 place-items-center rounded-xl hover:bg-muted"
         >
           <Icon name="back" />
@@ -94,7 +95,11 @@ export function TrailDetail({
         >
           {rank}
         </span>
-        <h2 id="trail-detail-title" className="flex-1 text-xl font-bold">
+        <h2
+          id="trail-detail-title"
+          data-testid="trail-detail-title"
+          className="flex-1 text-xl font-bold"
+        >
           {title}
         </h2>
       </header>
@@ -169,6 +174,7 @@ export function TrailDetail({
         <button
           type="button"
           onClick={() => onStartWalk({ reversed })}
+          data-testid="start-walk"
           className={buttonClasses('primary', 'w-full text-base')}
         >
           <Icon name="walk" />
@@ -178,6 +184,7 @@ export function TrailDetail({
           <button
             type="button"
             onClick={() => onStartWalk({ fromCode: end.code })}
+            data-testid="start-nearest"
             className={buttonClasses('soft', 'w-full')}
           >
             <Icon name="flag" />
@@ -190,13 +197,19 @@ export function TrailDetail({
           <button
             type="button"
             aria-pressed={reversed}
+            data-testid="reverse-trail"
             onClick={() => setReversed((current) => !current)}
             className={CHIP_CLASSES}
           >
             <Icon name="reverse" className="h-4 w-4" />
             {t('detail.reverse')}
           </button>
-          <button type="button" onClick={exportGpx} className={CHIP_CLASSES}>
+          <button
+            type="button"
+            onClick={exportGpx}
+            data-testid="export-gpx"
+            className={CHIP_CLASSES}
+          >
             <Icon name="download" className="h-4 w-4" />
             {t('detail.exportGpx')}
           </button>

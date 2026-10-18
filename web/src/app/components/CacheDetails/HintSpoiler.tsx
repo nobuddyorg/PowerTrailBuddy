@@ -17,6 +17,7 @@ export function HintSpoiler({ hint }: { hint: string }) {
       <button
         type="button"
         aria-expanded={shown}
+        data-testid="hint-toggle"
         aria-controls={panelId}
         onClick={() => setShown((current) => !current)}
         className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-accent hover:bg-accent-soft"

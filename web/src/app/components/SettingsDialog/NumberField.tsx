@@ -31,6 +31,7 @@ export function NumberField({
       <input
         id={id}
         name={spec.name}
+        data-testid={`setting-${spec.name}`}
         type="text"
         inputMode={spec.step === 1 ? 'numeric' : 'decimal'}
         autoComplete="off"

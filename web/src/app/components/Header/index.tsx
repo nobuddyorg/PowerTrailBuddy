@@ -31,6 +31,7 @@ function LanguageToggle() {
           key={each}
           type="button"
           lang={each}
+          data-testid={`language-${each}`}
           aria-pressed={language === each}
           onClick={() => setLanguage(each)}
           className="min-h-10 min-w-10 rounded-[10px] px-2 text-xs font-bold text-muted-foreground aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-soft"
@@ -93,6 +94,7 @@ export function Header({ walking, onOpenData, onOpenSettings }: HeaderProps) {
               type="button"
               onClick={onOpenData}
               aria-label={t('header.data')}
+              data-testid="open-data"
               className={ICON_BUTTON_CLASSES}
             >
               <Icon name="database" />
@@ -101,6 +103,7 @@ export function Header({ walking, onOpenData, onOpenSettings }: HeaderProps) {
               type="button"
               onClick={onOpenSettings}
               aria-label={t('header.settings')}
+              data-testid="open-settings"
               className={ICON_BUTTON_CLASSES}
             >
               <Icon name="settings" />

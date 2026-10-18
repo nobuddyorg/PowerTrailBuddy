@@ -42,6 +42,7 @@ export function IgnoredCaches({
               <button
                 type="button"
                 onClick={() => onUnignore(code)}
+                data-testid="unignore"
                 aria-label={t('settings.unignore', { code })}
                 className={ICON_BUTTON_CLASSES}
               >
