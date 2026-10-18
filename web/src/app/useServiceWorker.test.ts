@@ -1,10 +1,15 @@
 // @vitest-environment jsdom
 import { renderHook } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useServiceWorker } from './useServiceWorker';
 
 describe('useServiceWorker', () => {
+  // Next inlines NODE_ENV: `production` in the static export, `development` under `next dev`.
+  beforeEach(() => {
+    vi.stubEnv('NODE_ENV', 'production');
+  });
+
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.unstubAllEnvs();
@@ -40,6 +45,14 @@ describe('useServiceWorker', () => {
     rerender();
 
     expect(register).toHaveBeenCalledOnce();
+  });
+
+  it('registers nothing under the development server', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    const register = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { serviceWorker: { register } });
+    renderHook(() => useServiceWorker());
+    expect(register).not.toHaveBeenCalled();
   });
 
   it('does nothing when the browser has no serviceWorker support', () => {

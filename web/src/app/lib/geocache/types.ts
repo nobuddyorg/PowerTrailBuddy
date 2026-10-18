@@ -15,6 +15,15 @@ export interface Coordinates {
   longitude: number;
 }
 
+export type RecentLogType =
+  'found' | 'dnf' | 'note' | 'maintenance' | 'disabled' | 'other';
+
+export interface RecentLog {
+  type: RecentLogType;
+  /** ISO date, YYYY-MM-DD. */
+  date: string;
+}
+
 export interface Geocache extends Coordinates {
   /** e.g. GC1ABCD or OC1234, upper-case; the cache's identity. */
   code: string;
@@ -31,4 +40,12 @@ export interface Geocache extends Coordinates {
   archived: boolean;
   /** Found by the Pocket Query's owner according to the file (`<sym>Geocache Found</sym>`). */
   found: boolean;
+  /** The owner's name as the listing shows it; '' when absent. */
+  placedBy: string;
+  /** The decoded hint; '' when none. */
+  hint: string;
+  /** Newest first, at most 5. */
+  recentLogs: RecentLog[];
+  /** The nearest 'Parking Area' additional waypoint of this cache from the same import. */
+  parking?: Coordinates;
 }

@@ -5,10 +5,7 @@ import { I18nProvider } from './i18n/I18nProvider';
 import { ServiceWorkerRegistration } from './ServiceWorkerRegistration';
 
 // Hand-written head tags, not Next's `metadata` export, which duplicates each tag on hydration in this version.
-const THEME_COLORS = [
-  { media: '(prefers-color-scheme: light)', color: '#f3f5ef' },
-  { media: '(prefers-color-scheme: dark)', color: '#151a14' },
-];
+const THEME_COLOR = '#f3f5ef';
 
 // Same pre-paint trick for `<html lang>`, kept in lockstep with pickLanguage() in i18n/translate.ts.
 const LANG_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem('lang');var l=(s==='de'||s==='en')?s:(navigator.language||'').split('-')[0];document.documentElement.lang=(l==='de'||l==='en')?l:'de';}catch(e){}})();`;
@@ -43,9 +40,8 @@ export default function RootLayout({
         {/* I18nProvider updates this via a `meta[name="description"]` selector that must keep matching. */}
         <meta name="description" content={de.page.tagline} />
         <link rel="manifest" href={withBasePath('/site.webmanifest')} />
-        {THEME_COLORS.map(({ media, color }) => (
-          <meta key={media} name="theme-color" content={color} media={media} />
-        ))}
+        <meta name="theme-color" content={THEME_COLOR} />
+        <meta name="color-scheme" content="light" />
         {/* As early as possible: a CSP meta tag only covers what the document parses after it. */}
         <meta
           httpEquiv="Content-Security-Policy"

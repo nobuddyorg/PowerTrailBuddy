@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<gpx xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" version="1.0" creator="PowerTrailBuddy sample generator" xsi:schemaLocation="http://www.topografix.com/GPX/1/0 http://www.topografix.com/GPX/1/0/gpx.xsd http://www.groundspeak.com/cache/1/0/1 http://www.groundspeak.com/cache/1/0/1/cache.xsd" xmlns="http://www.topografix.com/GPX/1/0">
+  <name>PowerTrailBuddy sample waypoints</name>
+  <desc>Synthetic sample data for PowerTrailBuddy. None of these caches exist.</desc>
+  <author>PowerTrailBuddy</author>
+  <time>2026-10-01T08:00:00Z</time>
+  <wpt lat="50.702391" lon="9.485112">
+    <time>2025-04-12T00:00:00</time>
+    <name>PKSUA01</name>
+    <cmt>Invented parking for the sample data.</cmt>
+    <desc>Parking</desc>
+    <url>https://coord.info/GCSUA01</url>
+    <urlname>Parking</urlname>
+    <sym>Parking Area</sym>
+    <type>Waypoint|Parking Area</type>
+  </wpt>
+  <wpt lat="50.689350" lon="9.512941">
+    <time>2025-04-12T00:00:00</time>
+    <name>PKSUB01</name>
+    <cmt>Invented parking for the sample data.</cmt>
+    <desc>Parking</desc>
+    <url>https://coord.info/GCSUB01</url>
+    <urlname>Parking</urlname>
+    <sym>Parking Area</sym>
+    <type>Waypoint|Parking Area</type>
+  </wpt>
+  <wpt lat="50.713812" lon="9.523167">
+    <time>2025-04-12T00:00:00</time>
+    <name>PKSUC01</name>
+    <cmt>Invented parking for the sample data.</cmt>
+    <desc>Parking</desc>
+    <url>https://coord.info/GCSUC01</url>
+    <urlname>Parking</urlname>
+    <sym>Parking Area</sym>
+    <type>Waypoint|Parking Area</type>
+  </wpt>
+</gpx>
