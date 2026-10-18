@@ -60,7 +60,8 @@
     "loadFailed": "Your stored data could not be read. You can still import files, but they may not be kept.",
     "importFailed": "The import failed. Please try again.",
     "saveFailed": "Saving to this browser failed, so your latest changes may be lost on reload.",
-    "sampleFailed": "The sample data could not be loaded. Are you offline?"
+    "sampleFailed": "The sample data could not be loaded. Are you offline?",
+    "shareEmpty": "No file arrived from the share. Share a Pocket Query .zip or .gpx of at most 100 MB and 20 files, or import it here."
   },
   "main": {
     "cacheCount": "{count} caches imported",

@@ -16,6 +16,8 @@ function message(t: Translate, error: AppError): string {
       return t('error.saveFailed');
     case 'sample-failed':
       return t('error.sampleFailed');
+    case 'share-empty':
+      return t('error.shareEmpty');
   }
 }
 

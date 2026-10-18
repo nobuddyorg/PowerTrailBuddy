@@ -15,6 +15,7 @@ describe('ErrorNotice', () => {
     ['import-failed', 'The import failed.'],
     ['save-failed', 'Saving to this browser failed'],
     ['sample-failed', 'The sample data could not be loaded.'],
+    ['share-empty', 'No file arrived from the share.'],
   ] as const)('announces %s', (error, text) => {
     renderWithI18n(<ErrorNotice error={error} onDismiss={() => {}} />);
     expect(screen.getByRole('alert')).toHaveTextContent(text);

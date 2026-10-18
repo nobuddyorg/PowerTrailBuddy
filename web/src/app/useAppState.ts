@@ -33,7 +33,11 @@ import { useMarkActions } from './useMarkActions';
 import { useWalkActions } from './useWalkActions';
 
 export type AppError =
-  'load-failed' | 'import-failed' | 'save-failed' | 'sample-failed';
+  | 'load-failed'
+  | 'import-failed'
+  | 'save-failed'
+  | 'sample-failed'
+  | 'share-empty';
 
 export interface ImportSummary {
   /** Caches read from this import, before merging with what was there. */
@@ -180,7 +184,10 @@ export function useAppState() {
         withoutSharedParam(window.location.href),
       );
       try {
-        await importSelected(await takeSharedFiles());
+        const shared = await takeSharedFiles();
+        // The worker stores nothing for a share it refused, yet still redirects here.
+        if (shared.length === 0) setError('share-empty');
+        else await importSelected(shared);
       } catch {
         setError('import-failed');
       }

@@ -60,7 +60,8 @@
     "loadFailed": "Deine gespeicherten Daten ließen sich nicht lesen. Du kannst weiter Dateien importieren, sie werden aber vielleicht nicht behalten.",
     "importFailed": "Der Import ist fehlgeschlagen. Bitte versuche es noch einmal.",
     "saveFailed": "Speichern in diesem Browser ist fehlgeschlagen, deine letzten Änderungen gehen beim Neuladen vielleicht verloren.",
-    "sampleFailed": "Die Beispieldaten ließen sich nicht laden. Bist du offline?"
+    "sampleFailed": "Die Beispieldaten ließen sich nicht laden. Bist du offline?",
+    "shareEmpty": "Beim Teilen ist keine Datei angekommen. Teile eine Pocket-Query-.zip oder -.gpx mit höchstens 100 MB und 20 Dateien, oder importiere sie hier."
   },
   "main": {
     "cacheCount": "{count} Caches importiert",

@@ -158,6 +158,14 @@ describe('importing', () => {
     expect(result.current.lastImport?.files[0].name).toBe('shared.gpx');
   });
 
+  it('says so when the share delivered no file', async () => {
+    window.history.replaceState(null, '', '/?shared=1');
+    const { result } = await renderReady();
+    await waitFor(() => expect(result.current.error).toBe('share-empty'));
+    expect(window.location.search).toBe('');
+    expect(result.current.caches).toEqual([]);
+  });
+
   it('reports shared files it cannot take', async () => {
     shared.take.mockRejectedValue(new Error('no cache storage'));
     window.history.replaceState(null, '', '/?shared=1');
