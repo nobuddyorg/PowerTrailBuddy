@@ -40,6 +40,18 @@ export default function RootLayout({
         {/* I18nProvider updates this via a `meta[name="description"]` selector that must keep matching. */}
         <meta name="description" content={de.page.tagline} />
         <link rel="manifest" href={withBasePath('/site.webmanifest')} />
+        {/* Unlinked, a browser asks for /favicon.ico at the origin root, outside the base path. */}
+        <link rel="icon" href={withBasePath('/favicon.ico')} sizes="any" />
+        <link
+          rel="icon"
+          href={withBasePath('/favicon-32x32.png')}
+          type="image/png"
+          sizes="32x32"
+        />
+        <link
+          rel="apple-touch-icon"
+          href={withBasePath('/apple-touch-icon.png')}
+        />
         <meta name="theme-color" content={THEME_COLOR} />
         <meta name="color-scheme" content="light" />
         {/* As early as possible: a CSP meta tag only covers what the document parses after it. */}

@@ -1,4 +1,4 @@
-// Cache-first for hashed `_next/static/**`, network-first for the app shell, one cache per build, plus the share target (docs/reference/architecture.md).
+// Cache-first for hashed `_next/static/**`, network-first for the app shell (pages, manifest, logo, favicons), one cache per build, plus the share target (docs/reference/architecture.md).
 
 // Shell caches only: the share target's cache must survive a new build.
 const CACHE_PREFIX = 'powertrailbuddy-shell-';
@@ -40,8 +40,19 @@ function isHashedStaticAsset(pathname) {
   return pathname.includes('/_next/static/');
 }
 
+// What every page loads by URL besides the bundle; passed through, each fails offline with a console error.
+const SHELL_FILES = [
+  '/site.webmanifest',
+  '/logo.svg',
+  '/favicon.ico',
+  '/favicon-32x32.png',
+  '/apple-touch-icon.png',
+];
+
 function isAppShellRequest(pathname, mode) {
-  return mode === 'navigate' || pathname.endsWith('/site.webmanifest');
+  return (
+    mode === 'navigate' || SHELL_FILES.some((file) => pathname.endsWith(file))
+  );
 }
 
 function isShareTargetRequest(pathname, method, basePath) {

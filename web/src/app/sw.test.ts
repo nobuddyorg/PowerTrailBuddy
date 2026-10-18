@@ -154,16 +154,25 @@ describe('strategyFor', () => {
     expect(strategy(`${site}/_next/static/chunks/1.js`)).toBe('cache-first');
   });
 
-  it('serves navigations and the manifest network-first', () => {
+  it('serves navigations and the files every page links network-first', () => {
     expect(strategy(`${site}/`, 'GET', 'navigate')).toBe('network-first');
     expect(strategy(`${site}/share-target/`, 'GET', 'navigate')).toBe(
       'network-first',
     );
     expect(strategy(`${site}/site.webmanifest`)).toBe('network-first');
+    expect(strategy(`${site}/logo.svg`)).toBe('network-first');
+    expect(strategy(`${site}/favicon.ico`, 'GET', 'no-cors')).toBe(
+      'network-first',
+    );
+    expect(strategy(`${site}/favicon-32x32.png`)).toBe('network-first');
+    expect(strategy(`${site}/apple-touch-icon.png`)).toBe('network-first');
   });
 
   it('passes anything else through', () => {
-    expect(strategy(`${site}/favicon.ico`, 'GET', 'no-cors')).toBe(
+    expect(strategy(`${site}/icon-512.png`, 'GET', 'no-cors')).toBe(
+      'pass-through',
+    );
+    expect(strategy(`${site}/sample/powertrail-sample.gpx`)).toBe(
       'pass-through',
     );
     expect(strategy(`${site}/share-target/`)).toBe('pass-through');
