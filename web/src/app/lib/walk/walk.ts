@@ -98,6 +98,19 @@ export function undoLast(state: WalkState): WalkState {
   return { ...state, outcomes, history: state.history.slice(0, -1) };
 }
 
+/** Without the open caches `present` lacks, as after a re-import dropped them; recorded ones stay, and one that comes back is walked again. */
+export function withoutMissingCaches(
+  state: WalkState,
+  present: ReadonlySet<string>,
+): WalkState {
+  return {
+    ...state,
+    codes: state.codes.filter(
+      (code) => hasOutcome(state, code) || present.has(code),
+    ),
+  };
+}
+
 /** The first code without an outcome; undefined once the walk is done. */
 export function nextCode(state: WalkState): string | undefined {
   return state.codes.find((code) => !hasOutcome(state, code));

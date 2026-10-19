@@ -1,6 +1,7 @@
 import { namesParkingArea, withParking, type ParkingArea } from './parking';
 import { recentLogsOf, type LogEntry } from './recentLogs';
 import type { CacheType, Geocache } from './types';
+import { withoutNotXmlContent } from './xmlCharacters';
 
 export interface ParsedGpx {
   /** Each with the nearest parking area of this document, if it has one. */
@@ -143,9 +144,9 @@ function parkingAreaOf(waypoint: Element): ParkingArea | undefined {
 }
 
 function gpxRootOf(xml: string): Element {
-  // XML allows nothing before its declaration; hand-edited and shared files often start with a blank line.
+  // The strict parser refuses a whole file for a blank line before its declaration, or one control character in one log.
   const document = new DOMParser().parseFromString(
-    xml.trimStart(),
+    withoutNotXmlContent(xml).trimStart(),
     'application/xml',
   );
   // Firefox and jsdom replace the root with <parsererror>; Chromium inserts one inside it.

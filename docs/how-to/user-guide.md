@@ -53,7 +53,9 @@ it read from how many files, and why it refused a file:
 
 - **not a geocache .zip or .gpx file**: another kind of file, or XML that is
   not GPX;
-- **damaged**: the file could not be read, or a zip is broken;
+- **damaged**: the file could not be read, or a zip is broken (control
+  characters that XML forbids, which some apps put in log texts, are left
+  out instead);
 - **too large**: a zip of more than 50 files or more than 100 MB unpacked, or
   any file over 100 MB.
 
@@ -73,6 +75,10 @@ caches.
 Name other GPX files you import (from GSAK, c:geo, …) after what they hold:
 importing a different area under the same file name replaces the first
 area's caches.
+
+With the app open twice, say installed and in a browser tab, neither loses
+what the other imports, marks found or ignores; reopen one to see what the
+other did.
 
 ## Share a file to the app (Android)
 
@@ -163,7 +169,9 @@ phone vibrates once.
 - **Finish** ends early; **Resume walk** goes on.
 
 The screen stays on while you walk, and the walk is saved as you go: reopen
-the app to continue. Caches you mark found are left out of every trail, even
+the app to continue. If a newer Pocket Query you import during the walk no
+longer lists a cache still ahead of you, the walk leaves it out and goes on
+with the next one. Caches you mark found are left out of every trail, even
 before your next Pocket Query.
 
 At the end, the summary shows your finds and DNFs, time and caches per hour.

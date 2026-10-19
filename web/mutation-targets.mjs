@@ -6,6 +6,7 @@ export const MUTATE_TARGETS = [
   'src/app/lib/geocache/recentLogs.ts',
   'src/app/lib/geocache/parking.ts',
   'src/app/lib/geocache/health.ts',
+  'src/app/lib/geocache/xmlCharacters.ts',
   'src/app/lib/trails/geo.ts',
   'src/app/lib/trails/findTrails.ts',
   'src/app/lib/trails/compareCodes.ts',

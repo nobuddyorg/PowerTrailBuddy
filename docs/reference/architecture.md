@@ -28,10 +28,10 @@ All paths relative to `web/src/app/`.
 
 | Directory | Holds | May import |
 | --- | --- | --- |
-| `lib/geocache/` | Cache types, the GPX parser, recent logs (`recentLogs.ts`), parking areas (`parking.ts`), cache health (`health.ts`), the file importer (zip and gpx), the merge | `jszip`, other `lib/` |
+| `lib/geocache/` | Cache types, the GPX parser, the characters XML 1.0 forbids (`xmlCharacters.ts`), recent logs (`recentLogs.ts`), parking areas (`parking.ts`), cache health (`health.ts`), the file importer (zip and gpx), the merge | `jszip`, other `lib/` |
 | `lib/trails/` | Trail settings and their defaults, geometry, the trail finder and its stages (`filterCaches`, `linkComponents`, `orderPath`, `splitWalks`, `scoreTrail`, `trailShape`, `projection`, `compareCodes`), routed walking distances and barriers (`walkingDistances.ts`), distances from the user (`nearby.ts`) | other `lib/` |
 | `lib/routing/` | Which caches still need walking distances (`planRouting.ts`), the OSRM table request and its answer (`osrmTable.ts`) | other `lib/` |
-| `lib/walk/` | Walk state: start, orient, reverse, record, undo, next cache, progress, pace | other `lib/` |
+| `lib/walk/` | Walk state: start, orient, reverse, record, undo, next cache, progress, pace, leaving out caches a re-import dropped | other `lib/` |
 | `lib/export/` | The two downloads: a trail as GPX (`trailGpx.ts`), a walk as Geocaching.com field notes (`fieldNotes.ts`) | other `lib/` |
 | `lib/format/` | Display formatting: distances, durations, rates, ratings, coordinates, dates, compass points, decimal input | other `lib/` |
 | `lib/navigation/` | Outbound links (`coord.info`, `geo:`, Google Maps walking directions) and the share-target landing (`sharedLaunch.ts`) | other `lib/` |
@@ -87,7 +87,11 @@ export interface Geocache extends Coordinates {
 skippedWaypoints: number; parkingAreas: ParkingArea[] }`. Throws
 `GpxParseError` (`code: 'not-xml' | 'not-gpx'`) for unusable input: any XML
 parser error is `not-xml`, a root other than `gpx` is `not-gpx`. Whitespace
-before the XML declaration is tolerated.
+before the XML declaration is tolerated, and so are characters XML 1.0
+forbids (C0 controls but tab, LF and CR; lone surrogates; U+FFFE, U+FFFF),
+raw or as numeric character references (`&#1;`, `&#x1F;`, past U+10FFFF):
+`withoutNotXmlContent` (`xmlCharacters.ts`) removes them before parsing, so
+one in one log's free text no longer makes the whole query `not-xml`.
 
 - Accepts the Groundspeak cache extension in namespaces `…/cache/1/0` and
   `…/cache/1/0/1`, matched by local name and namespace prefix, directly under
@@ -319,15 +323,21 @@ other way round); `recordOutcome(state, code, outcome, at)` (a later outcome
 replaces an earlier one; a code outside the walk is ignored);
 `undoLast(state)`; `nextCode(state)` (the first code without an outcome,
 `undefined` when done); `walkProgress(state)` → `{ done, total, found, dnf }`;
-`walkPace(state, now)` → `{ elapsedMinutes, cachesPerHour }`. Recording
+`walkPace(state, now)` → `{ elapsedMinutes, cachesPerHour }`;
+`withoutMissingCaches(state, present)` (the walk without the open codes not in
+`present`; recorded ones stay). Recording
 `found` also marks the cache found in the app (`useWalkActions.ts`), and undo
-takes that back.
+takes that back. `WalkView` shows `withoutMissingCaches(walk, imported codes)`,
+so a re-import that dropped the next cache goes on with the next one still
+imported, the progress counting only those; the stored walk keeps the code,
+and a later import that brings the cache back puts it back in the walk.
 
 ### `lib/export/`
 
 - `buildTrailGpx(trail, title)`: GPX 1.1 with one waypoint per cache in
   walking order, the parking areas as `PK…` waypoints, and a route through
-  the caches; text XML-escaped, characters XML cannot carry dropped,
+  the caches; text XML-escaped, characters XML cannot carry dropped
+  (`withoutNotXmlCharacters`, shared with the parser),
   coordinates to six decimals. Saved as `powertrail-<rank>.gpx`.
 - `buildFieldNotes(entries)`: Geocaching.com's drafts format,
   `geocache_visits.txt`: UTF-16LE with a byte order mark, CRLF lines of
@@ -343,11 +353,12 @@ it.
 
 ### `data/store.ts`
 
-The only module importing idb-keyval: `loadCaches()`, `saveCaches(caches)`,
+The only module importing idb-keyval: `loadCaches()`,
+`mergeIntoStoredCaches(incoming)` (→ `MergedCaches`),
 `loadSettings()` (through `sanitizeSettings`: unknown keys dropped, missing
 ones defaulted, numbers clamped and rounded), `saveSettings(settings)`,
-`loadLocallyFound()`, `saveLocallyFound(codes)`, `loadIgnored()`,
-`saveIgnored(codes)`, `loadWalk()`, `saveWalk(state | undefined)`,
+`loadLocallyFound()`, `updateLocallyFound(change)`, `loadIgnored()`,
+`updateIgnored(change)`, `loadWalk()`, `saveWalk(state | undefined)`,
 `loadPreferences()` (over `DEFAULT_PREFERENCES`), `savePreferences(p)`,
 `loadImportInfo()`, `saveImportInfo(info)`, `loadWalkingDistances()` (only
 string keys with non-negative or infinite metres), `saveWalkingDistances(map)`,
@@ -397,6 +408,21 @@ Everything the app keeps, all in the user's browser, all per origin.
 `clearAllData()` removes the eight IndexedDB keys; the language choice and
 the caches of the service worker stay. A new stored value is added
 to this table in the same change.
+
+**Two open instances** (the installed app and a browser tab) share this
+storage, each with its own copy in memory. So `caches`, `locally-found` and
+`ignored` are never written from that copy: an import is merged into the
+stored caches (`mergeIntoStoredCaches`), and a mark is applied to the stored
+codes (`updateLocallyFound`, `updateIgnored`, each given the change, such as
+"add this code"), each read, changed and written in one IndexedDB
+transaction (idb-keyval's `update`). An import then also shows the other
+instance's imports; the other instance's marks show once the app is
+reopened. If the merge is refused, the import is merged into the copy in
+memory and the app shows the save notice. The other
+keys hold one value the user set as a whole (`settings`, `preferences`, the
+`walk`, `last-import`) and are written whole: the later write wins.
+`walking-distances` is written whole too; a pair one instance's write drops
+is only fetched again.
 
 ## Service worker
 

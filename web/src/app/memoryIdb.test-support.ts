@@ -41,6 +41,21 @@ export function set(name: string, value: unknown, store: unknown) {
   );
 }
 
+/** Reads and writes in one step, as idb-keyval does in one transaction. */
+export function update(
+  name: string,
+  updater: (old: unknown) => unknown,
+  store: unknown,
+) {
+  if (memoryIdb.refuseReads) {
+    return Promise.reject(new DOMException('broken', 'UnknownError'));
+  }
+  return write(() => {
+    const old = structuredClone(memoryIdb.values.get(key(store, name)));
+    memoryIdb.values.set(key(store, name), structuredClone(updater(old)));
+  });
+}
+
 export function del(name: string, store: unknown) {
   return write(() => memoryIdb.values.delete(key(store, name)));
 }
