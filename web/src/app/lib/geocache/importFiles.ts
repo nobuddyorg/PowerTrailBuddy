@@ -25,6 +25,8 @@ export interface ImportResult {
 /** Larger than any Pocket Query (1,000 caches is a few MB); applies to a file and to the GPX inside an archive. */
 export const MAX_IMPORT_BYTES = 100 * 1024 * 1024;
 export const MAX_ARCHIVE_ENTRIES = 50;
+/** Twenty full Pocket Queries in one import; trail finding on every launch stays within its measured budget up to here. */
+export const MAX_IMPORT_CACHES = 20_000;
 
 const ZIP_SIGNATURE = [0x50, 0x4b, 0x03, 0x04];
 const SNIFF_BYTES = 1024;
@@ -201,25 +203,38 @@ async function contentOfFile(file: File): Promise<GpxContent> {
     : contentOf(new TextDecoder().decode(bytes), file.name);
 }
 
-async function importFile(
-  file: File,
-): Promise<GpxContent & { report: ImportedFile }> {
+type ImportedContent = GpxContent & { report: ImportedFile };
+
+function refused(file: File, error: ImportFileError): ImportedContent {
+  return {
+    caches: [],
+    parkingAreas: [],
+    sources: [],
+    report: { name: file.name, cacheCount: 0, error },
+  };
+}
+
+async function importFile(file: File): Promise<ImportedContent> {
   try {
     const content = await contentOfFile(file);
     const report = { name: file.name, cacheCount: content.caches.length };
     return { ...content, report };
   } catch (error) {
     if (!(error instanceof ImportFailure)) throw error;
-    return {
-      caches: [],
-      parkingAreas: [],
-      sources: [],
-      report: { name: file.name, cacheCount: 0, error: error.code },
-    };
+    return refused(file, error.code);
   }
 }
 
-/** Reads Pocket Query `.zip` archives and `.gpx` files into caches, one after another. */
+/** How many caches the import would hold with these added, each code once. */
+function cacheCountWith(
+  byCode: ReadonlyMap<string, Geocache>,
+  caches: readonly Geocache[],
+): number {
+  const added = caches.filter((cache) => !byCode.has(cache.code));
+  return byCode.size + new Set(added.map((cache) => cache.code)).size;
+}
+
+/** Reads Pocket Query `.zip` archives and `.gpx` files into caches, one after another, refusing a file that would take the import past MAX_IMPORT_CACHES. */
 export async function importFiles(
   files: readonly File[],
 ): Promise<ImportResult> {
@@ -228,7 +243,12 @@ export async function importFiles(
   const reports: ImportedFile[] = [];
   const sources: string[] = [];
   for (const file of files) {
-    const imported = await importFile(file);
+    const read = await importFile(file);
+    // A file that would take the import past the limit is refused whole, so none of its queries counts as read.
+    const imported =
+      cacheCountWith(byCode, read.caches) > MAX_IMPORT_CACHES
+        ? refused(file, 'too-large')
+        : read;
     for (const cache of imported.caches) {
       const earlier = byCode.get(cache.code)?.sources ?? [];
       byCode.set(cache.code, {

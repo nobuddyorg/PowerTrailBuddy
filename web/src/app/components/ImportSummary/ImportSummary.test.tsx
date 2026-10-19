@@ -62,7 +62,7 @@ describe('ImportSummary', () => {
     ).toEqual([
       'notes.txt: not a geocache .zip or .gpx file',
       'broken.gpx: the file is damaged and could not be read',
-      'huge.zip: too large (more than 50 files or 100 MB unpacked)',
+      'huge.zip: too large (more than 50 files or 100 MB unpacked, or more than 20,000 caches in one import)',
     ]);
     act(() => {
       vi.advanceTimersByTime(SUMMARY_MS * 2);

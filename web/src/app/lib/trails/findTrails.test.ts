@@ -444,10 +444,11 @@ describe('findTrails', () => {
     });
 
     it('measures the walk and its time along the routed legs', () => {
+      // Routed 160 m along the row, still shorter than any unrouted leg (300 m times the detour factor) the order could take instead.
       const legs = new Map(
         south
           .slice(1)
-          .map((cache, index) => [pairKey(south[index], cache), 400]),
+          .map((cache, index) => [pairKey(south[index], cache), 160]),
       );
       legs.set(pairKey(south[5], south[0]), 1000);
       const [trail] = findTrails(south, {
@@ -455,9 +456,9 @@ describe('findTrails', () => {
         locallyFound: nothingFoundHere,
         walkingDistances: legs,
       });
-      expect(trail.walkMeters).toBeCloseTo(5 * 400 + 1000, 6);
+      expect(trail.walkMeters).toBeCloseTo(5 * 160 + 1000, 6);
       expect(trail.durationMinutes).toBeCloseTo(
-        (3000 / 1000 / settings.walkingSpeedKmh) * 60 +
+        (1800 / 1000 / settings.walkingSpeedKmh) * 60 +
           6 * settings.minutesPerCache,
         6,
       );
