@@ -28,6 +28,7 @@ export function initHome(page: Page): Home {
     .or(root.getByTestId('side-panel'))
     .or(root.getByTestId('bottom-sheet'))
     .or(root.getByTestId('walk-view'));
+  const map = root.getByTestId('map');
   const locators = {
     buttons: {
       data: root.getByTestId('open-data'),
@@ -46,8 +47,9 @@ export function initHome(page: Page): Home {
       await screens.first().waitFor();
     },
     reload: async () => {
-      // A request still in flight (the lazily loaded map) is aborted by the reload, and Firefox logs the worker's lost answer.
-      await page.waitForLoadState('networkidle');
+      // A reload aborts the lazily loaded Leaflet still in flight, and Firefox logs the worker's lost answer; networkidle, reached at the first load, no longer waits.
+      if ((await map.count()) > 0)
+        await expect(map).toHaveClass(/leaflet-container/);
       await page.reload({ waitUntil: 'networkidle' });
       await screens.first().waitFor();
     },
