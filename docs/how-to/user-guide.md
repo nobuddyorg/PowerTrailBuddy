@@ -157,14 +157,42 @@ used for the time estimate. Nothing changes until **Apply**; **Reset to
 defaults** restores the defaults. Values and ranges:
 [Configuration](../reference/configuration.md).
 
+## Check trails on real footpaths
+
+By default, distances are straight lines times the detour factor. That can't
+tell that two caches 80 m apart sit on either side of a motorway, a river or
+a railway, where the real walk may be a long way round.
+
+Under **Settings → Walking routes**, tick **Check trails on real footpaths**.
+It takes effect at once. The app then sends the coordinates of the caches in
+your candidate trails, nothing else, to the routing server of the FOSSGIS
+(`routing.openstreetmap.de`, using OpenStreetMap's paths), one request a
+second at most. With the answers:
+
+- Distances, times and caches per hour follow real footpaths.
+- Two caches with no path between them, or only a very long one, no longer
+  link, so a trail splits at the barrier (and may disappear if neither part
+  is big enough).
+
+A line below the trail list shows the progress ("Checking walking routes …"),
+then "Distances follow real footpaths." The answers are kept in this browser,
+so a cache pair is never asked twice. If the server can't be reached, the
+line says so and the straight-line estimates stay. A very large import is
+checked in part per visit; reload to check more. Untick the box to go back to
+straight lines; nothing is sent while it is off. A wrong route is usually a
+missing path on OpenStreetMap: the **Fix the map** link explains how to
+report or add it.
+
 ## See and clear your data
 
 **Your data** shows how many caches, trails, finds marked here and ignored
 caches are stored, and when and from which files you last imported.
 
 **Clear all data** removes every imported cache, your settings, the caches you
-marked found or ignored and any walk in progress from this browser, after
-asking. Nothing else holds a copy.
+marked found or ignored, any walk in progress and the stored walking routes
+from this browser, after asking. Nothing else holds a copy; the routing server
+keeps only its own request log of the coordinates it was asked about, if you
+turned walking routes on.
 
 ## Install the app
 

@@ -48,21 +48,46 @@ There is no account to protect and no server to breach: the imported caches,
 the settings, the caches marked found and the walk in progress live in
 IndexedDB (through idb-keyval, the smallest wrapper that does the job), the
 language in `localStorage`. Losing the data costs a re-import, never more. The
-privacy guarantee is enforced, not promised: the CSP's `connect-src 'self'`
-gives the bundle no other origin to send to, and the browser suite fails on
-any request to another origin. Only map tiles come from outside, and a tile
-URL reveals only the area being viewed.
+privacy guarantee is enforced, not promised: the CSP's `connect-src` names
+only the app's own origin and the opt-in routing server, and the browser suite
+fails on any request to another origin. Map tiles come from outside, and a
+tile URL reveals only the area being viewed. The routing server is contacted
+only after the user turns walking routes on (next section).
 
-## Why walking only, and straight lines times a detour factor
+## Why walking only, with opt-in walking routes over a detour factor
 
 The app plans walks, not drives: power trails along forest paths and field
-tracks are what it is for. Real walking routes would need a routing service
-(sending the user's area and caches to a third party, against the privacy
-rule) or shipping a routing graph (far too large for a static site). A
-straight-line distance multiplied by a **detour factor** (default 1.3, a
-common rule of thumb for footpaths) is accurate enough to rank trails and
-estimate time, stays private, and is computed instantly. The user can change
-the factor in settings.
+tracks are what it is for. By default a straight-line distance multiplied by a
+**detour factor** (default 1.3, a common rule of thumb for footpaths) ranks
+trails and estimates time: private, instant, and good enough where paths run
+between the caches.
+
+It fails where they don't: two caches 80 m apart on either side of a motorway,
+a river or a railway are one trail to a straight line, and a 2 km walk to the
+next bridge on foot. Shipping a routing graph is far too large for a static
+site, so the app asks a router, and only once the user opts in, because that
+sends the trail caches' coordinates to a third party:
+
+- **Which router.** FOSSGIS's public OSRM server, foot profile
+  (`routing.openstreetmap.de/routed-foot`). It needs no key (a static site
+  cannot keep one secret), sends CORS headers (openstreetmap.org calls it from
+  the browser), and its `table` service answers every pair among up to 100
+  points in one request, `null` where no path joins them. Valhalla's public
+  matrix limits are stricter and unpublished; BRouter has no matrix. Keyed
+  services (GraphHopper, openrouteservice) would need a backend.
+- **Within its policy.** At most one request a second, batches of 50 caches,
+  at most 60 requests a visit, distances kept in IndexedDB so a pair is never
+  asked twice, attribution and a "fix the map" link beside the trails.
+- **What a route changes.** Trail finding still links caches closer than
+  `maxGapMeters` in a straight line; a routed gap longer than
+  `2 × maxGapMeters × detourFactor` (or unroutable) is a barrier and does not
+  link. Each leg of a walk and its way back counts its routed distance where
+  known, else the straight line times the detour factor, so walk splitting,
+  time and caches per hour follow real paths. With every route equal to its
+  estimate the trails are exactly those without routes.
+- **Determinism.** `findTrails` takes the routed distances as an input, so
+  the same distances give the same trails; only the hook that fetches them is
+  asynchronous.
 
 ## Why connected components on a grid instead of DBSCAN
 

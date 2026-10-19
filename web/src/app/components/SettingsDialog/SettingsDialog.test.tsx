@@ -19,6 +19,8 @@ function renderDialog(
     onApply: vi.fn(),
     onResetLocallyFound: vi.fn(),
     onUnignore: vi.fn(),
+    walkingRoutes: false,
+    onWalkingRoutesChange: vi.fn(),
     onClose: vi.fn(),
     ...overrides,
   };
@@ -155,6 +157,30 @@ describe('SettingsDialog', () => {
     expect(
       screen.getByText('You have not ignored any cache.'),
     ).toBeInTheDocument();
+  });
+
+  it('turns walking routes on at once, without Apply, and says what leaves the device', () => {
+    const { onWalkingRoutesChange, onApply } = renderDialog();
+    const toggle = screen.getByRole('checkbox', {
+      name: 'Check trails on real footpaths',
+    });
+    expect(toggle).not.toBeChecked();
+    expect(toggle).toHaveAccessibleDescription(
+      expect.stringContaining('routing.openstreetmap.de'),
+    );
+    fireEvent.click(toggle);
+    expect(onWalkingRoutesChange).toHaveBeenCalledWith(true);
+    expect(onApply).not.toHaveBeenCalled();
+  });
+
+  it('turns walking routes off again', () => {
+    const { onWalkingRoutesChange } = renderDialog({ walkingRoutes: true });
+    const toggle = screen.getByRole('checkbox', {
+      name: 'Check trails on real footpaths',
+    });
+    expect(toggle).toBeChecked();
+    fireEvent.click(toggle);
+    expect(onWalkingRoutesChange).toHaveBeenCalledWith(false);
   });
 
   it('closes without applying on Cancel', () => {

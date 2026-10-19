@@ -160,7 +160,10 @@ grep -rn 'getByTestId\|getByRole\|locator(' web/e2e --include=*.spec.ts
   request with a blank PNG. The `foreignRequests` fixture (automatic) fails
   every test whose pages or service worker contacted any other origin, so
   each journey (import, map, walk, share, export) checks that nothing leaves
-  the device.
+  the device. Only a spec that sets `test.use({ allowRouter: true })`
+  (`routes.spec.ts`) may reach `routing.openstreetmap.de`, and it answers
+  those requests itself with `fakeRouter(page, { barrierLongitude })`: 1.2 ×
+  the straight line, no path across the barrier, a 503 with `failing`.
 - The `pageProblems` fixture (automatic) fails a test on any uncaught error,
   console error or CSP violation in the page, so a rejected background
   promise cannot hide behind a passing assertion. CSP violations are read

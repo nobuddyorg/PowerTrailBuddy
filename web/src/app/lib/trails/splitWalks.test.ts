@@ -2,17 +2,23 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 
 import type { Coordinates } from '../geocache/types';
-import { distanceMeters, pathMeters } from './geo';
+import { distanceMeters } from './geo';
 import { splitWalks, type WalkLimits } from './splitWalks';
 import { eastwardChain, pointsNear } from './trails.test-support';
 
-function walkMeters(
-  walk: readonly Coordinates[],
-  detourFactor: number,
-): number {
-  return (
-    (pathMeters(walk) + distanceMeters(walk[walk.length - 1], walk[0])) *
-    detourFactor
+type Leg = (from: Coordinates, to: Coordinates) => number;
+
+const straightTimes =
+  (detourFactor: number): Leg =>
+  (from, to) =>
+    distanceMeters(from, to) * detourFactor;
+
+/** The walk's legs and the way back, each as legMeters counts it. */
+function walkMeters(walk: readonly Coordinates[], legMeters: Leg): number {
+  return walk.reduce(
+    (total, point, index) =>
+      total + legMeters(point, walk[(index + 1) % walk.length]),
+    0,
   );
 }
 
@@ -23,37 +29,43 @@ const chain = eastwardChain(
 
 describe('splitWalks', () => {
   it('returns nothing for nothing', () => {
-    expect(splitWalks([], { maxWalkMeters: 1000, detourFactor: 1 })).toEqual(
-      [],
-    );
+    expect(
+      splitWalks([], { maxWalkMeters: 1000, legMeters: straightTimes(1) }),
+    ).toEqual([]);
   });
 
   it('keeps a path that fits in one walk', () => {
     expect(
-      splitWalks(chain, { maxWalkMeters: 10_000, detourFactor: 1.3 }),
+      splitWalks(chain, {
+        maxWalkMeters: 10_000,
+        legMeters: straightTimes(1.3),
+      }),
     ).toEqual([chain]);
   });
 
   it('counts the way back to the start and the detour factor', () => {
     // Out 300 m and back 300 m is 600 m straight; 900 m with a detour factor of 1.5.
     expect(
-      splitWalks(chain, { maxWalkMeters: 901, detourFactor: 1.5 }),
+      splitWalks(chain, { maxWalkMeters: 901, legMeters: straightTimes(1.5) }),
     ).toEqual([chain.slice(0, 4), chain.slice(4)]);
     expect(
-      splitWalks(chain, { maxWalkMeters: 899, detourFactor: 1.5 }),
+      splitWalks(chain, { maxWalkMeters: 899, legMeters: straightTimes(1.5) }),
     ).toEqual([chain.slice(0, 3), chain.slice(3, 6)]);
   });
 
   it('allows a walk exactly as long as the limit', () => {
-    const limit = walkMeters(chain.slice(0, 3), 1.3);
+    const limit = walkMeters(chain.slice(0, 3), straightTimes(1.3));
     expect(
-      splitWalks(chain, { maxWalkMeters: limit, detourFactor: 1.3 }),
+      splitWalks(chain, {
+        maxWalkMeters: limit,
+        legMeters: straightTimes(1.3),
+      }),
     ).toEqual([chain.slice(0, 3), chain.slice(3, 6)]);
   });
 
   it('starts each new walk with a fresh length', () => {
     // Two caches 100 m apart are 200 m there and back; three are 400 m.
-    const limits = { maxWalkMeters: 250, detourFactor: 1 };
+    const limits = { maxWalkMeters: 250, legMeters: straightTimes(1) };
     expect(splitWalks(chain, limits)).toEqual([
       chain.slice(0, 2),
       chain.slice(2, 4),
@@ -63,15 +75,20 @@ describe('splitWalks', () => {
 
   it('makes a lone cache its own walk when even the next step is too long', () => {
     expect(
-      splitWalks(chain.slice(0, 3), { maxWalkMeters: 10, detourFactor: 1 }),
+      splitWalks(chain.slice(0, 3), {
+        maxWalkMeters: 10,
+        legMeters: straightTimes(1),
+      }),
     ).toEqual([[chain[0]], [chain[1]], [chain[2]]]);
   });
 });
 
 describe('splitWalks, for random ordered paths', () => {
-  const anyLimits: fc.Arbitrary<WalkLimits> = fc.record({
+  const anyLimits: fc.Arbitrary<WalkLimits<Coordinates>> = fc.record({
     maxWalkMeters: fc.double({ min: 0, max: 8000, noNaN: true }),
-    detourFactor: fc.double({ min: 1, max: 2, noNaN: true }),
+    legMeters: fc
+      .double({ min: 1, max: 2, noNaN: true })
+      .map((detourFactor) => straightTimes(detourFactor)),
   });
   const anyPath = pointsNear({ minLength: 0, maxLength: 40, spanMeters: 3000 });
 
@@ -89,7 +106,7 @@ describe('splitWalks, for random ordered paths', () => {
         for (const walk of splitWalks(path, limits)) {
           expect(
             walk.length === 1 ||
-              walkMeters(walk, limits.detourFactor) <= limits.maxWalkMeters,
+              walkMeters(walk, limits.legMeters) <= limits.maxWalkMeters,
           ).toBe(true);
         }
       }),
@@ -102,7 +119,7 @@ describe('splitWalks, for random ordered paths', () => {
         const walks = splitWalks(path, limits);
         walks.slice(0, -1).forEach((walk, index) => {
           const extended = [...walk, walks[index + 1][0]];
-          expect(walkMeters(extended, limits.detourFactor)).toBeGreaterThan(
+          expect(walkMeters(extended, limits.legMeters)).toBeGreaterThan(
             limits.maxWalkMeters,
           );
         });

@@ -2,8 +2,10 @@
 import { fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { DEFAULT_PREFERENCES } from '../../data/store';
 import type { Trail } from '../../lib/trails/types';
 import type { GeolocationState } from '../../useGeolocation';
+import type { RouteCheck } from '../../useWalkingDistances';
 import {
   makeApp,
   makeCache,
@@ -64,6 +66,7 @@ function renderMain({
     app,
     trails,
     pending: false,
+    routeCheck: { status: 'off' } as RouteCheck,
     location,
     startLocation: vi.fn(),
     onOpenSettings: vi.fn(),
@@ -265,7 +268,7 @@ describe('MainView', () => {
     renderMain({
       app: makeApp({
         caches: CACHES,
-        preferences: { sort: 'rate', showOtherCaches: false },
+        preferences: { ...DEFAULT_PREFERENCES, showOtherCaches: false },
       }),
     });
     expect(tones()?.map(([code]) => code)).not.toContain('GCLONE');

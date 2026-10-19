@@ -42,7 +42,10 @@ describe('sanitizeSettings', () => {
       minCaches: 0,
       minutesPerCache: 0,
     });
-    const [trail] = findTrails(atOneSpot, lowest, new Set());
+    const [trail] = findTrails(atOneSpot, {
+      settings: lowest,
+      locallyFound: new Set(),
+    });
     expect(trail.durationMinutes).toBeGreaterThan(0);
     expect(Number.isFinite(trail.cachesPerHour)).toBe(true);
   });

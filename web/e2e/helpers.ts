@@ -20,8 +20,9 @@ export async function collectPageProblems(page: Page): Promise<PageProblems> {
   page.on('pageerror', (error) => problems.errors.push(String(error.stack)));
   page.on('console', (message) => {
     if (message.type() !== 'error') return;
-    // A tile the tile server failed to send is its outage, not the app's error; the tile fake never fails.
+    // A tile or route the server failed to send is its outage, not the app's error; the fakes fail only when asked.
     if (TILE_HOST.test(message.location().url)) return;
+    if (ROUTER_HOST.test(message.location().url)) return;
     problems.console.push(message.text());
   });
   // Chromium reports a blocked eval only through this event, never on the console as Firefox does.
@@ -67,19 +68,77 @@ export async function failMapTiles(page: Page) {
   await page.route(TILE_HOST, (route) => route.abort('connectionfailed'));
 }
 
-/** Every request the context's pages and workers made that left the origin under test, tiles excepted. */
+/** Every request the context's pages and workers made that left the origin under test, tiles excepted, and the router where a spec allows it. */
 export function collectForeignRequests(
   context: BrowserContext,
-  origin: string,
+  { origin, allowRouter }: { origin: string; allowRouter: boolean },
 ): string[] {
   const foreign: string[] = [];
   context.on('request', (request) => {
     const url = request.url();
     if (url.startsWith('data:') || url.startsWith('blob:')) return;
     if (TILE_HOST.test(url)) return;
+    if (allowRouter && ROUTER_HOST.test(url)) return;
     if (new URL(url).origin !== origin) foreign.push(url);
   });
   return foreign;
+}
+
+const ROUTER_HOST = /^https:\/\/routing\.openstreetmap\.de\//;
+
+const METERS_PER_DEGREE = 111_195;
+
+type Point = { latitude: number; longitude: number };
+
+function metersBetween(a: Point, b: Point): number {
+  const north = (b.latitude - a.latitude) * METERS_PER_DEGREE;
+  const east =
+    (b.longitude - a.longitude) *
+    METERS_PER_DEGREE *
+    Math.cos((a.latitude * Math.PI) / 180);
+  return Math.hypot(north, east);
+}
+
+/** Answers the routing server's table requests itself: 1.2 times the straight line, and no path across `barrierLongitude`. */
+export async function fakeRouter(
+  page: Page,
+  {
+    barrierLongitude,
+    failing = false,
+  }: { barrierLongitude: number; failing?: boolean },
+): Promise<string[]> {
+  const asked: string[] = [];
+  await page.route(ROUTER_HOST, (route) => {
+    const url = route.request().url();
+    asked.push(url);
+    if (failing)
+      return route.fulfill({
+        status: 503,
+        headers: { 'access-control-allow-origin': '*' },
+        body: 'Unavailable',
+      });
+    const path = new URL(url).pathname;
+    const points: Point[] = path
+      .slice(path.lastIndexOf('/') + 1)
+      .split(';')
+      .map((pair) => {
+        const [longitude, latitude] = pair.split(',').map(Number);
+        return { latitude, longitude };
+      });
+    const west = (point: Point) => point.longitude < barrierLongitude;
+    const distances = points.map((from) =>
+      points.map((to) =>
+        west(from) === west(to) ? metersBetween(from, to) * 1.2 : null,
+      ),
+    );
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'access-control-allow-origin': '*' },
+      body: JSON.stringify({ code: 'Ok', distances }),
+    });
+  });
+  return asked;
 }
 
 /** The document's scroll width beside the window's client width, for a sideways-scroll check. */

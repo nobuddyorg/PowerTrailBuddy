@@ -13,10 +13,13 @@ import { createPageTree } from './pages';
 /** A function of `page`, not a tree, so a spec with a second browser context can point it there. */
 export const test = base.extend<{
   on: typeof createPageTree;
+  /** Lets requests to the routing server pass the foreign-request check; only the walking-routes spec sets it. */
+  allowRouter: boolean;
   tiles: void;
   pageProblems: void;
   foreignRequests: void;
 }>({
+  allowRouter: [false, { option: true }],
   // Named provide, not use: inside a property called on, `use` reads to react-hooks/rules-of-hooks as a hook.
   on: async ({}, provide) => {
     await provide((page) => createPageTree(page));
@@ -38,10 +41,13 @@ export const test = base.extend<{
     },
     { auto: true },
   ],
-  // Automatic, so every journey (import, map, walk, share, export) proves that nothing leaves the device.
+  // Automatic, so every journey (import, map, walk, share, export) proves that nothing leaves the device unless asked.
   foreignRequests: [
-    async ({ context, baseURL }, provide) => {
-      const foreign = collectForeignRequests(context, new URL(baseURL!).origin);
+    async ({ context, baseURL, allowRouter }, provide) => {
+      const foreign = collectForeignRequests(context, {
+        origin: new URL(baseURL!).origin,
+        allowRouter,
+      });
       await provide();
       expect(foreign, 'requests to other origins').toEqual([]);
     },

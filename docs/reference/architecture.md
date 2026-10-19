@@ -9,7 +9,9 @@ A Next.js App Router **static export** (`output: 'export'`) in `web/`, served
 by GitHub Pages under the base path `/PowerTrailBuddy` (`EXPORT_BASE_PATH` in
 `web/next.config.ts`; a `PAGES_BASE_URL` without a path, as on a custom
 domain, builds for `/`). There is no server runtime, no route handler and no
-backend; everything below runs in the browser.
+backend; everything below runs in the browser. The only servers it talks to
+are the OpenStreetMap tile server and, once the user turns walking routes on,
+FOSSGIS's OSRM foot router ([Outside requests](#outside-requests)).
 
 ```text
  file picker ─┐                                        ┌─> IndexedDB (data/store.ts)
@@ -27,17 +29,18 @@ All paths relative to `web/src/app/`.
 | Directory | Holds | May import |
 | --- | --- | --- |
 | `lib/geocache/` | Cache types, the GPX parser, recent logs (`recentLogs.ts`), parking areas (`parking.ts`), cache health (`health.ts`), the file importer (zip and gpx), the merge | `jszip`, other `lib/` |
-| `lib/trails/` | Trail settings and their defaults, geometry, the trail finder and its stages (`filterCaches`, `linkComponents`, `orderPath`, `splitWalks`, `scoreTrail`, `trailShape`, `projection`, `compareCodes`), distances from the user (`nearby.ts`) | other `lib/` |
+| `lib/trails/` | Trail settings and their defaults, geometry, the trail finder and its stages (`filterCaches`, `linkComponents`, `orderPath`, `splitWalks`, `scoreTrail`, `trailShape`, `projection`, `compareCodes`), routed walking distances and barriers (`walkingDistances.ts`), distances from the user (`nearby.ts`) | other `lib/` |
+| `lib/routing/` | Which caches still need walking distances (`planRouting.ts`), the OSRM table request and its answer (`osrmTable.ts`) | other `lib/` |
 | `lib/walk/` | Walk state: start, orient, reverse, record, undo, next cache, progress, pace | other `lib/` |
 | `lib/export/` | The two downloads: a trail as GPX (`trailGpx.ts`), a walk as Geocaching.com field notes (`fieldNotes.ts`) | other `lib/` |
 | `lib/format/` | Display formatting: distances, durations, rates, ratings, coordinates, dates, compass points, decimal input | other `lib/` |
 | `lib/navigation/` | Outbound links (`coord.info`, `geo:`, Google Maps walking directions) and the share-target landing (`sharedLaunch.ts`) | other `lib/` |
 | `lib/ui-logic/` | Pure decisions behind the UI: trail cards (sort, filter, health), search, presets, heading, parking, bottom-sheet snapping, walk statistics | other `lib/` |
-| `data/` | Browser storage: IndexedDB through idb-keyval (`store.ts`), settings validation (`sanitizeSettings.ts`), shared files from Cache Storage (`sharedFiles.ts`), the `localStorage` shim (`browserStorage.ts`) | `lib/` types, `idb-keyval` |
+| `data/` | Browser storage: IndexedDB through idb-keyval (`store.ts`), settings validation (`sanitizeSettings.ts`), shared files from Cache Storage (`sharedFiles.ts`), the `localStorage` shim (`browserStorage.ts`); the routing server's `fetch` (`walkingRoutes.ts`) | `lib/`, `idb-keyval` |
 | `components/` | React UI | `lib/`, `data/`, `i18n/` |
 | `components/Map/` | The only Leaflet wrapper; owns the tile URL. `content.ts` (pure) turns trails and a walk into markers, lines and badges | `leaflet`, `lib/` |
 | `i18n/` | `I18nProvider`, `useI18n`, the pure helpers in `translate.ts`, `de.json`, `en.json` | `data/browserStorage.ts` only |
-| top level | `layout.tsx`, `page.tsx`, `env.ts` (base path), `useAppState.ts` with `useMarkActions.ts` and `useWalkActions.ts` (the state and its actions; shared types in `dataCore.ts`), the device hooks (`useGeolocation`, `useCompass`, `useWakeLock`, `useFollow`, `useInstallPrompt`, `useBrowserState`), `useTrails.ts`, `useServiceWorker.ts`, `ServiceWorkerRegistration.tsx`, `globals.css` | anything above |
+| top level | `layout.tsx`, `page.tsx`, `env.ts` (base path), `useAppState.ts` with `useMarkActions.ts` and `useWalkActions.ts` (the state and its actions; shared types in `dataCore.ts`), the device hooks (`useGeolocation`, `useCompass`, `useWakeLock`, `useFollow`, `useInstallPrompt`, `useBrowserState`), `useTrails.ts`, `useWalkingDistances.ts` (fetches and keeps routed distances while walking routes are on), `useServiceWorker.ts`, `ServiceWorkerRegistration.tsx`, `globals.css` | anything above |
 
 `web/public/sw.js` is the service worker (a plain script, no bundler);
 `web/public/site.webmanifest` the manifest.
@@ -167,7 +170,7 @@ export interface Trail {
   caches: Geocache[];          // in walking order
   pathMeters: number;          // straight line along the order
   returnMeters: number;        // straight line last → first
-  walkMeters: number;          // (pathMeters + returnMeters) * detourFactor
+  walkMeters: number;          // each leg and the way back: routed where known, else straight * detourFactor
   durationMinutes: number;     // walkMeters at walkingSpeedKmh + caches * minutesPerCache
   cachesPerHour: number;
   shape: 'line' | 'area';      // eigenvalue ratio of the projected coordinates; line when elongated
@@ -182,8 +185,13 @@ export interface Trail {
 
 ### `lib/trails/findTrails.ts`
 
-`findTrails(caches, settings, locallyFound: ReadonlySet<string>): Trail[]`,
-fully deterministic:
+`findTrails(caches, { settings, locallyFound: ReadonlySet<string>,
+walkingDistances?: WalkingDistances }): Trail[]`, fully deterministic for the
+same input. A leg's walking metres (`legMetersFor`) are the routed distance
+where `walkingDistances` has one, else the straight line times
+`detourFactor`; without routed distances the result is exactly the
+straight-line one. `orderedGroups(caches, input)` exposes stages 1–3 for the
+routing planner.
 
 1. **Filter** (`filterCaches.ts`): type in `settings.cacheTypes`, difficulty
    and terrain at most their maxima, `available && !archived && !found`, and
@@ -196,15 +204,19 @@ fully deterministic:
    pairs: cells `maxGapMeters` tall, and wide by an east–west scale of
    `cos(min(90°, max|lat| + gap/R))`, which never overestimates a distance;
    the column count is rounded down and wraps at ±180°, so the antimeridian is
-   no seam. Candidate pairs are confirmed with the haversine distance.
+   no seam. Candidate pairs are confirmed with the haversine distance, then
+   with `isWalkableGap`: a pair whose leg is longer than
+   `BARRIER_FACTOR` (2) × `maxGapMeters` × `detourFactor`, which only a
+   routed distance can be (Infinity where no path joins them), is a barrier
+   and does not link (`linkComponentsWhere`).
 3. **Order** each component as an open path (`orderPath.ts`, on an
    equirectangular projection): start at the cache farthest from the
    component's centre, then nearest neighbour, then 2-opt with free
    endpoints. A move must save more than a relative 1e-9; the work cap is
    20,000,000 move evaluations (a count, never a time limit). Ties, at the
    start and in nearest neighbour, go to the earliest cache in code order.
-4. **Split** the ordered path greedily into walks whose `walkMeters` stay at
-   or below `maxWalkKilometers`; walks with fewer than `minCaches` caches are
+4. **Split** the ordered path greedily into walks whose legs plus way back
+   stay at or below `maxWalkKilometers`; walks with fewer than `minCaches` caches are
    dropped. This also drops the components smaller than `minCaches`: a small
    group can only split into small walks.
 5. **Score** each walk (`scoreTrail.ts`, the `Trail` fields above). The id is
@@ -219,6 +231,29 @@ It assumes cache codes are unique, as `Geocache.code` and `mergeCaches`
 promise. Settings are clamped to sane ranges on load (`data/sanitizeSettings.ts`,
 [Configuration](configuration.md#trail-settings)), so it never sees a zero
 speed or gap.
+
+### `lib/trails/walkingDistances.ts`
+
+`WalkingDistances = ReadonlyMap<string, number>`: routed walking metres by
+`pairKey(a, b)` (both caches as `code@lat,lon` to six decimals, sorted, so the
+same either way round and new for a moved cache), `Infinity` where no path
+joins them. `legMetersFor(distances, detourFactor)`, `isWalkableGap(legMeters,
+{ maxGapMeters, detourFactor })`, `BARRIER_FACTOR` = 2,
+`NO_WALKING_DISTANCES`.
+
+### `lib/routing/`
+
+- `routingBatches(caches, input)` (`planRouting.ts`): the requests still
+  needed, each up to `BATCH_SIZE` (50) caches. First, windows along each
+  group of at least `minCaches` in walking order, overlapping by
+  `BATCH_OVERLAP` (10), that hold an unrouted pair. Once there are none, the
+  way back of every trail whose ends are still unrouted, two caches each,
+  packed into batches. Empty once everything is known.
+- `tableUrl(caches)` and `parseTable(caches, body)` (`osrmTable.ts`):
+  `https://routing.openstreetmap.de/routed-foot/table/v1/foot/<lon,lat;…>?annotations=distance`
+  (six decimals); every pair of the answer's metre matrix, the longer of
+  there and back, `Infinity` if either is `null`. Anything but `code: 'Ok'`
+  with a square table of the batch's size throws.
 
 ### `lib/trails/nearby.ts`
 
@@ -276,10 +311,25 @@ ones defaulted, numbers clamped and rounded), `saveSettings(settings)`,
 `loadLocallyFound()`, `saveLocallyFound(codes)`, `loadIgnored()`,
 `saveIgnored(codes)`, `loadWalk()`, `saveWalk(state | undefined)`,
 `loadPreferences()` (over `DEFAULT_PREFERENCES`), `savePreferences(p)`,
-`loadImportInfo()`, `saveImportInfo(info)`, `clearAllData()`. A stored walk,
+`loadImportInfo()`, `saveImportInfo(info)`, `loadWalkingDistances()` (only
+string keys with non-negative or infinite metres), `saveWalkingDistances(map)`,
+`clearAllData()`. A stored walk,
 code list or preference in the wrong shape (an older build's included) is
 dropped rather than breaking the app; a refused write rejects, and the app
 shows a notice.
+
+### `data/walkingRoutes.ts` and `useWalkingDistances.ts`
+
+`fetchWalkingDistances(caches, signal)` fetches `tableUrl(caches)` and
+returns `parseTable`'s entries; a non-OK status or a bad answer rejects.
+`useWalkingDistances({ caches, settings, locallyFound, enabled })` loads the
+stored distances, then while `enabled` asks for `routingBatches(...)[0]`,
+one request at a time and at least a second apart, at most `MAX_REQUESTS`
+(60) per page load, merges and stores each answer, and returns
+`{ walkingDistances, check }`. `walkingDistances` is empty while off.
+`check` is `off`, `checking` (with the batches left), `done`, `limited` (the
+cap was reached) or `failed` (a request, a read or a write failed; turning it
+off and on tries again).
 
 ### `data/sharedFiles.ts`
 
@@ -298,13 +348,14 @@ Everything the app keeps, all in the user's browser, all per origin.
 | same | `locally-found` | `string[]` of codes marked found in the app (by hand or on a walk) | `data/store.ts` |
 | same | `ignored` | `string[]` of codes the user chose to ignore | `data/store.ts` |
 | same | `walk` | `WalkState` of the walk in progress | `data/store.ts` |
-| same | `preferences` | `{ sort, showOtherCaches }`: the trail list's sort and whether caches outside trails are drawn | `data/store.ts` |
+| same | `preferences` | `{ sort, showOtherCaches, walkingRoutes }`: the trail list's sort, whether caches outside trails are drawn, whether walking routes are on | `data/store.ts` |
 | same | `last-import` | `{ at, cacheCount, fileNames }` of the latest import | `data/store.ts` |
+| same | `walking-distances` | `Map<string, number>` of routed walking metres by cache pair (`Infinity` where no path) | `data/store.ts` |
 | Cache Storage | `powertrailbuddy-shell-<build id>` | The app shell and hashed assets of one build | `public/sw.js` |
 | Cache Storage | `powertrailbuddy-shared-files` | Files received by the share target until the page imports them | `public/sw.js`, emptied by `data/sharedFiles.ts` |
 | `localStorage` | `lang` | `de` or `en` | `i18n/I18nProvider.tsx` |
 
-`clearAllData()` removes the seven IndexedDB keys; the language choice and
+`clearAllData()` removes the eight IndexedDB keys; the language choice and
 the caches of the service worker stay. A new stored value is added
 to this table in the same change.
 
@@ -332,8 +383,8 @@ so `next dev` never pins its changing chunks.
   page whatever its query, so the share target's `?shared=1` landing opens
   too. On activation it deletes every `powertrailbuddy-shell-*` cache but
   the current one. The prefix spares the shared-files cache and other sites'
-  caches on the shared `github.io` origin. Cross-origin requests (map tiles)
-  are never intercepted.
+  caches on the shared `github.io` origin. Cross-origin requests (map tiles,
+  the routing server) are never intercepted.
 - **Share target**: the manifest declares
 
   ```json
@@ -369,10 +420,24 @@ so `next dev` never pins its changing chunks.
 ## Content security policy
 
 A `<meta http-equiv>` in `layout.tsx` (GitHub Pages sends no headers):
-`connect-src 'self'` — the app can fetch from nowhere else — and `img-src
-'self' data: blob: https://tile.openstreetmap.org`, the tile server
-`components/Map/` uses (`https://tile.openstreetmap.org/{z}/{x}/{y}.png`).
-`layout.test.ts` asserts both.
+`connect-src 'self' https://routing.openstreetmap.de` — the app can fetch
+from nowhere else — and `img-src 'self' data: blob:
+https://tile.openstreetmap.org`, the tile server `components/Map/` uses
+(`https://tile.openstreetmap.org/{z}/{x}/{y}.png`). `layout.test.ts` asserts
+both.
+
+## Outside requests
+
+| To | What it learns | When |
+| --- | --- | --- |
+| `tile.openstreetmap.org` | The map area on screen | Whenever the map shows |
+| `routing.openstreetmap.de` (FOSSGIS OSRM, foot) | Coordinates of caches in candidate trails, in batches of 50 | Only with walking routes on (Settings, off by default); at most one request a second and 60 a page load; never a pair already stored |
+
+Nothing else (settings, positions, logs, names, codes) leaves the device. The
+route status beside the trail list shows FOSSGIS's attribution and the
+OpenStreetMap "fix the map" link its usage policy asks for. The browser suite
+fails on any other origin; only `e2e/public/routes.spec.ts` sets
+`allowRouter`, and fakes the router.
 
 ## i18n
 

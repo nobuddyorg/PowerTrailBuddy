@@ -12,7 +12,7 @@ export interface TrailSettings {
   maxWalkKilometers: number;
   walkingSpeedKmh: number;
   minutesPerCache: number;
-  /** Straight line to real path. */
+  /** Straight line to real path, for every leg without a routed distance. */
   detourFactor: number;
 }
 
@@ -37,7 +37,7 @@ export interface Trail {
   pathMeters: number;
   /** Straight line from the last cache back to the first. */
   returnMeters: number;
-  /** (pathMeters + returnMeters) * detourFactor. */
+  /** Along the order and back: each leg routed where known, else straight times detourFactor. */
   walkMeters: number;
   /** walkMeters at walkingSpeedKmh, plus minutesPerCache for each cache. */
   durationMinutes: number;

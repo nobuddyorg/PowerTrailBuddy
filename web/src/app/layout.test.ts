@@ -10,9 +10,11 @@ const policy = layout.slice(
 );
 
 describe('the Content-Security-Policy meta tag in layout.tsx', () => {
-  // Privacy, enforced by the browser: imported cache data has no origin to be sent to.
-  it('lets the app fetch from its own origin only', () => {
-    expect(policy).toContain("`connect-src 'self'`,");
+  // Privacy, enforced by the browser: imported cache data has no origin to be sent to but the opt-in routing server.
+  it('lets the app fetch from its own origin and the routing server only', () => {
+    expect(policy).toContain(
+      "`connect-src 'self' https://routing.openstreetmap.de`,",
+    );
   });
 
   it('loads images from the app and the OpenStreetMap tile server only', () => {

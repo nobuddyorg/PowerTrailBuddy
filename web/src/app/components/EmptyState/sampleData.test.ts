@@ -31,7 +31,10 @@ describe('the sample Pocket Query', () => {
 
   it('shows three power trails with the default settings, each with parking at its start', async () => {
     const { caches } = await importSample();
-    const trails = findTrails(caches, DEFAULT_TRAIL_SETTINGS, new Set());
+    const trails = findTrails(caches, {
+      settings: DEFAULT_TRAIL_SETTINGS,
+      locallyFound: new Set(),
+    });
     expect(
       trails.map((trail) => trail.caches.length).sort((a, b) => a - b),
     ).toEqual([13, 16, 22]);
@@ -57,7 +60,7 @@ describe('the sample Pocket Query', () => {
     const { caches } = await importSample();
     const classic = withPreset(DEFAULT_TRAIL_SETTINGS, 'classic');
     expect(
-      findTrails(caches, classic, new Set()).map(
+      findTrails(caches, { settings: classic, locallyFound: new Set() }).map(
         (trail) => trail.caches.length,
       ),
     ).toEqual([22]);

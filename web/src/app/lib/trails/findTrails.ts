@@ -1,11 +1,25 @@
 import type { Geocache } from '../geocache/types';
 import { compareCodes } from './compareCodes';
 import { filterCandidates } from './filterCaches';
-import { linkComponents } from './linkComponents';
+import { linkComponentsWhere } from './linkComponents';
 import { orderPath } from './orderPath';
 import { scoreTrail } from './scoreTrail';
 import { splitWalks } from './splitWalks';
 import type { Trail, TrailSettings } from './types';
+import {
+  isWalkableGap,
+  legMetersFor,
+  NO_WALKING_DISTANCES,
+  type LegMeters,
+  type WalkingDistances,
+} from './walkingDistances';
+
+export interface TrailInput {
+  settings: TrailSettings;
+  locallyFound: ReadonlySet<string>;
+  /** Routed walking distances; any pair without one counts as straight line times the detour factor. */
+  walkingDistances?: WalkingDistances;
+}
 
 function compareTrails(a: Trail, b: Trail): number {
   if (a.cachesPerHour > b.cachesPerHour) return -1;
@@ -13,23 +27,43 @@ function compareTrails(a: Trail, b: Trail): number {
   return b.caches.length - a.caches.length || compareCodes(a.id, b.id);
 }
 
+/** The linked groups, each in walking order, with how far each leg is. */
+export function orderedGroups(
+  caches: readonly Geocache[],
+  {
+    settings,
+    locallyFound,
+    walkingDistances = NO_WALKING_DISTANCES,
+  }: TrailInput,
+): { groups: Geocache[][]; legMeters: LegMeters } {
+  const legMeters = legMetersFor(walkingDistances, settings.detourFactor);
+  const groups = linkComponentsWhere(
+    filterCandidates(caches, { settings, locallyFound }),
+    {
+      maxGapMeters: settings.maxGapMeters,
+      isLinked: isWalkableGap(legMeters, settings),
+    },
+  ).map((group) => orderPath(group));
+  return { groups, legMeters };
+}
+
 /** Filter, link, order, split and score: deterministic for the same input. */
 export function findTrails(
   caches: readonly Geocache[],
-  settings: TrailSettings,
-  locallyFound: ReadonlySet<string>,
+  input: TrailInput,
 ): Trail[] {
-  const candidates = filterCandidates(caches, { settings, locallyFound });
+  const { settings } = input;
+  const { groups, legMeters } = orderedGroups(caches, input);
   const limits = {
     maxWalkMeters: settings.maxWalkKilometers * 1000,
-    detourFactor: settings.detourFactor,
+    legMeters,
   };
   return (
-    linkComponents(candidates, settings.maxGapMeters)
-      .flatMap((component) => splitWalks(orderPath(component), limits))
+    groups
+      .flatMap((group) => splitWalks(group, limits))
       // A group below minCaches only splits into walks below it, so this one check drops both.
       .filter((walk) => walk.length >= settings.minCaches)
-      .map((walk) => scoreTrail(walk, settings))
+      .map((walk) => scoreTrail(walk, { settings, legMeters }))
       .sort(compareTrails)
   );
 }

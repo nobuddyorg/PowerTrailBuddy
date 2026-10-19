@@ -170,6 +170,40 @@ describe('App', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
+  it('checks walking routes once turned on in the settings, and stops when turned off', async () => {
+    const router = vi.fn((url: string) => {
+      const size = url.split('/').at(-1)!.split(';').length;
+      const distances = Array.from({ length: size }, (_, row) =>
+        Array.from({ length: size }, (_, column) => (row === column ? 0 : 200)),
+      );
+      return Promise.resolve(Response.json({ code: 'Ok', distances }));
+    });
+    vi.stubGlobal('fetch', router);
+    storeValue('caches', CACHES);
+    renderApp();
+    await screen.findByTestId('trail-card');
+    expect(screen.queryByTestId('route-status')).not.toBeInTheDocument();
+
+    fireEvent.click(button('Settings'));
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: 'Check trails on real footpaths' }),
+    );
+    fireEvent.click(button('Close'));
+    expect(
+      await screen.findByText('Distances follow real footpaths.'),
+    ).toBeInTheDocument();
+    expect(router.mock.calls[0][0]).toMatch(
+      /^https:\/\/routing\.openstreetmap\.de\/routed-foot\/table\//,
+    );
+
+    fireEvent.click(button('Settings'));
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: 'Check trails on real footpaths' }),
+    );
+    fireEvent.click(button('Close'));
+    expect(screen.queryByTestId('route-status')).not.toBeInTheDocument();
+  });
+
   it('merges a further import from the data panel, and clears everything after asking', async () => {
     storeValue('caches', CACHES);
     renderApp();

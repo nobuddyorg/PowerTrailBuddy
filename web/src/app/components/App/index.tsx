@@ -6,6 +6,7 @@ import { useI18n } from '../../i18n/useI18n';
 import { useAppState, type AppState } from '../../useAppState';
 import { useGeolocation } from '../../useGeolocation';
 import { useTrails } from '../../useTrails';
+import { useWalkingDistances } from '../../useWalkingDistances';
 import { CacheMarksProvider } from '../CacheDetails/marks';
 import { DataDialog } from '../DataDialog';
 import { EmptyState } from '../EmptyState';
@@ -46,10 +47,17 @@ function Shell() {
     () => new Set([...app.locallyFound, ...app.ignored]),
     [app.locallyFound, app.ignored],
   );
+  const { walkingDistances, check } = useWalkingDistances({
+    caches: app.caches,
+    settings: app.settings,
+    locallyFound: excluded,
+    enabled: app.preferences.walkingRoutes,
+  });
   const { trails, pending } = useTrails({
     caches: app.caches,
     settings: app.settings,
     locallyFound: excluded,
+    walkingDistances,
   });
   const walking = app.walk !== undefined;
 
@@ -111,6 +119,7 @@ function Shell() {
         app={app}
         trails={trails}
         pending={pending}
+        routeCheck={check}
         location={location}
         startLocation={start}
         onOpenSettings={() => setDialog('settings')}
@@ -152,6 +161,10 @@ function Shell() {
             onApply={app.applySettings}
             onResetLocallyFound={app.resetLocallyFound}
             onUnignore={app.unignore}
+            walkingRoutes={app.preferences.walkingRoutes}
+            onWalkingRoutesChange={(walkingRoutes) =>
+              app.setPreferences({ walkingRoutes })
+            }
             onClose={close}
           />
         )}

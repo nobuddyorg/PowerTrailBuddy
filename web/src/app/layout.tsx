@@ -21,14 +21,14 @@ const LANG_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem('lang');var
 // GitHub Pages sends no headers, so no frame-ancestors; this breaks out of a clickjacking frame instead.
 const FRAMEBUST_SCRIPT = `if(window.top!==window.self){window.top.location=window.self.location;}`;
 
-// connect-src 'self' is the privacy rule in code: imported cache data has nowhere to be sent.
+// connect-src is the privacy rule in code: cache data can only reach the routing server, and only once the user opts in.
 const CONTENT_SECURITY_POLICY = [
   `default-src 'self'`,
   `script-src 'self' 'unsafe-inline'`,
   `style-src 'self' 'unsafe-inline'`,
   // data: is Leaflet's default icon; the tiles are the app's only third-party request.
   `img-src 'self' data: blob: https://tile.openstreetmap.org`,
-  `connect-src 'self'`,
+  `connect-src 'self' https://routing.openstreetmap.de`,
   `font-src 'self'`,
   `worker-src 'self'`,
   `object-src 'none'`,
