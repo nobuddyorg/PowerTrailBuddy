@@ -5,6 +5,7 @@ interface Home {
   do: {
     open(path?: string): Promise<void>;
     reload(): Promise<void>;
+    reloadFromTitle(): Promise<void>;
     dismissImportSummary(): Promise<void>;
   };
   locators: {
@@ -13,6 +14,7 @@ interface Home {
       settings: Locator;
     };
     errorNotice: Locator;
+    homeLink: Locator;
     importSummary: Locator;
     removedCaches: Locator;
     refusedFiles: Locator;
@@ -36,6 +38,7 @@ export function initHome(page: Page): Home {
       settings: root.getByTestId('open-settings'),
     },
     errorNotice: root.getByTestId('error-notice'),
+    homeLink: root.getByTestId('home-link'),
     importSummary: root.getByTestId('import-summary'),
     removedCaches: root.getByTestId('import-removed'),
     refusedFiles: root.getByTestId('import-file'),
@@ -53,6 +56,12 @@ export function initHome(page: Page): Home {
       if ((await map.count()) > 0)
         await expect(map).toHaveClass(/leaflet-container/);
       await page.reload({ waitUntil: 'networkidle' });
+      await screens.first().waitFor();
+    },
+    reloadFromTitle: async () => {
+      if ((await map.count()) > 0)
+        await expect(map).toHaveClass(/leaflet-container/);
+      await Promise.all([page.waitForEvent('load'), locators.homeLink.click()]);
       await screens.first().waitFor();
     },
     dismissImportSummary: async () => {

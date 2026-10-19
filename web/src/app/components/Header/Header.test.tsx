@@ -44,6 +44,13 @@ describe('Header', () => {
     );
   });
 
+  it('links the logo and the name to the start of the app', () => {
+    renderHeader();
+    const link = screen.getByTestId('home-link');
+    expect(link).toHaveAttribute('href', '/');
+    expect(link).toContainElement(screen.getByTestId('home-title'));
+  });
+
   // The wordmark every nobuddyorg app shares: an ink rule under the first word, the brand orange on "Buddy".
   it('underscores "PowerTrail" and puts the brand orange on "Buddy"', () => {
     renderHeader();

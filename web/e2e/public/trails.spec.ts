@@ -329,6 +329,21 @@ test.describe('changing your mind about a cache', () => {
   });
 });
 
+test.describe('the header', () => {
+  test('its logo and name reload the app, keeping the data', async ({
+    on,
+    page,
+  }) => {
+    const app = on(page);
+    await app.trails.do.openTrail();
+
+    await app.home.do.reloadFromTitle();
+
+    await expect(app.trail.locators.title).toBeHidden();
+    await expect(app.trails.locators.cards).toHaveCount(2);
+  });
+});
+
 test.describe('the map', () => {
   test("a trail's badge opens that trail", async ({ on, page }) => {
     const app = on(page);
