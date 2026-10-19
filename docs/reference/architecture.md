@@ -30,7 +30,7 @@ All paths relative to `web/src/app/`.
 | --- | --- | --- |
 | `lib/geocache/` | Cache types, the GPX parser, recent logs (`recentLogs.ts`), parking areas (`parking.ts`), cache health (`health.ts`), the file importer (zip and gpx), the merge | `jszip`, other `lib/` |
 | `lib/trails/` | Trail settings and their defaults, geometry, the trail finder and its stages (`filterCaches`, `linkComponents`, `orderPath`, `splitWalks`, `scoreTrail`, `trailShape`, `projection`, `compareCodes`), routed walking distances and barriers (`walkingDistances.ts`), distances from the user (`nearby.ts`) | other `lib/` |
-| `lib/routing/` | Which caches still need walking distances (`planRouting.ts`), the OSRM table request and its answer (`osrmTable.ts`) | other `lib/` |
+| `lib/routing/` | Which caches still need walking distances (`planRouting.ts`), the OSRM table request and its answer (`osrmTable.ts`), FOSSGIS's rate limits, the next request and the route status (`requestPolicy.ts`) | other `lib/` |
 | `lib/walk/` | Walk state: start, orient, reverse, record, undo, next cache, progress, pace | other `lib/` |
 | `lib/export/` | The two downloads: a trail as GPX (`trailGpx.ts`), a walk as Geocaching.com field notes (`fieldNotes.ts`) | other `lib/` |
 | `lib/format/` | Display formatting: distances, durations, rates, ratings, coordinates, dates, compass points, decimal input | other `lib/` |
@@ -284,9 +284,22 @@ joins them. `legMetersFor(distances, detourFactor)`, `isWalkableGap(legMeters,
   needed, each up to `BATCH_SIZE` (50) caches. First, windows along each
   group of at least `minCaches` in walking order, overlapping by
   `BATCH_OVERLAP` (10), that hold an unrouted pair. Once there are none,
-  every leg of every trail, the way back first, that is still unrouted, two
-  caches each, packed into batches: without `loopsOnly` only ways back are
-  left by then; a round trip can also join caches no window held together. Empty once everything is known.
+  every unrouted link of those groups (a pair closer than `maxGapMeters`,
+  found through the spatial grid), so a barrier between caches far apart in
+  walking order splits the group too. Once those are routed, every leg of
+  every trail, the way back first, that is still unrouted: without
+  `loopsOnly` only ways back are left by then; a round trip can also join
+  caches no window held together. Links and legs are pairs, packed in order
+  by `packPairs` into batches of at most `BATCH_SIZE` distinct caches. Empty
+  once everything is known.
+- `requestPolicy.ts`: FOSSGIS's limits and the route status.
+  `REQUEST_INTERVAL_MS` (1000), `MAX_REQUESTS` (60) a page load,
+  `belowRequestCap(requestCount)`, `nextRequestDelay({ lastRequestAt, now })`
+  (what is left of the second since the last request, never below 0),
+  `nextRequest({ mayRequest, planned, batches, current })` (none once
+  requests must stop; the current one while the plan is behind its input;
+  else the first batch, named by its `tableUrl`), and `checkOf` (`off`, then
+  `failed`, then `done`, then `limited`, else `checking`).
 - `tableUrl(caches)` and `parseTable(caches, body)` (`osrmTable.ts`):
   `https://routing.openstreetmap.de/routed-foot/table/v1/foot/<lon,lat;…>?annotations=distance`
   (six decimals); every pair of the answer's metre matrix, the longer of
@@ -364,10 +377,17 @@ returns `parseTable`'s entries; a non-OK status or a bad answer rejects.
 stored distances, then while `enabled` asks for `routingBatches(...)[0]`,
 one request at a time and at least a second apart, at most `MAX_REQUESTS`
 (60) per page load, merges and stores each answer, and returns
-`{ walkingDistances, check }`. `walkingDistances` is empty while off.
+`{ walkingDistances, check, clear }`. It plans in a deferred render, as
+`useTrails` finds trails, so no found mark or settings change waits for the
+planner; a request is keyed by its URL, so a new plan with the same first
+batch never aborts and re-sends it, and a plan behind its input keeps the
+request it has. `walkingDistances` is empty while off.
 `check` is `off`, `checking` (with the batches left), `done`, `limited` (the
 cap was reached) or `failed` (a request, a read or a write failed; turning it
-off and on tries again).
+off and on tries again); it stays `off` until a plan with routes on exists.
+`clear()` cancels the stored-distance read and the request in flight and
+forgets every distance in memory; the Shell calls it before `clearData`, so
+no answer routed before Clear all data is stored again.
 
 ### `data/sharedFiles.ts`
 
@@ -395,7 +415,9 @@ Everything the app keeps, all in the user's browser, all per origin.
 | `localStorage` | `lang` | `de` or `en` | `i18n/I18nProvider.tsx` |
 
 `clearAllData()` removes the eight IndexedDB keys; the language choice and
-the caches of the service worker stay. A new stored value is added
+the caches of the service worker stay. The routed distances held in memory
+are forgotten first and a routing request in flight is cancelled
+(`useWalkingDistances`' `clear`), so none is written back. A new stored value is added
 to this table in the same change.
 
 ## Service worker
@@ -487,7 +509,7 @@ both.
 | To | What it learns | When |
 | --- | --- | --- |
 | `tile.openstreetmap.org` | The map area on screen | Whenever the map shows an area whose tiles are not kept, or kept for more than a week |
-| `routing.openstreetmap.de` (FOSSGIS OSRM, foot) | Coordinates of caches in candidate trails, in batches of 50 | Only with walking routes on (Settings, off by default); at most one request a second and 60 a page load; never a pair already stored |
+| `routing.openstreetmap.de` (FOSSGIS OSRM, foot) | Coordinates of caches in candidate trails, in batches of up to 50 | Only with walking routes on (Settings, off by default); at most one request a second and 60 a page load; never a pair already stored |
 
 Nothing else (settings, positions, logs, names, codes) leaves the device. The
 route status beside the trail list shows FOSSGIS's attribution and the

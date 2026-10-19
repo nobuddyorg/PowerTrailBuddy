@@ -202,7 +202,8 @@ second at most. With the answers:
 - Distances, times and caches per hour follow real footpaths.
 - Two caches with no path between them, or only a very long one, no longer
   link, so a trail splits at the barrier (and may disappear if neither part
-  is big enough).
+  is big enough). Every pair of caches close enough to link is checked, also
+  across a river two rows of caches run along.
 
 A line below the trail list shows the progress ("Checking walking routes …"),
 then "Distances follow real footpaths." The answers are kept in this browser,
@@ -220,7 +221,8 @@ caches are stored, and when and from which files you last imported.
 
 **Clear all data** removes every imported cache, your settings, the caches you
 marked found or ignored, any walk in progress and the stored walking routes
-from this browser, after asking. Nothing else holds a copy; the routing server
+from this browser, after asking; a walking-route answer still on its way is
+dropped. Nothing else holds a copy; the routing server
 keeps only its own request log of the coordinates it was asked about, if you
 turned walking routes on. The kept map tiles stay: they are OpenStreetMap's
 pictures of the areas you viewed, and your browser's site settings remove

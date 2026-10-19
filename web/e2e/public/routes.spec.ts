@@ -58,6 +58,36 @@ test.describe('walking routes', () => {
     await expect(app.trails.locators.routeStatus).toHaveCount(0);
   });
 
+  test('forget what they learnt on Clear all data, and ask the same again after the next import', async ({
+    on,
+    page,
+  }) => {
+    const asked = await fakeRouter(page, { barrierLongitude: MOTORWAY });
+    const app = on(page);
+    await app.settings.do.open();
+    await app.settings.do.toggleWalkingRoutes();
+    await app.settings.do.close();
+    await expect(app.trails.locators.routeStatus).toHaveText(
+      'Distances follow real footpaths.',
+    );
+    const askedBeforeClear = [...asked];
+    expect(askedBeforeClear.length).toBeGreaterThan(0);
+
+    await app.data.do.open();
+    await app.data.do.clearAll();
+    await app.emptyState.do.importFiles([await pocketQueryZip()]);
+    await app.home.do.dismissImportSummary();
+    await app.settings.do.open();
+    await app.settings.do.toggleWalkingRoutes();
+    await app.settings.do.close();
+
+    await expect(app.trails.locators.routeStatus).toHaveText(
+      'Distances follow real footpaths.',
+    );
+    await expect(app.trails.locators.count).toHaveText('1 trail');
+    expect(asked).toEqual([...askedBeforeClear, ...askedBeforeClear]);
+  });
+
   test('say so when the routing server fails, and keep the estimated trails', async ({
     on,
     page,

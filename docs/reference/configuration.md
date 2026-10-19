@@ -50,7 +50,7 @@ A preference, not a trail setting: `walkingRoutes` in IndexedDB under
 | `BARRIER_FACTOR` | `lib/trails/walkingDistances.ts` | 2 | A routed gap longer than this × `maxGapMeters` × `detourFactor` (or with no path) does not link two caches |
 | `BATCH_SIZE` | `lib/routing/planRouting.ts` | 50 caches | Caches per routing request; one request answers every pair among them |
 | `BATCH_OVERLAP` | same | 10 caches | Caches each window along a trail shares with the next |
-| `REQUEST_INTERVAL_MS` | `useWalkingDistances.ts` | 1,000 ms | At least this long between two requests (FOSSGIS's policy) |
+| `REQUEST_INTERVAL_MS` | `lib/routing/requestPolicy.ts` | 1,000 ms | At least this long between two requests (FOSSGIS's policy) |
 | `MAX_REQUESTS` | same | 60 | Requests per page load; past it the rest stays estimated until a reload |
 | `ROUTER_ORIGIN` | `lib/routing/osrmTable.ts` | `https://routing.openstreetmap.de` | FOSSGIS's OSRM server, foot graph under `/routed-foot` |
 

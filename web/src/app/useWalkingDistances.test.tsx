@@ -7,7 +7,8 @@ import { DEFAULT_TRAIL_SETTINGS } from './lib/trails/types';
 import { pairKey } from './lib/trails/walkingDistances';
 import { makeCaches } from './lib/ui-logic/ui.test-support';
 import { memoryIdb, storedValue, storeValue } from './memoryIdb.test-support';
-import { MAX_REQUESTS, useWalkingDistances } from './useWalkingDistances';
+import { MAX_REQUESTS } from './lib/routing/requestPolicy';
+import { useWalkingDistances } from './useWalkingDistances';
 
 vi.mock('idb-keyval', () => import('./memoryIdb.test-support'));
 
@@ -193,13 +194,81 @@ describe('useWalkingDistances', () => {
 
   it(`stops after ${MAX_REQUESTS} requests in one visit`, async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] });
-    // An answer that routes nothing leaves the batch to ask for forever.
-    router.fetch.mockImplementation(() => Promise.resolve([]));
-    const { result } = renderRoutes();
+    // One group, and so one request, more than a visit may ask for.
+    const groups = Array.from({ length: MAX_REQUESTS + 1 }, (_, index) =>
+      makeCaches(3, `GCCAP${index}X`).map((cache) => ({
+        ...cache,
+        latitude: cache.latitude + index / 10,
+      })),
+    ).flat();
+    const { result } = renderRoutes(true, groups);
     for (let second = 0; second <= MAX_REQUESTS + 5; second++) {
       await act(() => vi.advanceTimersByTimeAsync(1000));
     }
     expect(router.fetch).toHaveBeenCalledTimes(MAX_REQUESTS);
     expect(result.current.check).toEqual({ status: 'limited' });
+  });
+
+  it('never gives up and sends again a batch whose caches are unchanged', async () => {
+    router.fetch.mockImplementation(() => new Promise(() => {}));
+    const { rerender } = renderRoutes();
+    await waitFor(() => expect(router.fetch).toHaveBeenCalledTimes(1));
+    rerender({ enabled: true, caches: CACHES.map((cache) => ({ ...cache })) });
+    await act(() => new Promise((resolve) => setTimeout(resolve, 1100)));
+    expect(router.fetch).toHaveBeenCalledTimes(1);
+    expect(router.fetch.mock.calls[0][1].aborted).toBe(false);
+  });
+
+  it('forgets every routed pair on a clear, and stores none of them again, whatever is in flight', async () => {
+    const later = makeCaches(4, 'GCLATER').map((cache) => ({
+      ...cache,
+      latitude: cache.latitude + 1,
+    }));
+    const { result, rerender } = renderRoutes();
+    await waitFor(() =>
+      expect(result.current.check).toEqual({ status: 'done' }),
+    );
+    let answer = () => {};
+    router.fetch.mockImplementationOnce(
+      (caches) =>
+        new Promise((resolve) => {
+          answer = () => resolve(answerFor(caches));
+        }),
+    );
+    rerender({ enabled: true, caches: [...CACHES, ...later] });
+    await waitFor(() => expect(router.fetch).toHaveBeenCalledTimes(2), {
+      timeout: 3000,
+    });
+
+    // As Clear all data does: forget, empty the store, then the caches.
+    act(() => result.current.clear());
+    memoryIdb.values.clear();
+    rerender({ enabled: true, caches: [] });
+    await act(async () => answer());
+    expect(router.fetch.mock.calls[1][1].aborted).toBe(true);
+    expect(result.current.walkingDistances.size).toBe(0);
+    expect(storedValue('walking-distances')).toBeUndefined();
+
+    rerender({ enabled: true, caches: later });
+    await waitFor(
+      () => expect(result.current.check).toEqual({ status: 'done' }),
+      { timeout: 3000 },
+    );
+    expect(storedValue('walking-distances')).toEqual(
+      new Map(answerFor(router.fetch.mock.calls[2][0])),
+    );
+  });
+
+  it('drops stored pairs that a clear overtakes on their way in', async () => {
+    storeValue('walking-distances', new Map(answerFor(CACHES)));
+    const { result } = renderRoutes();
+    act(() => result.current.clear());
+    await waitFor(() =>
+      expect(result.current.check).toEqual({ status: 'done' }),
+    );
+    expect(router.fetch).toHaveBeenCalledTimes(1);
+    expect(result.current.walkingDistances).toEqual(
+      new Map(answerFor(router.fetch.mock.calls[0][0])),
+    );
   });
 });

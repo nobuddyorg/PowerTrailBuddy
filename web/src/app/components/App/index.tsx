@@ -49,7 +49,11 @@ function Shell() {
     () => new Set([...app.locallyFound, ...app.ignored]),
     [app.locallyFound, app.ignored],
   );
-  const { walkingDistances, check } = useWalkingDistances({
+  const {
+    walkingDistances,
+    check,
+    clear: clearWalkingDistances,
+  } = useWalkingDistances({
     caches: app.caches,
     settings: app.settings,
     locallyFound: excluded,
@@ -190,6 +194,8 @@ function Shell() {
             onImport={importAndClose}
             onClear={() => {
               close();
+              // Before the store empties, so no answer in flight writes a routed pair back into it.
+              clearWalkingDistances();
               void app.clearData();
             }}
             onClose={close}
