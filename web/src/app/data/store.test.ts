@@ -7,6 +7,7 @@ import {
 } from '../lib/trails/types';
 import type { WalkState } from '../lib/walk/walk';
 import {
+  addWalkingDistances,
   clearAllData,
   DEFAULT_PREFERENCES,
   loadCaches,
@@ -24,7 +25,6 @@ import {
   savePreferences,
   saveSettings,
   saveWalk,
-  saveWalkingDistances,
 } from './store';
 
 // IndexedDB as idb-keyval presents it: databases of key/value stores, values structured-cloned in and out.
@@ -55,6 +55,17 @@ vi.mock('idb-keyval', () => {
       Promise.resolve(structuredClone(storeOf(store).get(key))),
     set: (key: string, value: unknown, store: unknown) =>
       write(() => storeOf(store).set(key, structuredClone(value))),
+    update: (
+      key: string,
+      updater: (stored: unknown) => unknown,
+      store: unknown,
+    ) =>
+      write(() =>
+        storeOf(store).set(
+          key,
+          structuredClone(updater(storeOf(store).get(key))),
+        ),
+      ),
     del: (key: string, store: unknown) =>
       write(() => storeOf(store).delete(key)),
     delMany: (keys: string[], store: unknown) =>
@@ -290,7 +301,7 @@ describe('clearAllData', () => {
       showOtherCaches: false,
       walkingRoutes: true,
     });
-    await saveWalkingDistances(new Map([['a|b', 120]]));
+    await addWalkingDistances([['a|b', 120]]);
     await saveImportInfo({
       at: '2026-05-01T08:00:00Z',
       cacheCount: 1,
@@ -379,16 +390,39 @@ describe('preferences', () => {
 });
 
 describe('walking distances', () => {
-  it('reads none before any were saved, and back what was saved, unroutable pairs included', async () => {
+  it('reads none before any were added, and back what was added, unroutable pairs included', async () => {
     expect(await loadWalkingDistances()).toEqual(new Map());
     const distances = new Map([
       ['a|b', 120],
       ['a|c', Infinity],
     ]);
-    await saveWalkingDistances(distances);
+    await addWalkingDistances([...distances]);
 
     expect(await loadWalkingDistances()).toEqual(distances);
     expect(stored('walking-distances')).toEqual(distances);
+  });
+
+  it('adds to what is kept, as another tab may have added it, a newer answer replacing an older one', async () => {
+    storeRaw(
+      'walking-distances',
+      new Map<unknown, unknown>([
+        ['a|b', 120],
+        ['a|c', 300],
+        ['a|d', 'unreadable'],
+      ]),
+    );
+    await addWalkingDistances([
+      ['a|c', 310],
+      ['b|c', Infinity],
+    ]);
+
+    expect(stored('walking-distances')).toEqual(
+      new Map([
+        ['a|b', 120],
+        ['a|c', 310],
+        ['b|c', Infinity],
+      ]),
+    );
   });
 
   it('keeps only readable entries from a value in an unexpected shape', async () => {
@@ -452,7 +486,7 @@ describe('when storage refuses a write', () => {
     ['saveWalk(undefined)', () => saveWalk(undefined)],
     ['saveIgnored', () => saveIgnored(new Set(['GC0A']))],
     ['savePreferences', () => savePreferences(DEFAULT_PREFERENCES)],
-    ['saveWalkingDistances', () => saveWalkingDistances(new Map())],
+    ['addWalkingDistances', () => addWalkingDistances([])],
     [
       'saveImportInfo',
       () => saveImportInfo({ at: 'x', cacheCount: 0, fileNames: [] }),

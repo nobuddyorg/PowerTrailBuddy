@@ -167,6 +167,8 @@ export default function MapView({
         .addTo(map);
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
+        // A pinch would otherwise fetch a screenful at every zoom level it passes on OpenStreetMap's volunteer-run servers.
+        updateWhenZooming: false,
         // A CORS tile is a readable response public/sw.js can keep for offline; an opaque one is not.
         crossOrigin: true,
         attribution: `&copy; <a href="https://www.openstreetmap.org/copyright">${attribution}</a>`,

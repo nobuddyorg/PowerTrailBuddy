@@ -320,10 +320,10 @@ describe('tileFirst', () => {
     expect(response.status).toBe(504);
   });
 
-  it('keeps at most 2,000 tiles, dropping the oldest first', async () => {
+  it('keeps at most 5,000 tiles, dropping the oldest first', async () => {
     const fake = installCaches();
     const { worker } = loadWorker();
-    expect(worker.MAX_TILES).toBe(2000);
+    expect(worker.MAX_TILES).toBe(5000);
     const cache = await caches.open(worker.TILE_CACHE);
     const urls = Array.from(
       { length: 5 },

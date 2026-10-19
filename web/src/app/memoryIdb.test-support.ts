@@ -41,6 +41,19 @@ export function set(name: string, value: unknown, store: unknown) {
   );
 }
 
+export function update(
+  name: string,
+  updater: (stored: unknown) => unknown,
+  store: unknown,
+) {
+  return write(() =>
+    memoryIdb.values.set(
+      key(store, name),
+      structuredClone(updater(memoryIdb.values.get(key(store, name)))),
+    ),
+  );
+}
+
 export function del(name: string, store: unknown) {
   return write(() => memoryIdb.values.delete(key(store, name)));
 }
