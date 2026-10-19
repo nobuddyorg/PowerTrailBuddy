@@ -1,4 +1,5 @@
 import type { CacheType, Coordinates, Geocache } from '../geocache/types';
+import { withoutNotXmlCharacters } from '../geocache/xmlCharacters';
 import type { Trail } from '../trails/types';
 
 // eslint-disable-next-line sonarjs/no-clear-text-protocols -- an XML namespace name, never fetched
@@ -19,13 +20,8 @@ const TYPE_TEXT: Readonly<Record<CacheType, string>> = {
   other: 'Other',
 };
 
-// Everything XML 1.0 cannot carry: C0 controls but tab, LF and CR; lone surrogates; U+FFFE and U+FFFF.
-const NOT_XML_CHARACTER =
-  /[^\t\n\r\u0020-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/gu;
-
 function escapeXml(text: string): string {
-  return text
-    .replace(NOT_XML_CHARACTER, '')
+  return withoutNotXmlCharacters(text)
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')

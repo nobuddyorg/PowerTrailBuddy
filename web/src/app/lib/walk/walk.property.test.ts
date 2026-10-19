@@ -12,6 +12,7 @@ import {
   undoLast,
   walkPace,
   walkProgress,
+  withoutMissingCaches,
   type WalkOutcome,
   type WalkState,
 } from './walk';
@@ -224,6 +225,40 @@ describe('walk state machine properties', () => {
         );
         expect(reverseWalk(reverseWalk(state))).toEqual(state);
       }),
+    );
+  });
+
+  it('leaves out only open caches no longer imported, and its next cache is always one still there', () => {
+    fc.assert(
+      fc.property(
+        scenario,
+        fc.array(fc.boolean(), { minLength: 8, maxLength: 8 }),
+        ([codes, commands], kept) => {
+          const state = commands.reduce(
+            apply,
+            startWalk(trailOf(codes), START),
+          );
+          const present = new Set(codes.filter((_, index) => kept[index]));
+          const left = withoutMissingCaches(state, present);
+          const recorded = (code: string) =>
+            Object.hasOwn(state.outcomes, code);
+          expect(left).toEqual({
+            ...state,
+            codes: state.codes.filter(
+              (code) => recorded(code) || present.has(code),
+            ),
+          });
+          const next = nextCode(left);
+          if (next === undefined) {
+            expect(
+              state.codes.every((code) => recorded(code) || !present.has(code)),
+            ).toBe(true);
+          } else {
+            expect(present.has(next)).toBe(true);
+          }
+          expect(walkProgress(left).done).toBe(walkProgress(state).done);
+        },
+      ),
     );
   });
 

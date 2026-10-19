@@ -311,9 +311,38 @@ describe('the map', () => {
 
   it('skips a code with no cache behind it', () => {
     renderWalk({ caches: CACHES.slice(1) });
-    expect(mapStub.props?.content.markers.map((marker) => marker.code)).toEqual(
-      ['GCWALK2', 'GCWALK3'],
-    );
+    const tones = mapStub.props?.content.markers.map((marker) => [
+      marker.code,
+      marker.tone,
+    ]);
+    expect(tones?.map(([code]) => code).sort()).toEqual(['GCWALK2', 'GCWALK3']);
+    expect(tones).toContainEqual(['GCWALK2', 'target']);
+  });
+});
+
+describe('after a re-import dropped caches of the walk', () => {
+  it('goes on with the next cache still imported, and counts only those', () => {
+    const { rerenderWith } = renderWalk({
+      walk: walkWith([['GCWALK1', 'found', '2026-06-01T10:10:00Z']]),
+    });
+    expect(screen.getByTestId('walk-target-code')).toHaveTextContent('GCWALK2');
+
+    rerenderWith({ caches: [CACHES[2], OTHER] });
+
+    expect(screen.getByTestId('walk-target-code')).toHaveTextContent('GCWALK3');
+    expect(screen.getByTestId('walk-progress')).toHaveTextContent('1/2');
+  });
+
+  it('ends with the summary once nothing still imported is open', () => {
+    renderWalk({
+      walk: walkWith([['GCWALK1', 'found', '2026-06-01T10:10:00Z']]),
+      caches: [CACHES[0], OTHER],
+    });
+    expect(screen.getByTestId('walk-summary')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /resume/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId('walk-progress')).toHaveTextContent('1/1');
   });
 });
 

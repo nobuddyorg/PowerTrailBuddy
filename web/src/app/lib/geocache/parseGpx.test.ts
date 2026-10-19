@@ -120,6 +120,26 @@ describe('parseGpx: exporter variants', () => {
     expect(parseGpx(xml).caches[0]?.name).toBe('Tom & Jerry äü <3');
   });
 
+  // Free log text from many apps: one such character used to make the whole query unreadable.
+  it('reads every cache when a log holds characters XML forbids, raw or as references', () => {
+    const xml = buildGpx([waypoint(), waypoint({ code: 'GC0TEST2' })])
+      .replace('Synthetic log', 'Bell\u0007 &#x1;&#11;&#xFFFE;rang')
+      .replace('Synthetic log', 'Plain log');
+    expect(xml).toContain('Bell');
+    expect(parseGpx(xml).caches).toEqual([
+      EXPECTED_BENCH,
+      { ...EXPECTED_BENCH, code: 'GC0TEST2' },
+    ]);
+  });
+
+  it('keeps the rest of a text that held forbidden characters', () => {
+    const xml = buildGpx([cacheWith({ name: 'NAME' })]).replace(
+      'NAME',
+      'Tom\u000B &#x1F;&amp;&#1; Jerry\uFFFF &#228;',
+    );
+    expect(parseGpx(xml).caches[0]?.name).toBe('Tom & Jerry ä');
+  });
+
   it('keeps markup in a name as literal text', () => {
     const name = '<img src=x onerror=alert(1)>';
     expect(onlyCache(cacheWith({ name }))?.name).toBe(name);

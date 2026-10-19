@@ -10,6 +10,7 @@ import {
   nextCode,
   walkPace,
   walkProgress,
+  withoutMissingCaches,
   type WalkOutcome,
   type WalkState,
 } from '../../lib/walk/walk';
@@ -48,7 +49,16 @@ const TICK_MS = 5_000;
 
 /** The guided walk: the map, the next cache with a compass, logging, live numbers, and the summary at the end. */
 export function WalkView(props: WalkViewProps) {
-  const { walk, caches, settings, location } = props;
+  const { caches, settings, location } = props;
+  // A re-import can drop open caches of the walk; it goes on with the next one still imported.
+  const walk = useMemo(
+    () =>
+      withoutMissingCaches(
+        props.walk,
+        new Set(caches.map((cache) => cache.code)),
+      ),
+    [props.walk, caches],
+  );
   const { t } = useI18n();
   const labels = useMapLabels();
   const [finishedEarly, setFinishedEarly] = useState(false);

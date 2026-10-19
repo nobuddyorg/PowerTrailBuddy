@@ -13,7 +13,7 @@ import {
   loadPreferences,
   loadSettings,
   loadWalk,
-  saveCaches,
+  mergeIntoStoredCaches,
   saveImportInfo,
   savePreferences,
   saveSettings,
@@ -137,10 +137,13 @@ export function useAppState() {
       setImporting(true);
       try {
         const result = await importFiles(files);
-        const { caches, removedCount } = mergeCaches(
-          dataRef.current.caches,
+        // Merged into what is stored, not this window's copy, which another open window may have outdated.
+        const { caches, removedCount } = await mergeIntoStoredCaches(
           result,
-        );
+        ).catch(() => {
+          setError('save-failed');
+          return mergeCaches(dataRef.current.caches, result);
+        });
         const importInfo: ImportInfo = {
           at: new Date().toISOString(),
           cacheCount: result.caches.length,
@@ -152,7 +155,6 @@ export function useAppState() {
           files: result.files,
           removedCount,
         });
-        persist(saveCaches(caches));
         persist(saveImportInfo(importInfo));
       } catch {
         setError('import-failed');

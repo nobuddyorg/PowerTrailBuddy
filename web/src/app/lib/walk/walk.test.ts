@@ -11,6 +11,7 @@ import {
   undoLast,
   walkPace,
   walkProgress,
+  withoutMissingCaches,
   type WalkOutcome,
   type WalkState,
 } from './walk';
@@ -302,6 +303,44 @@ describe('nextCode and walkProgress', () => {
     expect(nextCode(walk)).toBe('toString');
     expect(walkProgress(walk)).toEqual({ done: 1, total: 3, found: 1, dnf: 0 });
     expect(undoLast(walk).outcomes).toEqual({});
+  });
+});
+
+describe('withoutMissingCaches', () => {
+  const walk = record(
+    startWalk(fiveCaches, START),
+    ['GCA', 'found'],
+    ['GCB', 'dnf'],
+  );
+
+  it('goes on with the next cache still imported when a re-import dropped the target', () => {
+    const left = withoutMissingCaches(walk, new Set(['GCA', 'GCB', 'GCD']));
+    expect(left.codes).toEqual(['GCA', 'GCB', 'GCD']);
+    expect(nextCode(left)).toBe('GCD');
+    expect(walkProgress(left)).toEqual({ done: 2, total: 3, found: 1, dnf: 1 });
+  });
+
+  it('keeps the recorded caches, gone or not, with their outcomes and undo history', () => {
+    const present = new Set(['GCC']);
+    const left = withoutMissingCaches(walk, present);
+    expect(left).toEqual({ ...walk, codes: ['GCA', 'GCB', 'GCC'] });
+    // Taken back, a gone cache is open again, and so left out.
+    expect(withoutMissingCaches(undoLast(left), present).codes).toEqual([
+      'GCA',
+      'GCC',
+    ]);
+  });
+
+  it('can be finished once the open caches still imported are done', () => {
+    const left = withoutMissingCaches(walk, new Set(['GCE']));
+    const done = record(left, ['GCE', 'found']);
+    expect(nextCode(done)).toBeUndefined();
+    expect(walkProgress(done)).toEqual({ done: 3, total: 3, found: 2, dnf: 1 });
+  });
+
+  it('changes nothing while every cache is still imported', () => {
+    const present = new Set(fiveCaches.caches.map((cache) => cache.code));
+    expect(withoutMissingCaches(walk, present)).toEqual(walk);
   });
 });
 

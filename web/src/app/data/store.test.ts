@@ -17,14 +17,14 @@ import {
   loadSettings,
   loadWalk,
   loadWalkingDistances,
-  saveCaches,
-  saveIgnored,
+  mergeIntoStoredCaches,
   saveImportInfo,
-  saveLocallyFound,
   savePreferences,
   saveSettings,
   saveWalk,
   saveWalkingDistances,
+  updateIgnored,
+  updateLocallyFound,
 } from './store';
 
 // IndexedDB as idb-keyval presents it: databases of key/value stores, values structured-cloned in and out.
@@ -61,6 +61,12 @@ vi.mock('idb-keyval', () => {
       write(() => {
         for (const key of keys) storeOf(store).delete(key);
       }),
+    // Read and written in one step, as idb-keyval does in one transaction.
+    update: (key: string, updater: (old: unknown) => unknown, store: unknown) =>
+      write(() => {
+        const old = structuredClone(storeOf(store).get(key));
+        storeOf(store).set(key, structuredClone(updater(old)));
+      }),
   };
 });
 
@@ -95,6 +101,8 @@ const CACHE: Geocache = {
   longitude: 8.2,
 };
 
+const IMPORT = { caches: [CACHE], sources: CACHE.sources };
+
 const WALK: WalkState = {
   trailId: 'GC0TEST-12',
   codes: ['GC0TEST', 'GC0TEST2', 'GC0TEST3'],
@@ -121,11 +129,56 @@ describe('caches', () => {
     expect(await loadCaches()).toEqual([]);
   });
 
-  it('reads back what was saved, in its own store and key', async () => {
-    await saveCaches([CACHE]);
+  it('reads back what was imported, in its own store and key', async () => {
+    expect(await mergeIntoStoredCaches(IMPORT)).toEqual({
+      caches: [CACHE],
+      removedCount: 0,
+    });
 
     expect(await loadCaches()).toEqual([CACHE]);
     expect(stored('caches')).toEqual([CACHE]);
+  });
+
+  it('merges an import into what is stored, and says how many it replaced', async () => {
+    const gone = { ...CACHE, code: 'GC0GONE' };
+    const other = { ...CACHE, code: 'GC0OTHER', sources: ['other'] };
+    storeRaw('caches', [gone, other]);
+
+    expect(await mergeIntoStoredCaches(IMPORT)).toEqual({
+      caches: [other, CACHE],
+      removedCount: 1,
+    });
+    expect(stored('caches')).toEqual([other, CACHE]);
+  });
+
+  it('merges into stored caches of an older build as it reads them', async () => {
+    const { placedBy, hint, recentLogs, sources, ...older } = CACHE;
+    void [placedBy, hint, recentLogs, sources];
+    const olderCode = { ...older, code: 'GC0OLD' };
+    storeRaw('caches', [olderCode, 'junk']);
+
+    const { caches } = await mergeIntoStoredCaches(IMPORT);
+    expect(caches).toEqual([
+      {
+        ...olderCode,
+        placedBy: '',
+        hint: '',
+        recentLogs: [],
+        sources: [],
+      },
+      CACHE,
+    ]);
+  });
+
+  // Two open windows, each holding the caches it loaded: neither import may overwrite the other.
+  it('keeps the imports of two windows made one after the other', async () => {
+    const second = { ...CACHE, code: 'GC0SECOND', sources: ['second'] };
+    await Promise.all([
+      mergeIntoStoredCaches(IMPORT),
+      mergeIntoStoredCaches({ caches: [second], sources: ['second'] }),
+    ]);
+
+    expect(await loadCaches()).toEqual([CACHE, second]);
   });
 
   it('reads nothing from a value that is no list', async () => {
@@ -198,11 +251,33 @@ describe('locally found codes', () => {
     expect(await loadLocallyFound()).toEqual(new Set());
   });
 
-  it('reads back what was saved, stored as a list', async () => {
-    await saveLocallyFound(new Set(['GC0A', 'GC0B']));
+  it('reads back what was marked, stored as a list', async () => {
+    await updateLocallyFound((codes) => codes.add('GC0A').add('GC0B'));
 
     expect(await loadLocallyFound()).toEqual(new Set(['GC0A', 'GC0B']));
     expect(stored('locally-found')).toEqual(['GC0A', 'GC0B']);
+  });
+
+  // Another open window may have marked caches since this one loaded.
+  it('changes the stored codes, keeping what another window marked', async () => {
+    storeRaw('locally-found', ['GC0OTHER', 'GC0A']);
+
+    await updateLocallyFound((codes) => {
+      codes.delete('GC0A');
+      return codes.add('GC0B');
+    });
+
+    expect(stored('locally-found')).toEqual(['GC0OTHER', 'GC0B']);
+  });
+
+  it('changes only the codes of a value in an unexpected shape', async () => {
+    storeRaw('locally-found', ['GC0A', 7]);
+    await updateLocallyFound((codes) => codes.add('GC0B'));
+    expect(stored('locally-found')).toEqual(['GC0A', 'GC0B']);
+
+    storeRaw('locally-found', 'GC0A');
+    await updateLocallyFound((codes) => codes.add('GC0B'));
+    expect(stored('locally-found')).toEqual(['GC0B']);
   });
 
   it('keeps only the codes from a value in an unexpected shape', async () => {
@@ -280,11 +355,11 @@ describe('walk', () => {
 
 describe('clearAllData', () => {
   it('removes everything this app stored, and nothing else', async () => {
-    await saveCaches([CACHE]);
+    await mergeIntoStoredCaches(IMPORT);
     await saveSettings(DEFAULT_TRAIL_SETTINGS);
-    await saveLocallyFound(new Set(['GC0A']));
+    await updateLocallyFound((codes) => codes.add('GC0A'));
     await saveWalk(WALK);
-    await saveIgnored(new Set(['GC0B']));
+    await updateIgnored((codes) => codes.add('GC0B'));
     await savePreferences({
       sort: 'nearest',
       showOtherCaches: false,
@@ -315,12 +390,23 @@ describe('clearAllData', () => {
 });
 
 describe('ignored codes', () => {
-  it('reads none before any was ignored, and back what was saved as a list', async () => {
+  it('reads none before any was ignored, and back what was ignored as a list', async () => {
     expect(await loadIgnored()).toEqual(new Set());
-    await saveIgnored(new Set(['GC0A']));
+    await updateIgnored((codes) => codes.add('GC0A'));
 
     expect(await loadIgnored()).toEqual(new Set(['GC0A']));
     expect(stored('ignored')).toEqual(['GC0A']);
+  });
+
+  it('changes the stored codes, keeping what another window ignored', async () => {
+    storeRaw('ignored', ['GC0OTHER', 'GC0A', 5]);
+
+    await updateIgnored((codes) => {
+      codes.delete('GC0A');
+      return codes;
+    });
+
+    expect(stored('ignored')).toEqual(['GC0OTHER']);
   });
 
   it('keeps only the codes from a value in an unexpected shape', async () => {
@@ -445,12 +531,12 @@ describe('the last import', () => {
 
 describe('when storage refuses a write', () => {
   it.each([
-    ['saveCaches', () => saveCaches([CACHE])],
+    ['mergeIntoStoredCaches', () => mergeIntoStoredCaches(IMPORT)],
     ['saveSettings', () => saveSettings(DEFAULT_TRAIL_SETTINGS)],
-    ['saveLocallyFound', () => saveLocallyFound(new Set(['GC0A']))],
+    ['updateLocallyFound', () => updateLocallyFound((codes) => codes)],
     ['saveWalk', () => saveWalk(WALK)],
     ['saveWalk(undefined)', () => saveWalk(undefined)],
-    ['saveIgnored', () => saveIgnored(new Set(['GC0A']))],
+    ['updateIgnored', () => updateIgnored((codes) => codes)],
     ['savePreferences', () => savePreferences(DEFAULT_PREFERENCES)],
     ['saveWalkingDistances', () => saveWalkingDistances(new Map())],
     [
