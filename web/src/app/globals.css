@@ -25,6 +25,8 @@
   --destructive-soft: #fdecea;
   --destructive-foreground: #ffffff;
   --position: #2563eb;
+  /* The "Buddy" orange every nobuddyorg app's wordmark shares. */
+  --brand-accent: #ad5725;
 }
 
 @theme inline {
@@ -49,6 +51,8 @@
   --color-destructive-soft: var(--destructive-soft);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-position: var(--position);
+  --color-brand-accent: var(--brand-accent);
+  --font-display: var(--font-display-family), ui-sans-serif, sans-serif;
   --shadow-soft:
     0 1px 2px rgb(20 32 25 / 0.06), 0 4px 16px rgb(20 32 25 / 0.08);
   --shadow-lifted:

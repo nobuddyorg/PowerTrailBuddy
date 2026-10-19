@@ -1,8 +1,16 @@
+import { Archivo } from 'next/font/google';
+
 import './globals.css';
 import { withBasePath } from './env';
 import de from './i18n/de.json';
 import { I18nProvider } from './i18n/I18nProvider';
 import { ServiceWorkerRegistration } from './ServiceWorkerRegistration';
+
+// The nobuddyorg wordmark face; next/font self-hosts it at build time, so font-src 'self' still holds.
+const displayFont = Archivo({
+  subsets: ['latin'],
+  variable: '--font-display-family',
+});
 
 // Hand-written head tags, not Next's `metadata` export, which duplicates each tag on hydration in this version.
 const THEME_COLOR = '#f3f5ef';
@@ -34,7 +42,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="de">
+    <html lang="de" className={displayFont.variable}>
       <head>
         <title>PowerTrailBuddy</title>
         {/* I18nProvider updates this via a `meta[name="description"]` selector that must keep matching. */}

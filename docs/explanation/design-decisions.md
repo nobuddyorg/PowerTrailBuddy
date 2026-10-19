@@ -135,6 +135,19 @@ defines one light palette (forest green for trails and actions, orange for the
 walk's current target), `layout.tsx` declares `color-scheme: light` and one
 `theme-color`, and nothing reacts to `prefers-color-scheme`.
 
+## Why the header looks like the other nobuddyorg apps
+
+PowerTrailBuddy is one of a family of Buddy apps (CollectionBuddy, BikeBuddy,
+FairBuddy and others) that share one mark, so a user recognises the family:
+a flat amber icon with a thick dark-brown outline (here a geocache box with a
+lightning bolt at the end of a dotted trail, `web/public/logo.svg`), and a
+wordmark in Archivo bold with an ink rule under the first word and "Buddy" in
+the shared brand orange (`--brand-accent`). Archivo comes through
+`next/font`, which self-hosts the files at build time, so the CSP's
+`font-src 'self'` and the one-outside-request rule still hold, and the
+service worker precaches the font with the rest of the bundle. After changing
+`logo.svg`, `node scripts/make-icons.mjs` regenerates the PNG icons.
+
 ## Why mutation testing is scoped to a list of files
 
 The value of the app is in pure logic — the parser, the geometry, the trail

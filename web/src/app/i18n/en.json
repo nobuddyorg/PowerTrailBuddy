@@ -1,6 +1,8 @@
 {
   "brand": {
-    "name": "PowerTrailBuddy"
+    "name": "PowerTrailBuddy",
+    "trail": "PowerTrail",
+    "buddy": "Buddy"
   },
   "page": {
     "tagline": "Find power trails in your Pocket Queries and walk them"

@@ -58,11 +58,15 @@ export function Header({ walking, onOpenData, onOpenSettings }: HeaderProps) {
           height={32}
           className="h-8 w-8 shrink-0"
         />
+        {/* pb-0.5 keeps the rule under the first word visible past truncate's clip. */}
         <h1
           data-testid="home-title"
-          className="truncate text-lg font-extrabold tracking-tight text-primary-strong"
+          className="truncate pb-0.5 font-display text-lg font-bold tracking-[-0.02em] text-foreground"
         >
-          {t('brand.name')}
+          <span className="border-b-2 border-foreground pb-px">
+            {t('brand.trail')}
+          </span>
+          <span className="text-brand-accent">{t('brand.buddy')}</span>
         </h1>
       </div>
       <div className="flex shrink-0 items-center gap-1">

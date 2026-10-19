@@ -1,13 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="PowerTrailBuddy">
-  <path d="M20 106 C 4 70, 60 92, 64 64 S 124 58, 108 22" fill="none" stroke="#8b5a2b" stroke-width="8" stroke-linecap="round" stroke-dasharray="0.01 13"/>
-  <g fill="#2f6b3a">
-    <rect x="8" y="94" width="24" height="24" rx="6"/>
-    <rect x="52" y="52" width="24" height="24" rx="6"/>
-    <rect x="96" y="10" width="24" height="24" rx="6"/>
-  </g>
-  <g fill="#f3f5ef">
-    <rect x="12" y="102" width="16" height="3" rx="1.5"/>
-    <rect x="56" y="60" width="16" height="3" rx="1.5"/>
-    <rect x="100" y="18" width="16" height="3" rx="1.5"/>
-  </g>
+  <path d="M10 118 C 10 104, 18 98, 30 96" fill="none" stroke="#3b2a14" stroke-width="10" stroke-linecap="round" stroke-dasharray="0.01 15"/>
+  <path d="M66 24 V16 a4 4 0 0 1 4 -4 H92 a4 4 0 0 1 4 4 V24" fill="none" stroke="#3b2a14" stroke-width="7" stroke-linejoin="round"/>
+  <rect x="40" y="40" width="78" height="66" rx="11" fill="#f6b739" stroke="#3b2a14" stroke-width="7" stroke-linejoin="round"/>
+  <rect x="46" y="94" width="66" height="7" rx="3.5" fill="#e3922b"/>
+  <rect x="34" y="24" width="90" height="22" rx="8" fill="#eda334" stroke="#3b2a14" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M86 52 L65 80 H78 L71 98 L94 69 H81 L88 52 Z" fill="#3b2a14" stroke="#3b2a14" stroke-width="3" stroke-linejoin="round"/>
 </svg>

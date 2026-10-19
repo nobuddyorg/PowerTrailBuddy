@@ -55,6 +55,13 @@ describe('Header', () => {
     );
   });
 
+  // The wordmark every nobuddyorg app shares: an ink rule under the first word, the brand orange on "Buddy".
+  it('underscores "PowerTrail" and puts the brand orange on "Buddy"', () => {
+    renderHeader();
+    expect(screen.getByText('PowerTrail').className).toContain('border-b-2');
+    expect(screen.getByText('Buddy').className).toContain('text-brand-accent');
+  });
+
   it('switches the language and marks the current one', () => {
     renderHeader();
     const german = screen.getByRole('button', { name: 'DE' });
