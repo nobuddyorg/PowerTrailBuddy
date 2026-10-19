@@ -91,11 +91,14 @@ export function useGeolocation(): {
           gpsHeading: coords.heading,
           speed: coords.speed,
         }),
-      // A timeout or a lost fix keeps the watch running; the next fix replaces this state.
+      // A timeout or a lost fix keeps the watch running and the last fix shown: standing still at a cache, no new fix may come.
       (error) =>
-        setLocation({
-          status:
-            error.code === error.PERMISSION_DENIED ? 'denied' : 'unavailable',
+        setLocation((current) => {
+          if (error.code === error.PERMISSION_DENIED)
+            return { status: 'denied' };
+          return current.status === 'located'
+            ? current
+            : { status: 'unavailable' };
         }),
       WATCH_OPTIONS,
     );

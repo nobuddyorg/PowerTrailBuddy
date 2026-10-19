@@ -111,6 +111,18 @@ describe('useGeolocation', () => {
     expect(result.current.location).toEqual({ status: 'unavailable' });
   });
 
+  it('keeps the last fix through a timeout or a lost fix, but not through a refusal', () => {
+    const { result } = renderHook(() => useGeolocation());
+    act(() => result.current.start());
+    fix({});
+    fail(3);
+    expect(result.current.location.status).toBe('located');
+    fail(2);
+    expect(result.current.location.status).toBe('located');
+    fail(1);
+    expect(result.current.location).toEqual({ status: 'denied' });
+  });
+
   it('watches again when started after a refusal, as once allowed in the site settings', () => {
     const { result } = renderHook(() => useGeolocation());
     act(() => result.current.start());

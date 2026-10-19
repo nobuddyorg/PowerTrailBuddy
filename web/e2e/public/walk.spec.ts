@@ -167,40 +167,6 @@ test.describe('walking without the location permission', () => {
 
     await placeDevice(context, offset(-200));
 
-    // TEMPORARY diagnostics for the Firefox CI failure; removed before merge.
-    page.on('console', (message) =>
-      console.log('DIAG console', message.type(), message.text()),
-    );
-    const states: string[] = [];
-    for (let tick = 0; tick < 8; tick++) {
-      const views = await page.getByTestId('walk-view').count();
-      const text = await page
-        .locator('body')
-        .innerText()
-        .catch((error: unknown) => String(error));
-      states.push(
-        `${tick} ${page.url()} views=${views} ${text.replace(/\s+/g, ' ').slice(0, 300)}`,
-      );
-      await page.waitForTimeout(500);
-    }
-    const probe = await page.evaluate(
-      () =>
-        new Promise((resolve) =>
-          navigator.geolocation.getCurrentPosition(
-            ({ coords }) =>
-              resolve({
-                lat: coords.latitude,
-                heading: coords.heading,
-                speed: coords.speed,
-              }),
-            (error) => resolve({ error: error.code }),
-            { timeout: 3000 },
-          ),
-        ),
-    );
-    console.log('DIAG states', JSON.stringify(states, null, 1));
-    console.log('DIAG probe', JSON.stringify(probe));
-
     await expect(app.walk.locators.locationMessage).toBeHidden();
     await expect(app.walk.locators.distance).toBeVisible();
   });
