@@ -10,6 +10,8 @@ const config: KnipConfig = {
     // Loaded by the browser via navigator.serviceWorker.register(), never imported.
     'public/sw.js',
   ],
+  // An export its own module also uses is a deliberate test seam; `knip --production` flags only test-only code.
+  ignoreExportsUsedInFile: true,
 };
 
 export default config;

@@ -46,11 +46,16 @@ All paths relative to `web/src/app/`.
 `web/public/site.webmanifest` the manifest.
 
 The boundaries are enforced by `web/.dependency-cruiser.mjs`
-(`lib-is-pure`, `storage-behind-data-layer`, `leaflet-behind-map`,
-`data-layer-no-components`, `i18n-no-app-deps`, `e2e-is-black-box`,
-`scripts-are-standalone`, `app-bundle-no-node-tooling`, `no-circular`,
-`no-orphans`, `not-to-unresolvable`) and, for static imports in the editor,
-by ESLint's `no-restricted-imports`.
+(`lib-is-pure`, `lib-no-node-core`, `app-bundle-no-node-core`,
+`storage-behind-data-layer`, `leaflet-behind-map`, `data-layer-only-lib`,
+`i18n-no-app-deps`, `e2e-is-black-box`, `scripts-are-standalone`,
+`app-bundle-no-node-tooling`, `no-circular`, `no-orphans`,
+`not-to-unresolvable`) and, for static imports in the editor, by ESLint's
+`no-restricted-imports`. A rule sees direct imports only, so `lib/`, `data/`
+and `i18n/` forbid every app module outside what the table allows, not just
+the layers above them: a top-level hook or `dataCore.ts` would reach React or
+IndexedDB in turn. No Node built-in is imported outside tests (none at all in
+`lib/`).
 
 ## Contracts
 

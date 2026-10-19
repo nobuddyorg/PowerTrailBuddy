@@ -36,14 +36,37 @@ const config = {
       comment:
         'src/app/lib/ is the pure core (parsing, geometry, trail finding, walk state): plain functions ' +
         'over values, so unit and mutation tests reach all of it without faking a browser. It never ' +
-        'imports React, Next, Leaflet, IndexedDB, the data layer or a component.',
+        'imports React, Next, Leaflet, IndexedDB, or any app module outside lib/ -- not even a ' +
+        'top-level hook or dataCore.ts, which would reach React or IndexedDB in turn.',
       from: { path: '^src/app/lib/' },
       to: {
         path: [
           '^node_modules/(react|react-dom|next|leaflet|idb-keyval)/',
-          '^src/app/(data|components|i18n)/',
+          '^src/app/',
         ],
+        pathNot: '^src/app/lib/',
       },
+    },
+    {
+      name: 'lib-no-node-core',
+      severity: 'error',
+      comment:
+        'The pure core runs in the browser and in Node tests alike, so it never imports a Node ' +
+        'built-in (node:fs, path, ...), not even from a test.',
+      from: { path: '^src/app/lib/' },
+      to: { dependencyTypes: ['core'] },
+    },
+    {
+      name: 'app-bundle-no-node-core',
+      severity: 'error',
+      comment:
+        'src/app/ ships to the browser, which has no Node built-ins; only tests and their ' +
+        'support files, which run in Node, may read a file. lib/ has its stricter rule above.',
+      from: {
+        path: '^src/app/',
+        pathNot: ['^src/app/lib/', '\\.test(-support)?\\.(ts|tsx)$'],
+      },
+      to: { dependencyTypes: ['core'] },
     },
     {
       name: 'storage-behind-data-layer',
@@ -63,23 +86,28 @@ const config = {
       to: { path: '^node_modules/leaflet/' },
     },
     {
-      name: 'data-layer-no-components',
+      name: 'data-layer-only-lib',
       severity: 'error',
       comment:
-        'The data-access layer is consumed by components, never the other way around.',
+        'The data-access layer is consumed by components and the top-level hooks, never the other ' +
+        'way around: besides itself it imports only the pure core in lib/.',
       from: { path: '^src/app/data/' },
-      to: { path: '^src/app/components/' },
+      to: { path: '^src/app/', pathNot: '^src/app/(data|lib)/' },
     },
     {
       name: 'i18n-no-app-deps',
       severity: 'error',
       comment:
-        'Translation lookup is a leaf: it must not depend on data access or UI. The one exception ' +
-        'is the localStorage shim that remembers the chosen language.',
+        'Translation lookup is a leaf: it imports no other app module -- no data access, UI, ' +
+        'top-level hook or lib/. The one exception is the localStorage shim that remembers the ' +
+        'chosen language.',
       from: { path: '^src/app/i18n/' },
       to: {
-        path: '^src/app/(data|components)/',
-        pathNot: '^src/app/data/browserStorage(\\.test-support)?\\.ts$',
+        path: '^src/app/',
+        pathNot: [
+          '^src/app/i18n/',
+          '^src/app/data/browserStorage(\\.test-support)?\\.ts$',
+        ],
       },
     },
     {

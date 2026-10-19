@@ -1,7 +1,6 @@
-import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 
-import { daysSince, formatDay, formatMoment } from './dates';
+import { formatDay, formatMoment } from './dates';
 
 describe('formatDay', () => {
   it.each([
@@ -31,27 +30,5 @@ describe('formatMoment', () => {
         timeZone: 'UTC',
       }),
     ).toBe('12 Mar 2026, 13:05');
-  });
-});
-
-describe('daysSince', () => {
-  it.each([
-    ['2026-03-12', '2026-03-12T23:59:00Z', 0],
-    ['2026-03-11', '2026-03-12T00:00:00Z', 1],
-    ['2025-03-12', '2026-03-12T10:00:00Z', 365],
-    ['2026-03-20', '2026-03-12T10:00:00Z', 0],
-  ])('from %s to %s is %s days', (date, now, expected) => {
-    expect(daysSince(date, now)).toBe(expected);
-  });
-
-  it('counts each day added once', () => {
-    fc.assert(
-      fc.property(fc.integer({ min: 0, max: 5000 }), (days) => {
-        const now = new Date(
-          Date.UTC(2026, 0, 1) + days * 86_400_000,
-        ).toISOString();
-        expect(daysSince('2026-01-01', now)).toBe(days);
-      }),
-    );
   });
 });

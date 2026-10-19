@@ -53,19 +53,25 @@ From `web/`, in this order — `build` generates `next-env.d.ts`, which `tsc`
 and ESLint need:
 
 ```bash
-npm run build
+E2E_COVERAGE_SOURCEMAPS=true npm run build
 npx tsc --noEmit
 npx prettier --check .
 npm run lint
 npm run depcruise
 npm run knip
 npm test -- --coverage
-npm run e2e
+E2E_COVERAGE_SOURCEMAPS=true npm run e2e
 ```
 
-These are CI's `build_and_test` and `e2e` jobs. `npm run test:mutation` (CI's
-`mutation_test`) is required when you changed code in a file listed in
-`web/mutation-targets.mjs`; comments produce no new mutants.
+These are CI's `build_and_test` and `e2e` jobs. `E2E_COVERAGE_SOURCEMAPS=true`
+on both the build and the suite is what CI's `e2e` job sets: the build emits
+source maps, and the full suite then fails below the e2e coverage floor in
+`web/e2e/coverage.ts`. Without it on either command, that floor never runs. It
+is for a local test build only: the deployed build (`pages-deploy.yml`) never
+sets it, and a build that is published must not ship source maps.
+`npm run test:mutation` (CI's `mutation_test`) is required when you changed
+code in a file listed in `web/mutation-targets.mjs`; comments produce no new
+mutants.
 
 The [developer guide](docs/how-to/developer-guide.md) has what each one reads
 and how to interpret a failure. On a PR, CI skips jobs whose paths did not

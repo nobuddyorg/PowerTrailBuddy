@@ -72,15 +72,7 @@ export function gridNeighbourhood(
   };
 }
 
-/** Groups of points chained by gaps under maxGapMeters, in order of their first point; near-linear via the grid. */
-export function linkComponents<T extends Coordinates>(
-  points: readonly T[],
-  maxGapMeters: number,
-): T[][] {
-  return linkComponentsWhere(points, { maxGapMeters, isLinked: () => true });
-}
-
-/** As linkComponents, but a gap under maxGapMeters links only where isLinked agrees. */
+/** Groups of points chained by gaps under maxGapMeters where isLinked agrees, in order of their first point; near-linear via the grid. */
 export function linkComponentsWhere<T extends Coordinates>(
   points: readonly T[],
   {
