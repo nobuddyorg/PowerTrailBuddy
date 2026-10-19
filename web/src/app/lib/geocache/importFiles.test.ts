@@ -473,6 +473,8 @@ describe('importFiles: the queries it read', () => {
       [' My Area .gpx', 'my area'],
       ['shared-file', 'shared-file'],
       ['notes (draft).gpx', 'notes (draft)'],
+      ['area.gpx-old.gpx', 'area.gpx-old'],
+      ['(2) area.gpx', '(2) area'],
     ];
     expect(names.map(([name]) => sourceName(name))).toEqual(
       names.map(([, source]) => source),
