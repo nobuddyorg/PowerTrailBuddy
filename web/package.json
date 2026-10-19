@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && node scripts/precache-manifest.mjs",
+    "build": "next build",
     "lint": "eslint . --max-warnings 0",
     "depcruise": "depcruise --config .dependency-cruiser.mjs src e2e scripts",
     "knip": "knip",
@@ -13,7 +13,8 @@
     "test:mutation": "rm -rf reports/mutation && stryker run",
     "mutation:summary": "node scripts/mutation-summary.mjs",
     "e2e": "playwright test",
-    "icons": "node scripts/make-icons.mjs"
+    "icons": "node scripts/make-icons.mjs",
+    "screenshots": "node scripts/docs-screenshots.mjs"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4",
