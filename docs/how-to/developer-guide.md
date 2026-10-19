@@ -176,7 +176,10 @@ grep -rn 'getByTestId\|getByRole\|locator(' web/e2e --include=*.spec.ts
   console error or CSP violation in the page, so a rejected background
   promise cannot hide behind a passing assertion. CSP violations are read
   from the `securitypolicyviolation` event, because Chromium reports a
-  blocked `eval` only there while Firefox logs it to the console. `failMapTiles` in `e2e/helpers.ts` takes the
+  blocked `eval` only there while Firefox logs it to the console. A tile the
+  server failed to send is its outage, not the app's error: messages at a
+  tile's URL, or naming one (Firefox's CORS error for a failed tile), are
+  left out. `failMapTiles` in `e2e/helpers.ts` takes the
   tile server down for the one spec that checks the app without it.
 - Import fixtures are generated, not committed: `e2e/pocketQuery.ts` writes a
   synthetic Pocket Query (two trails, three caches the default settings leave

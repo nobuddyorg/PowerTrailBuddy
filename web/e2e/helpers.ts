@@ -22,6 +22,8 @@ export async function collectPageProblems(page: Page): Promise<PageProblems> {
     if (message.type() !== 'error') return;
     // A tile or route the server failed to send is its outage, not the app's error; the fakes fail only when asked.
     if (TILE_HOST.test(message.location().url)) return;
+    // Firefox reports a CORS tile that failed as a CORS error naming the tile, not at the tile's location.
+    if (TILE_IN_TEXT.test(message.text())) return;
     if (ROUTER_HOST.test(message.location().url)) return;
     problems.console.push(message.text());
   });
@@ -55,6 +57,7 @@ const BLANK_TILE = Buffer.from(
 );
 
 const TILE_HOST = /^https:\/\/([a-z]\.)?tile\.openstreetmap\.org\//;
+const TILE_IN_TEXT = /https:\/\/([a-z]\.)?tile\.openstreetmap\.org\//;
 
 /** Answers every OpenStreetMap tile request with a blank tile, so no test reaches a third party; on the context, which in Chromium also routes the worker's requests. */
 export async function fakeMapTiles(page: Page) {
