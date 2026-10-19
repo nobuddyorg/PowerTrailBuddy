@@ -3,8 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { Coordinates } from '../geocache/types';
 import { distanceMeters } from './geo';
-import { linkComponents } from './linkComponents';
-import { pointsNear } from './trails.test-support';
+import { linkComponents, pointsNear } from './trails.test-support';
 
 /** All pairs, the definition the grid must reproduce. */
 function bruteForceComponents(

@@ -2,9 +2,18 @@ import fc from 'fast-check';
 
 import type { Coordinates, Geocache } from '../geocache/types';
 import { EARTH_RADIUS_METERS } from './geo';
+import { linkComponentsWhere } from './linkComponents';
 
 /** One metre north or east at the equator, in degrees. */
 export const DEGREES_PER_METER = 180 / (Math.PI * EARTH_RADIUS_METERS);
+
+/** Groups of points chained by gaps under maxGapMeters, every such gap allowed. */
+export function linkComponents<T extends Coordinates>(
+  points: readonly T[],
+  maxGapMeters: number,
+): T[][] {
+  return linkComponentsWhere(points, { maxGapMeters, isLinked: () => true });
+}
 
 /** A synthetic cache that passes every default filter; the code and position are invented. */
 export function makeCache(overrides: Partial<Geocache> = {}): Geocache {

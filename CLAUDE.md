@@ -148,17 +148,22 @@ these is green, from `web/`, in this order (`build` generates `next-env.d.ts`,
 which `tsc` and ESLint need):
 
 ```bash
-npm run build
+E2E_COVERAGE_SOURCEMAPS=true npm run build
 npx tsc --noEmit
 npx prettier --check .
 npm run lint
 npm run depcruise         # architectural boundaries
-npm run knip              # dead code / unused dependencies
+npm run knip              # dead code / unused dependencies, then exports only tests use
 npm test -- --coverage
-npm run e2e               # chromium, mobile, firefox; needs `npm run build` first
+E2E_COVERAGE_SOURCEMAPS=true npm run e2e   # chromium, mobile, firefox
 npm run test:mutation     # if you changed code in a file listed in web/mutation-targets.mjs;
                           # comments produce no new mutants (TEST_STRATEGY.md §14, gate scope)
 ```
+
+`E2E_COVERAGE_SOURCEMAPS=true` on both the build and the suite is what CI's
+`e2e` job sets; without it the e2e coverage floor (`web/e2e/coverage.ts`)
+never runs. It adds source maps, so it is for test builds only: the deployed
+build never sets it.
 
 `prek run --all-files` from the repo root runs the repo-wide hooks (`typos`,
 `zizmor`, `actionlint`, `markdownlint`, file hygiene) plus the same web

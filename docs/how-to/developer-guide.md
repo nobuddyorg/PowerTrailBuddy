@@ -29,8 +29,19 @@ passed.
 | User-facing text | `t('area.key')` + both `de.json` and `en.json` | `parity.test.ts` |
 
 The boundaries are checked by `npm run depcruise`
-([Architecture](../reference/architecture.md#modules)). A new dependency is a
-decision to raise, not a side effect of a change.
+([Architecture](../reference/architecture.md#modules)): `lib/` imports nothing
+from `src/app/` outside `lib/` and no Node built-in, `data/` only `lib/`, and
+`i18n/` only the `localStorage` shim. A new dependency is a decision to raise,
+not a side effect of a change.
+
+`npm run knip` runs Knip twice. The default run counts tests as entry points
+and finds unused files, exports and dependencies. The second,
+`knip --production --exports`, leaves the tests out, so it fails on an export
+that only tests call: delete it, or move it into a `*.test-support.ts` if the
+tests still need it. An export the module itself also uses is a deliberate
+test seam (`ignoreExportsUsedInFile` in `knip.config.ts`) and passes. The
+second run checks exports only: without the tests, every `*.test-support.ts`,
+`e2e/` and `scripts/` file would read as unused.
 
 ## Write a unit test
 
@@ -213,9 +224,13 @@ grep -rn 'getByTestId\|getByRole\|locator(' web/e2e --include=*.spec.ts
 
 With `E2E_COVERAGE_SOURCEMAPS=true` for both `npm run build` and
 `npm run e2e`, the Chromium projects collect JS/CSS coverage through
-Playwright's `page.coverage` and write `web/coverage-e2e/`. CI's `e2e` job does
-this, and fails below the floor in `e2e/coverage.ts`
+Playwright's `page.coverage` and write `web/coverage-e2e/`. CI's `e2e` job and
+the checklist in [CONTRIBUTING.md](../../CONTRIBUTING.md#before-opening-a-pull-request)
+do this, and fail below the floor in `e2e/coverage.ts`
 ([Configuration](../reference/configuration.md#coverage-and-mutation-thresholds)).
+The floor is for the whole suite, so leave the variable unset for a run of a
+few specs or a single project. It makes the build emit source maps: only a
+test build sets it, never the deployed one (`pages-deploy.yml` does not).
 To find what no journey reaches, read the function coverage per file in
 `web/coverage-e2e/index.html`, not the line coverage.
 
