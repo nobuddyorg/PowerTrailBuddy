@@ -12,6 +12,7 @@ export const MUTATE_TARGETS = [
   'src/app/lib/trails/filterCaches.ts',
   'src/app/lib/trails/linkComponents.ts',
   'src/app/lib/trails/orderPath.ts',
+  'src/app/lib/trails/nearestNeighbour.ts',
   'src/app/lib/trails/projection.ts',
   'src/app/lib/trails/scoreTrail.ts',
   'src/app/lib/trails/roundTrips.ts',

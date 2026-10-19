@@ -50,7 +50,9 @@ describe('orderPath', () => {
       [70, 30],
       [20, 90],
     ]);
-    expect(labelsOf(orderPath(points, 0))).toEqual([1, 3, 0, 4, 2]);
+    expect(labelsOf(orderPath(points, { maxMoveEvaluations: 0 }))).toEqual([
+      1, 3, 0, 4, 2,
+    ]);
   });
 
   it('reverses the start of the path when that shortens it, since the start is free', () => {
@@ -61,9 +63,11 @@ describe('orderPath', () => {
       [70, 30],
       [20, 90],
     ]);
-    const improved = orderPath(points, 1);
+    const improved = orderPath(points, { maxMoveEvaluations: 1 });
     expect(labelsOf(improved)).toEqual([3, 1, 0, 4, 2]);
-    expect(pathMeters(improved)).toBeLessThan(pathMeters(orderPath(points, 0)));
+    expect(pathMeters(improved)).toBeLessThan(
+      pathMeters(orderPath(points, { maxMoveEvaluations: 0 })),
+    );
     expect(labelsOf(orderPath(points))).toEqual([3, 1, 0, 4, 2]);
   });
 
@@ -75,7 +79,9 @@ describe('orderPath', () => {
       [80, 90],
       [80, 40],
     ]);
-    expect(labelsOf(orderPath(points, 0))).toEqual([2, 4, 1, 0, 3]);
+    expect(labelsOf(orderPath(points, { maxMoveEvaluations: 0 }))).toEqual([
+      2, 4, 1, 0, 3,
+    ]);
     expect(labelsOf(orderPath(points))).toEqual([2, 0, 1, 4, 3]);
   });
 
@@ -87,11 +93,21 @@ describe('orderPath', () => {
       [80, 90],
       [80, 40],
     ]);
-    expect(labelsOf(orderPath(points, 3))).toEqual([2, 4, 1, 0, 3]);
-    expect(labelsOf(orderPath(points, 4))).toEqual([2, 4, 0, 1, 3]);
-    expect(labelsOf(orderPath(points, 5))).toEqual([2, 1, 0, 4, 3]);
-    expect(labelsOf(orderPath(points, 11))).toEqual([2, 1, 0, 4, 3]);
-    expect(labelsOf(orderPath(points, 12))).toEqual([2, 0, 1, 4, 3]);
+    expect(labelsOf(orderPath(points, { maxMoveEvaluations: 3 }))).toEqual([
+      2, 4, 1, 0, 3,
+    ]);
+    expect(labelsOf(orderPath(points, { maxMoveEvaluations: 4 }))).toEqual([
+      2, 4, 0, 1, 3,
+    ]);
+    expect(labelsOf(orderPath(points, { maxMoveEvaluations: 5 }))).toEqual([
+      2, 1, 0, 4, 3,
+    ]);
+    expect(labelsOf(orderPath(points, { maxMoveEvaluations: 11 }))).toEqual([
+      2, 1, 0, 4, 3,
+    ]);
+    expect(labelsOf(orderPath(points, { maxMoveEvaluations: 12 }))).toEqual([
+      2, 0, 1, 4, 3,
+    ]);
   });
 
   it('starts at the earlier of two points equally far from the center', () => {
@@ -110,7 +126,9 @@ describe('orderPath', () => {
       [-0.2, 0],
       [-0.1, 0],
     ]);
-    expect(labelsOf(orderPath(points, 0))).toEqual([1, 0, 3, 2]);
+    expect(labelsOf(orderPath(points, { maxMoveEvaluations: 0 }))).toEqual([
+      1, 0, 3, 2,
+    ]);
   });
 
   it('goes on to the earlier of two points equally near', () => {
@@ -121,9 +139,13 @@ describe('orderPath', () => {
       [-100, 1],
       [-100, -1],
     ]);
-    expect(labelsOf(orderPath(points, 0))).toEqual([0, 1, 2, 3]);
+    expect(labelsOf(orderPath(points, { maxMoveEvaluations: 0 }))).toEqual([
+      0, 1, 2, 3,
+    ]);
     const swapped = [points[0], points[1], points[3], points[2]];
-    expect(labelsOf(orderPath(swapped, 0))).toEqual([0, 1, 3, 2]);
+    expect(labelsOf(orderPath(swapped, { maxMoveEvaluations: 0 }))).toEqual([
+      0, 1, 3, 2,
+    ]);
   });
 
   it('keeps improving after the first improvement until no reversal helps', () => {
@@ -136,7 +158,9 @@ describe('orderPath', () => {
       [50, 20],
       [80, 70],
     ]);
-    expect(labelsOf(orderPath(points, 0))).toEqual([0, 5, 4, 2, 6, 3, 1]);
+    expect(labelsOf(orderPath(points, { maxMoveEvaluations: 0 }))).toEqual([
+      0, 5, 4, 2, 6, 3, 1,
+    ]);
     expect(labelsOf(orderPath(points))).toEqual([0, 5, 4, 2, 1, 6, 3]);
   });
 
@@ -179,7 +203,9 @@ describe('shortenLoop', () => {
       [50, 0],
       [0, 50],
     ]);
-    expect(labelsOf(shortenLoop(crossed, 0))).toEqual([0, 1, 2, 3]);
+    expect(labelsOf(shortenLoop(crossed, { maxMoveEvaluations: 0 }))).toEqual([
+      0, 1, 2, 3,
+    ]);
     expect(labelsOf(shortenLoop(crossed))).toEqual([0, 2, 1, 3]);
   });
 

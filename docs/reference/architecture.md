@@ -29,7 +29,7 @@ All paths relative to `web/src/app/`.
 | Directory | Holds | May import |
 | --- | --- | --- |
 | `lib/geocache/` | Cache types, the GPX parser, recent logs (`recentLogs.ts`), parking areas (`parking.ts`), cache health (`health.ts`), the file importer (zip and gpx), the merge | `jszip`, other `lib/` |
-| `lib/trails/` | Trail settings and their defaults, geometry, the trail finder and its stages (`filterCaches`, `linkComponents`, `orderPath`, `splitWalks`, `scoreTrail`, `trailShape`, `projection`, `compareCodes`), routed walking distances and barriers (`walkingDistances.ts`), distances from the user (`nearby.ts`) | other `lib/` |
+| `lib/trails/` | Trail settings and their defaults, geometry, the trail finder and its stages (`filterCaches`, `linkComponents`, `orderPath` with `nearestNeighbour`, `splitWalks`, `scoreTrail`, `trailShape`, `projection`, `compareCodes`), routed walking distances and barriers (`walkingDistances.ts`), distances from the user (`nearby.ts`) | other `lib/` |
 | `lib/routing/` | Which caches still need walking distances (`planRouting.ts`), the OSRM table request and its answer (`osrmTable.ts`) | other `lib/` |
 | `lib/walk/` | Walk state: start, orient, reverse, record, undo, next cache, progress, pace | other `lib/` |
 | `lib/export/` | The two downloads: a trail as GPX (`trailGpx.ts`), a walk as Geocaching.com field notes (`fieldNotes.ts`) | other `lib/` |
@@ -158,6 +158,10 @@ Files are read one after another; the extension decides, case-insensitively.
   that name in `sources`; `ImportResult.sources` lists every document that
   parsed, sorted and once each, a `-wpts.gpx` or one without caches included.
   A refused file or archive names none.
+- An import holds at most **20,000** caches, each code counted once
+  (`MAX_IMPORT_CACHES`): a file that would take it past that is `too-large`
+  whole, after the files before it, and names no query, so the merge keeps
+  what that query had brought before. Later files that fit are still read.
 - Caches are deduplicated by code; a later file wins, with the sources of
   every file that had the cache. Parking areas from every
   file and entry of one import are matched to caches after that (`parking.ts`:
@@ -218,7 +222,7 @@ walkingDistances?: WalkingDistances }): Trail[]`, fully deterministic for the
 same input. A leg's walking metres (`legMetersFor`) are the routed distance
 where `walkingDistances` has one, else the straight line times
 `detourFactor`; without routed distances the result is exactly the
-straight-line one. `orderedGroups(caches, input)` exposes stages 1–3 for the
+straight-line one, ordering included. `orderedGroups(caches, input)` exposes stages 1–3 for the
 routing planner.
 
 1. **Filter** (`filterCaches.ts`): type in `settings.cacheTypes`, difficulty
@@ -245,13 +249,27 @@ routing planner.
    endpoints. A move must save more than a relative 1e-9; the work cap is
    20,000,000 move evaluations (a count, never a time limit). Ties, at the
    start and in nearest neighbour, go to the earliest cache in code order.
+   Nearest neighbour (`nearestNeighbour.ts`) is a sweep west to east, never
+   all pairs: from each cache it measures outwards until a cache is farther
+   east or west than the nearest found, which gives exactly the all-pairs
+   answer; it too is capped, at 20,000,000 distance evaluations per search,
+   after which each step goes on to the next cache east, else west.
+   Once any leg is routed (`walkingDistances` not empty), the order follows
+   the legs (`legMeters`) too: each nearest-neighbour step goes on to the
+   shortest leg among the 8 plane-nearest unvisited caches, 2-opt starts from
+   the shorter by legs of that order and the plane order, and measures by
+   legs only the moves that join a cache to one of its 8 plane-nearest
+   (`NEAR_COUNT`). 2-opt never lengthens a walk, so the order is never longer
+   by its legs than the plane order; a move that leaves out an unroutable
+   (Infinity) leg is always taken. Both caps apply as before.
 4. **Split** the ordered path greedily into walks whose legs plus way back
    stay at or below `maxWalkKilometers`; walks with fewer than `minCaches` caches are
    dropped. This also drops the components smaller than `minCaches`: a small
    group can only split into small walks.
    With `loopsOnly` (`roundTrips.ts`), each walk is then closed into a round
    trip: 2-opt over the closed tour from the walk's order (`shortenLoop` in
-   `orderPath.ts`; the first cache stays put, the same work cap), kept only
+   `orderPath.ts`; the first cache stays put, the same work cap, by legs
+   once any leg is routed, as in step 3), kept only
    if it walks shorter than the order it started from, then started after its
    shortest leg, the earliest on a tie, so that leg is the way back. Walks
    whose way back is longer than `maxReturnMeters` are dropped. A round trip

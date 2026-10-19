@@ -2,6 +2,7 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 
 import type { Coordinates } from '../geocache/types';
+import { distanceMeters } from './geo';
 import { orderPath, shortenLoop } from './orderPath';
 import { type PlanePoint, projectToPlane } from './projection';
 import { pointsNear } from './trails.test-support';
@@ -36,7 +37,7 @@ function orderedPlane(
 ): PlanePoint[] {
   const plane = projectToPlane(points);
   const indexed = points.map((point, index) => ({ ...point, index }));
-  return orderPath(indexed, maxMoveEvaluations).map(
+  return orderPath(indexed, { maxMoveEvaluations }).map(
     (point) => plane[point.index],
   );
 }
@@ -53,7 +54,7 @@ function shortenedPlane(
 ): PlanePoint[] {
   const plane = projectToPlane(points);
   const indexed = points.map((point, index) => ({ ...point, index }));
-  return shortenLoop(indexed, maxMoveEvaluations).map(
+  return shortenLoop(indexed, { maxMoveEvaluations }).map(
     (point) => plane[point.index],
   );
 }
@@ -68,9 +69,9 @@ describe('orderPath, for random point sets', () => {
         fc.integer({ min: 0, max: 50 }),
         (points, budget) => {
           const indexed = points.map((point, index) => ({ ...point, index }));
-          const ordered = orderPath(indexed, budget).map(
-            (point) => point.index,
-          );
+          const ordered = orderPath(indexed, {
+            maxMoveEvaluations: budget,
+          }).map((point) => point.index);
           expect([...ordered].sort((a, b) => a - b)).toEqual(
             indexed.map((point) => point.index),
           );
@@ -122,7 +123,9 @@ describe('shortenLoop, for random point sets', () => {
         fc.integer({ min: 0, max: 50 }),
         (points, budget) => {
           const indexed = points.map((point, index) => ({ ...point, index }));
-          const loop = shortenLoop(indexed, budget).map((point) => point.index);
+          const loop = shortenLoop(indexed, { maxMoveEvaluations: budget }).map(
+            (point) => point.index,
+          );
           expect(loop[0]).toBe(0);
           expect([...loop].sort((a, b) => a - b)).toEqual(
             indexed.map((point) => point.index),
@@ -163,6 +166,70 @@ describe('shortenLoop, for random point sets', () => {
             ).toBeGreaterThanOrEqual(length - 1e-6);
           }
         }
+      }),
+    );
+  });
+});
+
+interface Indexed extends Coordinates {
+  index: number;
+}
+
+/** Symmetric legs one to three times the straight line, a few without any path. */
+function unevenLegs(seed: number): (from: Indexed, to: Indexed) => number {
+  return (from, to) => {
+    const [low, high] = [from.index, to.index].sort((a, b) => a - b);
+    const roll = (low * 31 + high * 17 + seed) % 7;
+    return roll === 0 ? Infinity : distanceMeters(from, to) * (1 + roll / 3);
+  };
+}
+
+function walkedLength(
+  ordered: readonly Indexed[],
+  legMeters: (from: Indexed, to: Indexed) => number,
+  { closed }: { closed: boolean },
+): number {
+  const legs = ordered
+    .slice(1)
+    .map((point, index) => legMeters(ordered[index], point));
+  if (closed) legs.push(legMeters(ordered[ordered.length - 1], ordered[0]));
+  return legs.reduce((total, leg) => total + leg, 0);
+}
+
+describe('ordering by walking legs, for random point sets and legs', () => {
+  const indexedSets = smallSets.map((points) =>
+    points.map((point, index) => ({ ...point, index })),
+  );
+
+  it('orders a permutation never walking farther than the plane order', () => {
+    fc.assert(
+      fc.property(indexedSets, fc.nat(100), (points, seed) => {
+        const legMeters = unevenLegs(seed);
+        const ordered = orderPath(points, { legMeters });
+        expect(
+          ordered.map((point) => point.index).sort((a, b) => a - b),
+        ).toEqual(points.map((point) => point.index));
+        const open = { closed: false };
+        expect(walkedLength(ordered, legMeters, open)).toBeLessThanOrEqual(
+          walkedLength(orderPath(points), legMeters, open) * (1 + 1e-9),
+        );
+      }),
+    );
+  });
+
+  it('shortens a round trip, first point first, never walking farther than the order given', () => {
+    fc.assert(
+      fc.property(indexedSets, fc.nat(100), (points, seed) => {
+        const legMeters = unevenLegs(seed);
+        const loop = shortenLoop(points, { legMeters });
+        expect(loop[0]).toBe(points[0]);
+        expect(loop.map((point) => point.index).sort((a, b) => a - b)).toEqual(
+          points.map((point) => point.index),
+        );
+        const closed = { closed: true };
+        expect(walkedLength(loop, legMeters, closed)).toBeLessThanOrEqual(
+          walkedLength(points, legMeters, closed) * (1 + 1e-9),
+        );
       }),
     );
   });

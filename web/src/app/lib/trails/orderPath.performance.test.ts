@@ -19,7 +19,9 @@ describe('orderPath at the largest realistic size', () => {
     const improved = orderPath(chain);
     const elapsed = performance.now() - started;
 
-    expect(pathMeters(improved)).toBeLessThan(pathMeters(orderPath(chain, 0)));
+    expect(pathMeters(improved)).toBeLessThan(
+      pathMeters(orderPath(chain, { maxMoveEvaluations: 0 })),
+    );
     // Measured 0.13 s in Node, 0.8 s under coverage; the bound catches a complexity regression, not jitter.
     expect(elapsed).toBeLessThan(3000);
   }, 30_000);

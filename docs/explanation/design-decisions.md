@@ -83,8 +83,12 @@ sends the trail caches' coordinates to a third party:
   `2 × maxGapMeters × detourFactor` (or unroutable) is a barrier and does not
   link. Each leg of a walk and its way back counts its routed distance where
   known, else the straight line times the detour factor, so walk splitting,
-  time and caches per hour follow real paths. With every route equal to its
-  estimate the trails are exactly those without routes.
+  time and caches per hour follow real paths. The walking order follows the
+  routed legs too: a straight-line order zig-zags across a canal, each
+  crossing then a detour to a bridge, and the walk splits into fragments.
+  Ordered by legs, it goes along each bank and crosses on the bridges, and it
+  is never a longer walk than the straight-line order. Until any leg is
+  routed the order is the straight-line one, exactly as without routes.
 - **Determinism.** `findTrails` takes the routed distances as an input, so
   the same distances give the same trails; only the hook that fetches them is
   asynchronous.
@@ -124,9 +128,25 @@ segments while that shortens the path). Nearest neighbour alone leaves
 crossings that 2-opt removes; anything heavier (Lin–Kernighan, exact TSP)
 buys little for chains of tens to hundreds of caches. The improvement loop has
 a fixed iteration cap — a count, never a time limit — so the result is
-deterministic and testable. Long chains are then **split greedily** along the
+deterministic and testable. Nearest neighbour compares a cache only with
+those a sweep from west to east meets before they are farther east or west
+than the nearest so far, which is the same answer as all pairs at a fraction
+of the work, under its own count cap. Long chains are then **split greedily** along the
 order into walks that fit `maxWalkKilometers` including the walk back to the
 start, which is how people actually walk long trails: one section per outing.
+
+## Why a cap on caches per import, and no Web Worker
+
+Trail finding runs on the main thread, on every launch, over everything
+stored. The ordering is the costly part: 2-opt is capped per group, nearest
+neighbour is a sweep, but the whole still grows with the import. So an import
+holds at most 20,000 caches (twenty full Pocket Queries), which keeps a
+start-up trail search within the budget `findTrails.performance.test.ts`
+measures, and a file past it is refused with a message, not silently
+trimmed. Moving trail finding into a Web Worker would free the main thread
+whatever the size, but it adds a second bundle, a message protocol and a
+loading state for every result; that is a design change of its own, not a
+bound on work.
 
 ## Why round trips are opt-in, and closed after the split
 

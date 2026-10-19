@@ -54,8 +54,9 @@ it read from how many files, and why it refused a file:
 - **not a geocache .zip or .gpx file**: another kind of file, or XML that is
   not GPX;
 - **damaged**: the file could not be read, or a zip is broken;
-- **too large**: a zip of more than 50 files or more than 100 MB unpacked, or
-  any file over 100 MB.
+- **too large**: a zip of more than 50 files or more than 100 MB unpacked,
+  any file over 100 MB, or a file that would take one import past 20,000
+  caches (about twenty full Pocket Queries); import the rest separately.
 
 Importing again adds to what is already there: a cache imported twice is
 kept once, the newer file's details winning. A newer run of the same Pocket
@@ -203,6 +204,9 @@ second at most. With the answers:
 - Two caches with no path between them, or only a very long one, no longer
   link, so a trail splits at the barrier (and may disappear if neither part
   is big enough).
+- The walking order follows real footpaths too: along a river or a motorway
+  it walks up one side and back the other, crossing where a bridge is,
+  instead of zig-zagging across.
 
 A line below the trail list shows the progress ("Checking walking routes …"),
 then "Distances follow real footpaths." The answers are kept in this browser,
