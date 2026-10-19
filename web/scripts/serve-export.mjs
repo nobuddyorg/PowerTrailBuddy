@@ -4,12 +4,16 @@ import { mkdirSync, rmSync, symlinkSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { assertPrecacheManifest } from './precache-manifest.mjs';
+
 const webDirectory = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const port = process.argv[2] ?? '4173';
 const basePath = (process.argv[3] ?? '').replace(/^\//, '');
 
 const scratch = resolve(webDirectory, '.e2e-serve');
 const out = resolve(webDirectory, 'out');
+// An export the worker cannot install from would pass every online test and fail only offline.
+assertPrecacheManifest(out);
 
 let root = out;
 if (basePath) {
