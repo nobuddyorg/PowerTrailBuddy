@@ -220,8 +220,9 @@ report or add it.
 
 ## See and clear your data
 
-**Your data** shows how many caches, trails, finds marked here and ignored
-caches are stored, and when and from which files you last imported.
+**Your data** (full screen on a phone) shows how many caches, trails, finds
+marked here and ignored caches are stored, and when and from which files you
+last imported.
 
 **Clear all data** removes every imported cache, your settings, the caches you
 marked found or ignored, any walk in progress and the stored walking routes

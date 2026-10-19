@@ -29,6 +29,22 @@ test.describe('the data on this device', () => {
     await expect(app.data.locators.lastImport).toHaveText(/\d/);
   });
 
+  test('fills the whole screen on a phone', async ({ on, page, isMobile }) => {
+    test.skip(!isMobile, 'a sheet over the app on a wider screen');
+    const app = on(page);
+    await app.home.do.open();
+    await app.emptyState.do.importFiles([await pocketQueryZip()]);
+    await app.home.do.dismissImportSummary();
+
+    await app.data.do.open();
+
+    expect(await app.data().boundingBox()).toEqual({
+      x: 0,
+      y: 0,
+      ...page.viewportSize(),
+    });
+  });
+
   test('merges another import into what is there', async ({ on, page }) => {
     const app = on(page);
     await app.home.do.open();
