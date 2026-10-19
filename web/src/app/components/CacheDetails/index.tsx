@@ -50,7 +50,9 @@ export function CacheDetails({
         </p>
         <h2
           id={`cache-${cache.code}`}
-          className="text-xl font-bold leading-tight"
+          data-view-heading
+          tabIndex={-1}
+          className="text-xl font-bold leading-tight outline-none"
         >
           {cache.name}
         </h2>
@@ -84,7 +86,7 @@ export function CacheDetails({
         <h3 className="text-sm font-semibold">{t('cache.recentLogs')}</h3>
         <RecentLogs logs={cache.recentLogs} />
       </section>
-      <HintSpoiler hint={cache.hint} />
+      <HintSpoiler key={cache.code} hint={cache.hint} />
       <MarkButtons cache={cache} />
     </article>
   );

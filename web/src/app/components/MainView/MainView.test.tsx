@@ -331,4 +331,79 @@ describe('MainView', () => {
       'full',
     );
   });
+
+  it('shows the next cache tapped on the map with its hint hidden again', () => {
+    renderMain({
+      app: makeApp({
+        caches: CACHES.map((cache) => ({ ...cache, hint: `At ${cache.code}` })),
+      }),
+    });
+    tap('map cache GCONE1');
+    tap('Show hint');
+    expect(screen.getByText('At GCONE1')).toBeVisible();
+    tap('map cache GCONE2');
+    expect(screen.getByText('At GCONE2')).not.toBeVisible();
+  });
+});
+
+describe('MainView focus', () => {
+  const heading = (name: string) => screen.getByRole('heading', { name });
+  const press = (element: HTMLElement) => {
+    element.focus();
+    fireEvent.click(element);
+  };
+
+  it("moves to a trail's title, and back to its card", () => {
+    renderMain();
+    press(screen.getAllByTestId('trail-card')[1]);
+    expect(heading('Trail #2')).toHaveFocus();
+    press(screen.getByTestId('trail-back'));
+    expect(screen.getAllByTestId('trail-card')[1]).toHaveFocus();
+  });
+
+  it("moves to a cache's name, and back to its row in the trail", () => {
+    renderMain();
+    press(screen.getAllByTestId('trail-card')[0]);
+    press(screen.getAllByTestId('trail-cache-toggle')[1]);
+    press(screen.getByRole('button', { name: 'Show on map' }));
+    expect(heading('Row stop 2')).toHaveFocus();
+    press(screen.getByTestId('cache-back'));
+    expect(screen.getAllByTestId('trail-cache-toggle')[1]).toHaveFocus();
+  });
+
+  it('falls back to the panel when the way in is gone', () => {
+    renderMain();
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Find a cache' }), {
+      target: { value: 'lonely' },
+    });
+    press(screen.getByTestId('search-result'));
+    expect(heading('Lonely Stump')).toHaveFocus();
+    press(screen.getByTestId('cache-back'));
+    expect(document.activeElement).toContainElement(
+      screen.getByRole('searchbox', { name: 'Find a cache' }),
+    );
+  });
+
+  it('leaves focus on the map that picked a trail or a cache', () => {
+    renderMain();
+    press(screen.getByRole('button', { name: 'map trail first' }));
+    expect(
+      screen.getByRole('button', { name: 'map trail first' }),
+    ).toHaveFocus();
+    press(screen.getByRole('button', { name: 'map cache GCONE2' }));
+    expect(
+      screen.getByRole('button', { name: 'map cache GCONE2' }),
+    ).toHaveFocus();
+  });
+
+  it('takes no focus before the user has done anything', () => {
+    Object.defineProperty(navigator, 'userActivation', {
+      value: { hasBeenActive: false },
+      configurable: true,
+    });
+    renderMain();
+    fireEvent.click(screen.getAllByTestId('trail-card')[0]);
+    expect(document.body).toHaveFocus();
+    Reflect.deleteProperty(navigator, 'userActivation');
+  });
 });

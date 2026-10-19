@@ -1,5 +1,7 @@
 'use client';
 
+import { useRef } from 'react';
+
 import { useI18n } from '../../i18n/useI18n';
 import { compassPoint } from '../../lib/format/compass';
 import { formatDistance } from '../../lib/format/format';
@@ -13,6 +15,7 @@ import { HintSpoiler } from '../CacheDetails/HintSpoiler';
 import { Icon } from '../Icon';
 import { directionName } from '../labels';
 import { buttonClasses } from '../ui/classes';
+import { useFocusOnMount } from '../ui/focus';
 import { Compass } from './Compass';
 import type { Guide } from './useWalkGuide';
 
@@ -93,6 +96,8 @@ export function TargetCard({
   onUndo,
 }: TargetCardProps) {
   const { t } = useI18n();
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useFocusOnMount(headingRef);
   const close = guide.status === 'guiding' && guide.close;
   return (
     <section
@@ -115,7 +120,12 @@ export function TargetCard({
           {t('walk.next')} ·{' '}
           <span data-testid="walk-target-code">{target.code}</span>
         </p>
-        <h2 id="walk-target-name" className="text-lg font-bold leading-tight">
+        <h2
+          ref={headingRef}
+          id="walk-target-name"
+          tabIndex={-1}
+          className="text-lg font-bold leading-tight outline-none"
+        >
           {target.name}
         </h2>
         <HealthBadge cache={target} />
@@ -171,7 +181,7 @@ export function TargetCard({
           {t('walk.undo')}
         </button>
       </div>
-      <HintSpoiler hint={target.hint} />
+      <HintSpoiler key={target.code} hint={target.hint} />
       <CacheLinks cache={target} />
     </section>
   );

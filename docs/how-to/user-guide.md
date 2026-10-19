@@ -103,7 +103,7 @@ maintenance, disabled).
 - **Find a cache** by code or name with the search box.
 - On the map, tap a trail's numbered badge or line to open it; the layers
   button shows or hides the caches that are on no trail, the target button
-  shows and follows your position.
+  shows and follows your position until you drag or zoom the map yourself.
 
 On a phone the list sits in a panel over the map: drag or tap its handle to
 make it small, half or full height.
@@ -116,7 +116,8 @@ Long chains are split into several walks no longer than the
 <img src="../images/phone-trail.png" alt="A trail on a phone: its numbers, the nearest parking, Start walk and the caches in walking order" width="280">
 
 A trail shows its numbers, the nearest parking with a link that opens your
-navigation app, and its caches in walking order. **Reverse** walks it the
+navigation app (Apple Maps on an iPhone, iPad or Mac), and its caches in
+walking order. **Reverse** walks it the
 other way round. **Export GPX** saves `powertrail-<number>.gpx` with the caches
 in order, the parking and a route, for a navigation app such as OsmAnd or
 Locus. Open a cache in the list for its links and marks.
@@ -126,7 +127,8 @@ Locus. Open a cache in the list for its links and marks.
 A cache shows its code, name, type, ratings, size and owner, how far away and
 in which direction it is, its latest logs and its hint (hidden until you ask).
 Its links open the cache page (`coord.info`, or the Geocaching app when
-installed), your navigation app, or Google Maps walking directions; **Copy**
+installed), your navigation app (Apple Maps on an iPhone, iPad or Mac), or
+Google Maps walking directions; **Copy**
 puts its coordinates on the clipboard as geocachers write them
 (`N 50° 18.000′ E 008° 54.000′`).
 
@@ -161,6 +163,8 @@ phone vibrates once.
   **Undo** takes the last one back.
 - The reverse button turns the rest of the walk around.
 - **Finish** ends early; **Resume walk** goes on.
+- The map keeps you and the next cache in view. Drag or zoom it and it stays
+  where you put it; the target button follows you again.
 
 The screen stays on while you walk, and the walk is saved as you go: reopen
 the app to continue. Caches you mark found are left out of every trail, even

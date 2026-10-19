@@ -2,7 +2,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { usePanel } from './usePanel';
+import { usePanel, viewKey } from './usePanel';
 
 describe('usePanel', () => {
   it('starts at the list, where back stays', () => {
@@ -49,5 +49,27 @@ describe('usePanel', () => {
     act(() => result.current.back());
     act(() => result.current.back());
     expect(result.current.view).toEqual({ kind: 'list' });
+  });
+
+  it('names the view Back left, for focus to return to, until the next open', () => {
+    const { result } = renderHook(() => usePanel());
+    expect(result.current.returnFocus).toBe('');
+    act(() => result.current.open({ kind: 'trail', trailId: 'a' }));
+    act(() => result.current.open({ kind: 'cache', code: 'GC1' }));
+    expect(result.current.returnFocus).toBe('');
+    act(() => result.current.back());
+    expect(result.current.returnFocus).toBe('cache:GC1');
+    act(() => result.current.back());
+    expect(result.current.returnFocus).toBe('trail:a');
+    act(() => result.current.open({ kind: 'cache', code: 'GC2' }));
+    expect(result.current.returnFocus).toBe('');
+  });
+});
+
+describe('viewKey', () => {
+  it('tells every view apart', () => {
+    expect(viewKey({ kind: 'list' })).toBe('list');
+    expect(viewKey({ kind: 'trail', trailId: 'a' })).toBe('trail:a');
+    expect(viewKey({ kind: 'cache', code: 'a' })).toBe('cache:a');
   });
 });

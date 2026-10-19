@@ -4,10 +4,12 @@ import { useI18n } from '../../i18n/useI18n';
 import { formatCoordinates } from '../../lib/format/coordinates';
 import type { Geocache } from '../../lib/geocache/types';
 import {
+  appleMapsUrl,
   cachePageUrl,
   geoUri,
   walkingDirectionsUrl,
 } from '../../lib/navigation/links';
+import { useApplePlatform } from '../../useBrowserState';
 import { Icon, type IconName } from '../Icon';
 import { useToast } from '../Toast/ToastProvider';
 
@@ -27,6 +29,7 @@ function LinkContent({ icon, label }: { icon: IconName; label: string }) {
 export function CacheLinks({ cache }: { cache: Geocache }) {
   const { t } = useI18n();
   const toast = useToast();
+  const navigateUrl = useApplePlatform() ? appleMapsUrl : geoUri;
   const coordinates = formatCoordinates(cache);
   const copy = () => {
     // Inside a promise, so a browser without a clipboard (not a secure context) also lands in catch.
@@ -47,7 +50,7 @@ export function CacheLinks({ cache }: { cache: Geocache }) {
         <LinkContent icon="external" label={t('cache.page')} />
       </a>
       <a
-        href={geoUri(cache, `${cache.code} ${cache.name}`)}
+        href={navigateUrl(cache, `${cache.code} ${cache.name}`)}
         data-testid="cache-navigate-link"
         className={LINK_CLASSES}
       >

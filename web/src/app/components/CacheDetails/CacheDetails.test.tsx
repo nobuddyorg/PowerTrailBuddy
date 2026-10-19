@@ -78,6 +78,7 @@ beforeEach(() => {
 
 afterEach(() => {
   Reflect.deleteProperty(navigator, 'clipboard');
+  vi.restoreAllMocks();
 });
 
 describe('CacheDetails', () => {
@@ -190,6 +191,33 @@ describe('CacheDetails', () => {
       'href',
       'https://www.google.com/maps/dir/?api=1&destination=48.135380,11.576120&travelmode=walking',
     );
+  });
+
+  it('navigates with Apple Maps on an iPhone, which opens no geo: link', () => {
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+    );
+    renderDetails();
+    expect(screen.getByRole('link', { name: 'Navigate' })).toHaveAttribute(
+      'href',
+      'https://maps.apple.com/?ll=48.135380,11.576120&q=GCSU42%20%3Ci%3EOld%20Oak%3C%2Fi%3E',
+    );
+  });
+
+  it('hides the hint again for the next cache shown in its place', () => {
+    const { rerender, ...callbacks } = renderDetails();
+    fireEvent.click(screen.getByRole('button', { name: 'Show hint' }));
+    expect(screen.getByTestId('hint')).toBeVisible();
+    rerender(
+      <CacheDetails
+        cache={{ ...CACHE, code: 'GCSU43', hint: 'Behind the gate' }}
+        membership={leftOut([])}
+        onOpenTrail={callbacks.onOpenTrail}
+        onStartWalkHere={callbacks.onStartWalkHere}
+        onOpenSettings={callbacks.onOpenSettings}
+      />,
+    );
+    expect(screen.getByText('Behind the gate')).not.toBeVisible();
   });
 
   it('copies the coordinates as geocachers write them and confirms it', async () => {

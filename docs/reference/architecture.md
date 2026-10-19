@@ -34,11 +34,11 @@ All paths relative to `web/src/app/`.
 | `lib/walk/` | Walk state: start, orient, reverse, record, undo, next cache, progress, pace | other `lib/` |
 | `lib/export/` | The two downloads: a trail as GPX (`trailGpx.ts`), a walk as Geocaching.com field notes (`fieldNotes.ts`) | other `lib/` |
 | `lib/format/` | Display formatting: distances, durations, rates, ratings, coordinates, dates, compass points, decimal input | other `lib/` |
-| `lib/navigation/` | Outbound links (`coord.info`, `geo:`, Google Maps walking directions) and the share-target landing (`sharedLaunch.ts`) | other `lib/` |
+| `lib/navigation/` | Outbound links (`coord.info`, `geo:`, Apple Maps for Apple devices, Google Maps walking directions) and the share-target landing (`sharedLaunch.ts`) | other `lib/` |
 | `lib/ui-logic/` | Pure decisions behind the UI: trail cards (sort, filter, health), search, presets, heading, parking, bottom-sheet snapping, walk statistics | other `lib/` |
 | `data/` | Browser storage: IndexedDB through idb-keyval (`store.ts`), settings validation (`sanitizeSettings.ts`), shared files from Cache Storage (`sharedFiles.ts`), the `localStorage` shim (`browserStorage.ts`); the routing server's `fetch` (`walkingRoutes.ts`) | `lib/`, `idb-keyval` |
 | `components/` | React UI | `lib/`, `data/`, `i18n/` |
-| `components/Map/` | The only Leaflet wrapper; owns the tile URL. `content.ts` (pure) turns trails and a walk into markers, lines and badges | `leaflet`, `lib/` |
+| `components/Map/` | The only Leaflet wrapper; owns the tile URL. `content.ts` (pure) turns trails and a walk into markers, lines and badges; `userMoves.ts` tells a pan or zoom by hand, which ends following, from the app's own fits | `leaflet`, `lib/` |
 | `i18n/` | `I18nProvider`, `useI18n`, the pure helpers in `translate.ts`, `de.json`, `en.json` | `data/browserStorage.ts` only |
 | top level | `layout.tsx`, `page.tsx`, `env.ts` (base path), `useAppState.ts` with `useMarkActions.ts` and `useWalkActions.ts` (the state and its actions; shared types in `dataCore.ts`), the device hooks (`useGeolocation`, `useCompass`, `useWakeLock`, `useFollow`, `useInstallPrompt`, `useBrowserState`), `useTrails.ts`, `useWalkingDistances.ts` (fetches and keeps routed distances while walking routes are on), `useServiceWorker.ts`, `ServiceWorkerRegistration.tsx`, `globals.css` | anything above |
 

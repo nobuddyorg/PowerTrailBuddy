@@ -4,11 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
 import type {
   Canvas,
-  CircleMarkerOptions,
   LatLngExpression,
   LayerGroup,
   Map as LeafletMap,
-  PolylineOptions,
 } from 'leaflet';
 
 import type { Coordinates } from '../../lib/geocache/types';
@@ -20,7 +18,9 @@ import {
   targetPulseElement,
   textElement,
 } from './elements';
-import type { LineTone, MapMarker, MapProps, MarkerTone } from './types';
+import { lineStyle, markerStyle } from './styles';
+import type { MapProps } from './types';
+import { watchUserMoves } from './userMoves';
 
 type Leaflet = typeof import('leaflet');
 
@@ -32,85 +32,6 @@ interface LoadedMap {
   markerLayer: LayerGroup;
   overlayLayer: LayerGroup;
   positionLayer: LayerGroup;
-}
-
-// Fixed colours: the canvas renderer cannot read CSS variables.
-const WHITE = '#ffffff';
-const MUTED = '#7b8579';
-const WARNING = '#d97706';
-const TARGET = '#f97316';
-
-function markerStyle({ tone, color, warning }: MapMarker): CircleMarkerOptions {
-  const ring = warning
-    ? { color: WARNING, weight: 3 }
-    : { color: WHITE, weight: 1.5 };
-  const styles: Record<MarkerTone, CircleMarkerOptions> = {
-    trail: { radius: 6, fillColor: color, fillOpacity: 0.95, ...ring },
-    selected: {
-      radius: 7.5,
-      fillColor: color,
-      fillOpacity: 1,
-      ...ring,
-      weight: warning ? 3 : 2,
-    },
-    faded: {
-      radius: 4.5,
-      fillColor: color,
-      fillOpacity: 0.35,
-      color: WHITE,
-      weight: 1,
-      opacity: 0.5,
-    },
-    other: {
-      radius: 4,
-      fillColor: MUTED,
-      fillOpacity: 0.6,
-      ...ring,
-      weight: warning ? 2 : 1,
-    },
-    disabled: {
-      radius: 4,
-      fillColor: WHITE,
-      fillOpacity: 1,
-      color: MUTED,
-      weight: 2,
-      dashArray: '2 2',
-    },
-    found: { radius: 0, opacity: 0, fillOpacity: 0 },
-    done: {
-      radius: 5,
-      fillColor: '#9ca3af',
-      fillOpacity: 0.9,
-      color: WHITE,
-      weight: 1.5,
-    },
-    dnf: {
-      radius: 5,
-      fillColor: WHITE,
-      fillOpacity: 1,
-      color: '#b42318',
-      weight: 2.5,
-    },
-    target: {
-      radius: 11,
-      fillColor: TARGET,
-      fillOpacity: 1,
-      color: WHITE,
-      weight: 3,
-    },
-  };
-  return styles[tone];
-}
-
-function lineStyle(tone: LineTone, color: string): PolylineOptions {
-  const styles: Record<LineTone, PolylineOptions> = {
-    trail: { color, weight: 4, opacity: 0.85 },
-    selected: { color, weight: 6, opacity: 1 },
-    faded: { color, weight: 3, opacity: 0.3 },
-    walk: { color, weight: 5, opacity: 0.6 },
-    guide: { color: TARGET, weight: 3, opacity: 0.9, dashArray: '6 8' },
-  };
-  return styles[tone];
 }
 
 const FIT_MAX_ZOOM = 17;
@@ -149,6 +70,7 @@ export default function MapView({
     let cancelled = false;
     let map: LeafletMap | undefined;
     let zoomAnimating = false;
+    let stopWatching = () => {};
     void (async () => {
       // Imported here: Leaflet touches window on import, which the static prerender has none of.
       const L = (await import('leaflet')).default;
@@ -158,7 +80,7 @@ export default function MapView({
         [51, 10],
         5,
       );
-      L.control
+      const zoomControl = L.control
         .zoom({
           position: 'topright',
           zoomInTitle: zoomIn,
@@ -171,7 +93,9 @@ export default function MapView({
         crossOrigin: true,
         attribution: `&copy; <a href="https://www.openstreetmap.org/copyright">${attribution}</a>`,
       }).addTo(map);
-      map.on('dragstart', () => callbacks.current.onUserPan?.());
+      stopWatching = watchUserMoves(map, zoomControl, () =>
+        callbacks.current.onUserPan?.(),
+      );
       map.on('zoomanim', () => (zoomAnimating = true));
       map.on('moveend', () => (zoomAnimating = false));
       setLoaded({
@@ -187,6 +111,7 @@ export default function MapView({
     })();
     return () => {
       cancelled = true;
+      stopWatching();
       setLoaded(undefined);
       const removed = map;
       // Leaflet 1.9 ends a zoom animation on a timer that remove() leaves running, which then reads the removed pane.

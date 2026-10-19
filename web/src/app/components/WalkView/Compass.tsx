@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
+
 import { useI18n } from '../../i18n/useI18n';
 import { relativeBearing } from '../../lib/format/compass';
-import type { Heading } from '../../lib/ui-logic/heading';
+import { unwrapRotation, type Heading } from '../../lib/ui-logic/heading';
 
 interface CompassProps {
   /** Bearing from the walker to the target, degrees clockwise from north. */
@@ -11,11 +13,24 @@ interface CompassProps {
   close: boolean;
 }
 
+/** The angle to draw: each new one reached from the last the short way, so the transition never spins round. */
+function useDrawnRotation(rotation: number): number {
+  const [drawn, setDrawn] = useState({ angle: rotation, rotation });
+  if (drawn.angle === rotation) return drawn.rotation;
+  const next = {
+    angle: rotation,
+    rotation: unwrapRotation(drawn.rotation, rotation),
+  };
+  setDrawn(next);
+  return next.rotation;
+}
+
 /** A big arrow to the target: relative to the way the phone faces when a heading is known, else north-up. */
 export function Compass({ bearing, heading, close }: CompassProps) {
   const { t } = useI18n();
   const facing = heading.source !== 'none';
   const rotation = facing ? relativeBearing(bearing, heading.degrees) : bearing;
+  const drawn = useDrawnRotation(rotation);
   const color = close ? 'var(--accent-bright)' : 'var(--primary)';
   return (
     <div className="flex shrink-0 flex-col items-center gap-1">
@@ -52,9 +67,9 @@ export function Compass({ bearing, heading, close }: CompassProps) {
         )}
         <g
           data-testid="compass-arrow"
-          data-rotation={Math.round(rotation)}
+          data-rotation={Math.round(drawn)}
           style={{
-            transform: `rotate(${rotation}deg)`,
+            transform: `rotate(${drawn}deg)`,
             transformOrigin: '60px 60px',
           }}
           className="motion-safe:transition-transform motion-safe:duration-300"

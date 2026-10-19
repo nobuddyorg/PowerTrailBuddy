@@ -20,9 +20,11 @@ vi.mock('../ui/download', () => ({ downloadFile: vi.fn() }));
 
 const NOW = new Date('2026-06-01T10:30:00Z');
 const STARTED = '2026-06-01T10:00:00Z';
-const CACHES = makeCaches(3, 'GCWALK').map((cache, index) =>
-  index === 0 ? { ...cache, hint: 'Under the root' } : cache,
-);
+const HINTS = ['Under the root', 'In the hedge', ''];
+const CACHES = makeCaches(3, 'GCWALK').map((cache, index) => ({
+  ...cache,
+  hint: HINTS[index],
+}));
 const OTHER = makeCache({ code: 'GCAWAY', latitude: 47.6 });
 const TRAIL = makeTrail({ id: 'walk', caches: CACHES });
 
@@ -89,6 +91,7 @@ afterEach(() => {
   vi.useRealTimers();
   Reflect.deleteProperty(navigator, 'vibrate');
   Reflect.deleteProperty(navigator, 'share');
+  Reflect.deleteProperty(navigator, 'userActivation');
   vi.unstubAllGlobals();
 });
 
@@ -180,6 +183,33 @@ describe('guiding to the next cache', () => {
       'href',
       'https://coord.info/GCWALK1',
     );
+  });
+
+  it("hides the next cache's hint again, whatever was shown for the last one", () => {
+    const { rerenderWith } = renderWalk();
+    fireEvent.click(button('Show hint'));
+    expect(screen.getByText('Under the root')).toBeVisible();
+    rerenderWith({
+      walk: walkWith([['GCWALK1', 'found', '2026-06-01T10:10:00Z']]),
+    });
+    expect(screen.getByText('In the hedge')).not.toBeVisible();
+    expect(button('Show hint')).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('turns the arrow the short way when the direction crosses north', () => {
+    const walking = (gpsHeading: number) =>
+      located(9.4987, { gpsHeading, speed: 1.4 });
+    const { rerenderWith } = renderWalk({ location: walking(91) });
+    const arrow = screen.getByTestId('compass-arrow');
+    expect(arrow).toHaveAttribute('data-rotation', '359');
+    rerenderWith({ location: walking(88) });
+    expect(arrow).toHaveAttribute('data-rotation', '362');
+    expect(arrow.style.transform).toMatch(/^rotate\(36[12]\.\d*deg\)$/);
+    expect(
+      screen.getByRole('img', {
+        name: 'Arrow to the cache, 2° clockwise from where you face',
+      }),
+    ).toBeInTheDocument();
   });
 
   it('asks for the compass with a tap where the browser wants one', () => {
@@ -370,5 +400,38 @@ describe('the end of the walk', () => {
     expect(
       screen.getByRole('heading', { name: 'Row stop 2' }),
     ).toBeInTheDocument();
+  });
+});
+
+describe('focus', () => {
+  const heading = (name: string) => screen.getByRole('heading', { name });
+
+  it('lands on the target when the walk starts, and on the summary when it ends', () => {
+    renderWalk();
+    expect(heading('Row stop 1')).toHaveFocus();
+    fireEvent.click(button('Finish'));
+    expect(heading('Walk finished early')).toHaveFocus();
+    fireEvent.click(button('Resume walk'));
+    expect(heading('Row stop 1')).toHaveFocus();
+  });
+
+  it('stays on Found while the next target comes up', () => {
+    const { rerenderWith } = renderWalk();
+    button('Found').focus();
+    rerenderWith({
+      walk: walkWith([['GCWALK1', 'found', '2026-06-01T10:10:00Z']]),
+    });
+    expect(heading('Row stop 2')).not.toHaveFocus();
+    expect(button('Found')).toHaveFocus();
+  });
+
+  it('is left alone when a walk is resumed on page load, before any tap', () => {
+    Object.defineProperty(navigator, 'userActivation', {
+      value: { hasBeenActive: false },
+      configurable: true,
+    });
+    renderWalk();
+    expect(heading('Row stop 1')).not.toHaveFocus();
+    expect(document.body).toHaveFocus();
   });
 });

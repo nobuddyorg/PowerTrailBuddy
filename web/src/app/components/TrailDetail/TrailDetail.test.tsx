@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { fireEvent, screen, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   makeCache,
@@ -50,6 +50,10 @@ const rows = () => screen.getAllByTestId('trail-cache');
 beforeEach(() => {
   localStorage.setItem('lang', 'en');
   vi.mocked(downloadFile).mockClear();
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 describe('TrailDetail', () => {
@@ -124,6 +128,17 @@ describe('TrailDetail', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Reverse' }));
     expect(screen.getByTestId('trail-parking')).toHaveTextContent(
       'N 47° 30.000′ E 009° 30.600′',
+    );
+  });
+
+  it('points to the parking with Apple Maps on an iPhone', () => {
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+    );
+    renderDetail();
+    expect(screen.getByTestId('trail-parking')).toHaveAttribute(
+      'href',
+      'https://maps.apple.com/?ll=47.499000,9.500000&q=Parking%2C%20trail%20%232',
     );
   });
 

@@ -73,6 +73,7 @@ export const QUICK_TRAIL = chain({
   north: 0,
 }).map((cache, index) => {
   if (index === 0) return { ...cache, hint: 'Under the synthetic stone' };
+  if (index === 1) return { ...cache, hint: 'Behind the synthetic fence' };
   if (index === 4) return { ...cache, logs: DNF_STREAK_LOGS };
   if (index === 7) return { ...cache, logs: MAINTENANCE_LOGS };
   return cache;
