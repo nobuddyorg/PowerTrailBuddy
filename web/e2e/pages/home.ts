@@ -54,6 +54,8 @@ export function initHome(page: Page): Home {
       await screens.first().waitFor();
     },
     reload: async () => {
+      // A request still in flight (the lazily loaded map) is aborted by the reload, and Firefox logs the worker's lost answer.
+      await page.waitForLoadState('networkidle');
       await page.reload({ waitUntil: 'networkidle' });
       await screens.first().waitFor();
     },
