@@ -18,11 +18,7 @@
   "header": {
     "data": "Your data",
     "settings": "Settings",
-    "install": "Install app",
-    "offline": "Offline",
-    "language": "Language",
-    "german": "DE",
-    "english": "EN"
+    "offline": "Offline"
   },
   "empty": {
     "title": "Find the best power trails near you",
@@ -235,6 +231,16 @@
       "title": "Walking routes",
       "toggle": "Check trails on real footpaths",
       "help": "Sends the coordinates of trail caches to the FOSSGIS routing server (routing.openstreetmap.de). Distances then follow real footpaths, and trails split where a motorway, river or other barrier lies between two caches. Off, everything stays on this device and distances are straight lines times the detour factor."
+    },
+    "language": {
+      "title": "Language",
+      "german": "Deutsch",
+      "english": "English"
+    },
+    "install": {
+      "title": "App",
+      "button": "Install app",
+      "help": "Puts PowerTrailBuddy on your home screen, where it opens full screen and works offline."
     }
   },
   "cacheType": {

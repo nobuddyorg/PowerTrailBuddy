@@ -15,8 +15,18 @@ interface ModalProps {
   onClose: () => void;
   children: ReactNode;
   role?: 'dialog' | 'alertdialog';
+  /** On a phone: a sheet from the bottom, or the whole screen. */
+  phoneLayout?: 'sheet' | 'fullScreen';
   testId?: string;
 }
+
+const PHONE_LAYOUT_CLASSES = {
+  sheet: { backdrop: 'items-end', panel: 'max-h-[92dvh] rounded-t-3xl' },
+  fullScreen: {
+    backdrop: 'items-stretch',
+    panel: 'h-full sm:h-auto sm:max-h-[92dvh]',
+  },
+} as const;
 
 function focusablesIn(panel: HTMLElement): HTMLElement[] {
   return [...panel.querySelectorAll<HTMLElement>(FOCUSABLE)];
@@ -43,6 +53,7 @@ export function Modal({
   onClose,
   children,
   role = 'dialog',
+  phoneLayout = 'sheet',
   testId,
 }: ModalProps) {
   const { t } = useI18n();
@@ -79,8 +90,11 @@ export function Modal({
     };
   }, []);
 
+  const layout = PHONE_LAYOUT_CLASSES[phoneLayout];
   return (
-    <div className="fixed inset-0 z-[2000] flex items-end justify-center bg-black/40 backdrop-blur-[2px] sm:items-center sm:p-4">
+    <div
+      className={`fixed inset-0 z-[2000] flex ${layout.backdrop} justify-center bg-black/40 backdrop-blur-[2px] sm:items-center sm:p-4`}
+    >
       <div
         ref={panelRef}
         role={role}
@@ -88,7 +102,7 @@ export function Modal({
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
         data-testid={testId}
-        className="flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-card text-card-foreground shadow-2xl sm:rounded-3xl"
+        className={`flex ${layout.panel} w-full max-w-lg flex-col overflow-hidden bg-card text-card-foreground shadow-2xl sm:rounded-3xl`}
       >
         <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
           <h2 id={titleId} className="text-lg font-semibold">

@@ -21,6 +21,8 @@ function renderDialog(
     onUnignore: vi.fn(),
     walkingRoutes: false,
     onWalkingRoutesChange: vi.fn(),
+    canInstall: false,
+    onInstall: vi.fn(),
     onClose: vi.fn(),
     ...overrides,
   };
@@ -188,5 +190,35 @@ describe('SettingsDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(onApply).not.toHaveBeenCalled();
+  });
+
+  it('switches the language at once and marks the current one', () => {
+    renderDialog();
+    expect(screen.getByRole('button', { name: 'English' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Deutsch' }));
+    expect(screen.getByRole('button', { name: 'Deutsch' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(localStorage.getItem('lang')).toBe('de');
+    expect(
+      screen.getByRole('dialog', { name: 'Einstellungen' }),
+    ).toBeInTheDocument();
+  });
+
+  it('offers to install only while the browser does', () => {
+    renderDialog();
+    expect(
+      screen.queryByRole('button', { name: 'Install app' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('installs from the offer', () => {
+    const { onInstall } = renderDialog({ canInstall: true });
+    fireEvent.click(screen.getByRole('button', { name: 'Install app' }));
+    expect(onInstall).toHaveBeenCalledTimes(1);
   });
 });

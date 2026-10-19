@@ -1,21 +1,16 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
-type Language = 'de' | 'en';
-
 interface Home {
   (): Locator;
   do: {
     open(path?: string): Promise<void>;
     reload(): Promise<void>;
     dismissImportSummary(): Promise<void>;
-    switchLanguage(language: Language): Promise<void>;
   };
   locators: {
     buttons: {
       data: Locator;
-      install: Locator;
       settings: Locator;
-      language(language: Language): Locator;
     };
     errorNotice: Locator;
     importSummary: Locator;
@@ -33,13 +28,11 @@ export function initHome(page: Page): Home {
     .or(root.getByTestId('side-panel'))
     .or(root.getByTestId('bottom-sheet'))
     .or(root.getByTestId('walk-view'));
+  const map = root.getByTestId('map');
   const locators = {
     buttons: {
       data: root.getByTestId('open-data'),
-      install: root.getByTestId('install-app'),
       settings: root.getByTestId('open-settings'),
-      language: (language: Language) =>
-        root.getByTestId(`language-${language}`),
     },
     errorNotice: root.getByTestId('error-notice'),
     importSummary: root.getByTestId('import-summary'),
@@ -54,18 +47,15 @@ export function initHome(page: Page): Home {
       await screens.first().waitFor();
     },
     reload: async () => {
-      // A request still in flight (the lazily loaded map) is aborted by the reload, and Firefox logs the worker's lost answer.
-      await page.waitForLoadState('networkidle');
+      // A reload aborts the lazily loaded Leaflet still in flight, and Firefox logs the worker's lost answer; networkidle, reached at the first load, no longer waits.
+      if ((await map.count()) > 0)
+        await expect(map).toHaveClass(/leaflet-container/);
       await page.reload({ waitUntil: 'networkidle' });
       await screens.first().waitFor();
     },
     dismissImportSummary: async () => {
       await root.getByTestId('import-summary-dismiss').click();
       await expect(locators.importSummary).toBeHidden();
-    },
-    switchLanguage: async (language: Language) => {
-      await locators.buttons.language(language).click();
-      await expect(page.locator('html')).toHaveAttribute('lang', language);
     },
   };
   return Object.assign(() => root, { locators, do: interactions });

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useI18n } from '../../i18n/useI18n';
 import { useAppState, type AppState } from '../../useAppState';
 import { useGeolocation } from '../../useGeolocation';
+import { useInstallPrompt } from '../../useInstallPrompt';
 import { useTrails } from '../../useTrails';
 import { useWalkingDistances } from '../../useWalkingDistances';
 import { CacheMarksProvider } from '../CacheDetails/marks';
@@ -40,6 +41,7 @@ function Loading() {
 function Shell() {
   const app: AppState = useAppState();
   const { location, start } = useGeolocation();
+  const { canInstall, install } = useInstallPrompt();
   const [dialog, setDialog] = useState<OpenDialog>('none');
   const close = () => setDialog('none');
   // Ignored caches leave the trails the same way found ones do.
@@ -165,6 +167,8 @@ function Shell() {
             onWalkingRoutesChange={(walkingRoutes) =>
               app.setPreferences({ walkingRoutes })
             }
+            canInstall={canInstall}
+            onInstall={install}
             onClose={close}
           />
         )}

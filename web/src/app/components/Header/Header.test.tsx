@@ -18,17 +18,6 @@ function renderHeader(walking = false) {
   return { onOpenData, onOpenSettings };
 }
 
-function offerInstall(prompt = vi.fn().mockResolvedValue(undefined)) {
-  const event = Object.assign(
-    new Event('beforeinstallprompt', { cancelable: true }),
-    { prompt },
-  );
-  act(() => {
-    window.dispatchEvent(event);
-  });
-  return { event, prompt };
-}
-
 function setOnline(online: boolean) {
   Object.defineProperty(navigator, 'onLine', {
     value: online,
@@ -62,24 +51,6 @@ describe('Header', () => {
     expect(screen.getByText('Buddy').className).toContain('text-brand-accent');
   });
 
-  it('switches the language and marks the current one', () => {
-    renderHeader();
-    const german = screen.getByRole('button', { name: 'DE' });
-    expect(screen.getByRole('button', { name: 'EN' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    fireEvent.click(german);
-    expect(screen.getByRole('button', { name: 'DE' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    expect(localStorage.getItem('lang')).toBe('de');
-    expect(
-      screen.getByRole('button', { name: 'Einstellungen' }),
-    ).toBeInTheDocument();
-  });
-
   it('opens the data and settings dialogs', () => {
     const { onOpenData, onOpenSettings } = renderHeader();
     fireEvent.click(screen.getByRole('button', { name: 'Your data' }));
@@ -105,41 +76,5 @@ describe('Header', () => {
     expect(screen.getByTestId('offline')).toHaveTextContent('Offline');
     setOnline(true);
     expect(screen.queryByTestId('offline')).not.toBeInTheDocument();
-  });
-
-  it('offers to install once the browser does, and shows the prompt only once', () => {
-    renderHeader();
-    expect(
-      screen.queryByRole('button', { name: 'Install app' }),
-    ).not.toBeInTheDocument();
-    const { event, prompt } = offerInstall();
-    expect(event.defaultPrevented).toBe(true);
-    fireEvent.click(screen.getByRole('button', { name: 'Install app' }));
-    expect(prompt).toHaveBeenCalledTimes(1);
-    expect(
-      screen.queryByRole('button', { name: 'Install app' }),
-    ).not.toBeInTheDocument();
-  });
-
-  it('tolerates a prompt the browser refuses', async () => {
-    renderHeader();
-    offerInstall(vi.fn().mockRejectedValue(new Error('refused')));
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Install app' }));
-    });
-    expect(
-      screen.queryByRole('button', { name: 'Install app' }),
-    ).not.toBeInTheDocument();
-  });
-
-  it('drops the offer once the app is installed', () => {
-    renderHeader();
-    offerInstall();
-    act(() => {
-      window.dispatchEvent(new Event('appinstalled'));
-    });
-    expect(
-      screen.queryByRole('button', { name: 'Install app' }),
-    ).not.toBeInTheDocument();
   });
 });

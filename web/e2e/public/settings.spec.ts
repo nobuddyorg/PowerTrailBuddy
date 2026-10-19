@@ -84,4 +84,16 @@ test.describe('the trail settings', () => {
     await expect(app.trails.locators.count).toHaveText('2 trails');
     await expect(app.home.locators.buttons.settings).toBeFocused();
   });
+
+  test('fills the whole screen on a phone', async ({ on, page, isMobile }) => {
+    test.skip(!isMobile, 'a sheet over the app on a wider screen');
+    const app = on(page);
+    await app.settings.do.open();
+
+    expect(await app.settings().boundingBox()).toEqual({
+      x: 0,
+      y: 0,
+      ...page.viewportSize(),
+    });
+  });
 });

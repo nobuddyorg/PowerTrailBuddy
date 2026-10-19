@@ -12,6 +12,8 @@ type SettingField =
 
 type Preset = 'standard' | 'classic' | 'relaxed';
 
+type Language = 'de' | 'en';
+
 interface Settings {
   (): Locator;
   do: {
@@ -21,17 +23,21 @@ interface Settings {
     close(): Promise<void>;
     dismissWithEscape(): Promise<void>;
     forgetLocallyFound(): Promise<void>;
+    install(): Promise<void>;
     open(): Promise<void>;
     unignore(code: string): Promise<void>;
     toggleCacheType(type: string): Promise<void>;
     toggleWalkingRoutes(): Promise<void>;
     resetToDefaults(): Promise<void>;
+    switchLanguage(language: Language): Promise<void>;
   };
   locators: {
     walkingRoutes: Locator;
     buttons: {
       apply: Locator;
       close: Locator;
+      install: Locator;
+      language(language: Language): Locator;
       preset(preset: Preset): Locator;
       reset: Locator;
     };
@@ -41,13 +47,16 @@ interface Settings {
   };
 }
 
-/** The trail settings dialog, opened from the header. */
+/** The settings dialog, opened from the header: the trail settings, the language and installing. */
 export function initSettings(page: Page): Settings {
   const root = page.getByTestId('settings-dialog');
   const locators = {
     buttons: {
       apply: root.getByTestId('settings-apply'),
       close: root.getByTestId('dialog-close'),
+      install: root.getByTestId('install-app'),
+      language: (language: Language) =>
+        root.getByTestId(`language-${language}`),
       preset: (preset: Preset) => root.getByTestId(`preset-${preset}`),
       reset: root.getByTestId('settings-reset'),
     },
@@ -86,6 +95,10 @@ export function initSettings(page: Page): Settings {
       await button.click();
       await expect(button).toBeDisabled();
     },
+    install: async () => {
+      await locators.buttons.install.click();
+      await expect(locators.buttons.install).toBeHidden();
+    },
     unignore: async (code: string) => {
       const row = locators.ignoredCaches.filter({ hasText: code });
       await row.getByTestId('unignore').click();
@@ -105,6 +118,10 @@ export function initSettings(page: Page): Settings {
     },
     resetToDefaults: async () => {
       await locators.buttons.reset.click();
+    },
+    switchLanguage: async (language: Language) => {
+      await locators.buttons.language(language).click();
+      await expect(page.locator('html')).toHaveAttribute('lang', language);
     },
   };
   return Object.assign(() => root, { locators, do: interactions });
