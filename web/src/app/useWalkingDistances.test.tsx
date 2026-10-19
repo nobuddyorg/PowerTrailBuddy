@@ -259,6 +259,24 @@ describe('useWalkingDistances', () => {
     );
   });
 
+  it('asks again after a clear that left the caches in place, as a failed Clear all data does', async () => {
+    router.fetch.mockImplementationOnce(() => new Promise(() => {}));
+    const { result } = renderRoutes();
+    await waitFor(() => expect(router.fetch).toHaveBeenCalledTimes(1));
+
+    act(() => result.current.clear());
+
+    await waitFor(() => expect(router.fetch).toHaveBeenCalledTimes(2), {
+      timeout: 3000,
+    });
+    expect(router.fetch.mock.calls[1][0]).toEqual(
+      router.fetch.mock.calls[0][0],
+    );
+    await waitFor(() =>
+      expect(result.current.check).toEqual({ status: 'done' }),
+    );
+  });
+
   it('drops stored pairs that a clear overtakes on their way in', async () => {
     storeValue('walking-distances', new Map(answerFor(CACHES)));
     const { result } = renderRoutes();

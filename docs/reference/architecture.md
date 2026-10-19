@@ -309,7 +309,8 @@ joins them. `legMetersFor(distances, detourFactor)`, `isWalkableGap(legMeters,
 
 - `routingBatches(caches, input)` (`planRouting.ts`): the requests still
   needed, each up to `BATCH_SIZE` (50) caches. First, windows along each
-  group of at least `minCaches` in walking order, overlapping by
+  group of at least `minCaches` in straight-line walking order (it stays
+  put as answers arrive; the routed order would not), overlapping by
   `BATCH_OVERLAP` (10), that hold an unrouted pair. Once there are none,
   every unrouted link of those groups (a pair closer than `maxGapMeters`,
   found through the spatial grid), so a barrier between caches far apart in
@@ -570,7 +571,7 @@ both.
 | To | What it learns | When |
 | --- | --- | --- |
 | `tile.openstreetmap.org` | The map area on screen | Whenever the map shows an area whose tiles are not kept, or kept for more than a week |
-| `routing.openstreetmap.de` (FOSSGIS OSRM, foot) | Coordinates of caches in candidate trails, in batches of up to 50 | Only with walking routes on (Settings, off by default); at most one request a second and 60 a page load; never a pair already stored |
+| `routing.openstreetmap.de` (FOSSGIS OSRM, foot) | Coordinates of caches in candidate trails, in batches of up to 50 | Only with walking routes on (Settings, off by default); at most one request a second and 60 a page load; no request once every pair in it is stored |
 
 Nothing else (settings, positions, logs, names, codes) leaves the device. The
 route status beside the trail list shows FOSSGIS's attribution and the

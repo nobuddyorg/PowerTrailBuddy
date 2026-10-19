@@ -105,3 +105,47 @@ describe('routingBatches across a river with no bridge nearby', () => {
     30_000,
   );
 });
+
+/** A square grid of side × side caches SPACING_METERS apart, all on one bank. */
+function grid(side: number): Geocache[] {
+  return Array.from({ length: side * side }, (_, index) =>
+    makeCache({
+      code: `GCG${String(index).padStart(4, '0')}`,
+      latitude:
+        48 + Math.floor(index / side) * SPACING_METERS * DEGREES_PER_METER,
+      longitude: 11 + (index % side) * SPACING_METERS * DEGREES_PER_METER_EAST,
+    }),
+  );
+}
+
+/** A fixed detour of 5–55 % per pair, so the routed walking order differs from the straight-line one. */
+function detourOf(key: string): number {
+  let hash = 0;
+  for (const char of key) hash = (hash * 31 + char.charCodeAt(0)) % 1000;
+  return 1.05 + (hash / 1000) * 0.5;
+}
+
+describe('routingBatches while answers reorder the walk', () => {
+  it('keeps its windows in place, so no answer makes it ask for a window again', () => {
+    const caches = grid(20);
+    const distances = new Map<string, number>();
+    let requests = 0;
+    for (;;) {
+      const [next] = routingBatches(caches, {
+        settings: DEFAULT_TRAIL_SETTINGS,
+        locallyFound: new Set(),
+        walkingDistances: distances,
+      });
+      if (next === undefined) break;
+      requests++;
+      next.forEach((cache, index) =>
+        next.slice(index + 1).forEach((other) => {
+          const key = pairKey(cache, other);
+          distances.set(key, distanceMeters(cache, other) * detourOf(key));
+        }),
+      );
+    }
+    // Windows cut from the routed order moved with every answer and asked 21 times.
+    expect(requests).toBeLessThanOrEqual(17);
+  }, 30_000);
+});

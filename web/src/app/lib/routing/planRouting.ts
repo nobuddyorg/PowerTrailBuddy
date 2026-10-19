@@ -1,4 +1,5 @@
 import type { Geocache } from '../geocache/types';
+import { compareCodes } from '../trails/compareCodes';
 import {
   findTrails,
   orderedGroups,
@@ -6,6 +7,7 @@ import {
 } from '../trails/findTrails';
 import { distanceMeters } from '../trails/geo';
 import { gridNeighbourhood } from '../trails/linkComponents';
+import { orderPath } from '../trails/orderPath';
 import {
   NO_WALKING_DISTANCES,
   pairKey,
@@ -29,6 +31,11 @@ function hasUnroutedPair(
       .slice(index + 1)
       .some((other) => !distances.has(pairKey(cache, other))),
   );
+}
+
+/** The group in its straight-line walking order, from code order so the result never depends on how the group came in. */
+function planeOrder(group: readonly Geocache[]): Geocache[] {
+  return orderPath([...group].sort((a, b) => compareCodes(a.code, b.code)));
 }
 
 /** Overlapping runs of BATCH_SIZE along the walking order, the last one possibly shorter. */
@@ -105,7 +112,9 @@ export function routingBatches(
   const groups = orderedGroups(caches, input).groups.filter(
     (group) => group.length >= settings.minCaches,
   );
+  // The routed walking order shifts with every answer; windows cut from it would ask again for pairs already known.
   const along = groups
+    .map(planeOrder)
     .flatMap(windows)
     .filter((batch) => hasUnroutedPair(batch, distances));
   if (along.length > 0) return along;

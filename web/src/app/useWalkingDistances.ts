@@ -168,6 +168,8 @@ export function useWalkingDistances({
   const clear = useCallback(() => {
     cancelLoad.current();
     cancelRequest.current();
+    // The cancelled request is not pending any more: the same batch, planned again, is sent again.
+    setRequest(NO_REQUEST);
     keep(NO_WALKING_DISTANCES);
     setLoaded(true);
   }, [keep]);

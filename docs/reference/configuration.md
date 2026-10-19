@@ -74,7 +74,7 @@ A preference, not a trail setting: `walkingRoutes` in IndexedDB under
 | Entries per `.zip` (`MAX_ARCHIVE_ENTRIES`) | 50 | A Pocket Query zip holds two files; anything far beyond that is not one |
 | Uncompressed size of a `.zip`'s GPX entries, total (`MAX_IMPORT_BYTES`) | 100 MiB, by the declared sizes and again while inflating | 1,000 caches with logs is a few MB; the limit keeps a hostile archive from exhausting a phone's memory |
 | Size of any one imported file | 100 MiB | Refused before it is read |
-| Caches in one import (`MAX_IMPORT_CACHES`) | 20,000, each code once | Twenty full Pocket Queries; keeps trail finding on every launch within its measured budget. A file that would go past it is refused whole |
+| Caches in one import (`MAX_IMPORT_CACHES`) | 20,000, each code once | Twenty full Pocket Queries; keeps trail finding on every launch within its measured budget. A file that would go past it is refused whole. Per import: separate imports of different queries add up |
 
 The service worker's share target has its own limits (`public/sw.js`): at most
 20 files and 100 MB in one share, refused whole past either.

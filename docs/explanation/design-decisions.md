@@ -76,13 +76,15 @@ sends the trail caches' coordinates to a third party:
   matrix limits are stricter and unpublished; BRouter has no matrix. Keyed
   services (GraphHopper, openrouteservice) would need a backend.
 - **Within its policy.** At most one request a second, batches of 50 caches,
-  at most 60 requests a visit, distances kept in IndexedDB so a pair is never
-  asked twice, attribution and a "fix the map" link beside the trails. The
+  at most 60 requests a visit, distances kept in IndexedDB so a request goes
+  out only while a pair in it is unknown, attribution and a "fix the map" link beside the trails. The
   limits and the request decisions live in pure functions
   (`lib/routing/requestPolicy.ts`) under mutation testing, not in the hook.
 - **What gets asked, in which order.** Windows of 50 consecutive caches in
-  walking order first: one request answers 1,225 pairs, most of them the
-  legs. A link between caches far apart in that order, such as across a river
+  each group's straight-line walking order first: one request answers 1,225
+  pairs, most of them the legs. The routed order would shift with every
+  answer and move the windows over pairs already known; the straight-line
+  one stays put. A link between caches far apart in that order, such as across a river
   two parallel rows of caches run along, no window holds; leaving it on its
   estimate would keep both banks one trail. So every remaining link of a
   group big enough for a trail, found through the spatial grid rather than
@@ -158,7 +160,10 @@ neighbour is a sweep, but the whole still grows with the import. So an import
 holds at most 20,000 caches (twenty full Pocket Queries), which keeps a
 start-up trail search within the budget `findTrails.performance.test.ts`
 measures, and a file past it is refused with a message, not silently
-trimmed. Moving trail finding into a Web Worker would free the main thread
+trimmed. The cap is per import, not on everything stored: separate imports of
+different queries add up, since a stored total would make an import depend
+on what earlier ones left, and a newer run of a query still replaces its own
+caches. Moving trail finding into a Web Worker would free the main thread
 whatever the size, but it adds a second bundle, a message protocol and a
 loading state for every result; that is a design change of its own, not a
 bound on work.

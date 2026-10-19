@@ -223,7 +223,7 @@ second at most. With the answers:
 
 A line below the trail list shows the progress ("Checking walking routes …"),
 then "Distances follow real footpaths." The answers are kept in this browser,
-so a cache pair is never asked twice. If the server can't be reached, the
+so nothing already known is asked for on its own again. If the server can't be reached, the
 line says so and the straight-line estimates stay. A very large import is
 checked in part per visit; reload to check more. Untick the box to go back to
 straight lines; nothing is sent while it is off. A wrong route is usually a
