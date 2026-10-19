@@ -15,6 +15,7 @@ const NUMERIC_SETTINGS = [
   'maxGapMeters',
   'minCaches',
   'maxWalkKilometers',
+  'maxReturnMeters',
   'walkingSpeedKmh',
   'minutesPerCache',
   'detourFactor',
@@ -27,6 +28,8 @@ const VALID: TrailSettings = {
   maxGapMeters: 450,
   minCaches: 25,
   maxWalkKilometers: 7.5,
+  loopsOnly: true,
+  maxReturnMeters: 750,
   walkingSpeedKmh: 4.6,
   minutesPerCache: 2.5,
   detourFactor: 1.15,
@@ -109,6 +112,8 @@ describe('sanitizeSettings', () => {
       ['minCaches', 1001, 1000],
       ['maxWalkKilometers', 0, 1],
       ['maxWalkKilometers', 500, 100],
+      ['maxReturnMeters', 5, 10],
+      ['maxReturnMeters', 20_000, 10000],
       ['walkingSpeedKmh', 0, 1],
       ['walkingSpeedKmh', 30, 10],
       ['minutesPerCache', -5, 1],
@@ -131,6 +136,8 @@ describe('sanitizeSettings', () => {
       ['minCaches', 1000, 1000],
       ['maxWalkKilometers', 1, 1],
       ['maxWalkKilometers', 100, 100],
+      ['maxReturnMeters', 10, 10],
+      ['maxReturnMeters', 10000, 10000],
       ['walkingSpeedKmh', 1, 1],
       ['walkingSpeedKmh', 10, 10],
       ['minutesPerCache', 1, 1],
@@ -159,10 +166,12 @@ describe('sanitizeSettings', () => {
         ...VALID,
         maxGapMeters: 299.6,
         minCaches: 10.4,
+        maxReturnMeters: 500.5,
       });
 
       expect(settings.maxGapMeters).toBe(300);
       expect(settings.minCaches).toBe(10);
+      expect(settings.maxReturnMeters).toBe(501);
     });
 
     it('keeps fractions in the continuous settings', () => {
@@ -181,6 +190,23 @@ describe('sanitizeSettings', () => {
         detourFactor: 1.27,
       });
     });
+  });
+
+  describe('round trips only', () => {
+    it.each([true, false])('keeps %s', (loopsOnly) => {
+      expect(sanitizeSettings({ ...VALID, loopsOnly }).loopsOnly).toBe(
+        loopsOnly,
+      );
+    });
+
+    it.each(['true', 1, null, undefined])(
+      'falls back to the default for %j',
+      (loopsOnly) => {
+        expect(sanitizeSettings({ ...VALID, loopsOnly }).loopsOnly).toBe(
+          DEFAULT_TRAIL_SETTINGS.loopsOnly,
+        );
+      },
+    );
   });
 
   describe('cache types', () => {

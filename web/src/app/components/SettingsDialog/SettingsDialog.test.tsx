@@ -44,18 +44,22 @@ describe('SettingsDialog', () => {
     type('Largest gap between caches (m)', '250');
     type('Fewest caches per trail', '8');
     type('Longest walk (km)', '12.5');
+    type('Longest way back to the start (m)', '400');
     type('Highest difficulty', '3');
     type('Highest terrain', '2.5');
     type('Walking speed (km/h)', '5');
     type('Minutes per cache', '2');
     type('Detour factor (path vs. straight line)', '1.5');
     fireEvent.click(screen.getByRole('checkbox', { name: 'Multi-cache' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Round trips only' }));
     apply();
     expect(onApply).toHaveBeenCalledWith({
       cacheTypes: ['traditional', 'multi'],
       maxGapMeters: 250,
       minCaches: 8,
       maxWalkKilometers: 12.5,
+      loopsOnly: true,
+      maxReturnMeters: 400,
       maxDifficulty: 3,
       maxTerrain: 2.5,
       walkingSpeedKmh: 5,

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { Coordinates } from '../geocache/types';
 import { pathMeters } from './geo';
-import { orderPath } from './orderPath';
+import { orderPath, shortenLoop } from './orderPath';
 import {
   DEGREES_PER_METER,
   eastwardChain,
@@ -157,5 +157,39 @@ describe('orderPath', () => {
       [100, 0],
     ]);
     expect(pathMeters(orderPath(points))).toBeCloseTo(100, 3);
+  });
+});
+
+describe('shortenLoop', () => {
+  it('keeps a lone point, and two or three points, as they are', () => {
+    const three = onEquator([
+      [0, 0],
+      [50, 0],
+      [0, 50],
+    ]);
+    expect(labelsOf(shortenLoop(three.slice(0, 1)))).toEqual([0]);
+    expect(labelsOf(shortenLoop(three.slice(0, 2)))).toEqual([0, 1]);
+    expect(labelsOf(shortenLoop(three))).toEqual([0, 1, 2]);
+  });
+
+  it('uncrosses a round trip into a ring, from the first point', () => {
+    const crossed = onEquator([
+      [0, 0],
+      [50, 50],
+      [50, 0],
+      [0, 50],
+    ]);
+    expect(labelsOf(shortenLoop(crossed, 0))).toEqual([0, 1, 2, 3]);
+    expect(labelsOf(shortenLoop(crossed))).toEqual([0, 2, 1, 3]);
+  });
+
+  it('turns a zigzag into a ring', () => {
+    const zigzag = onEquator([
+      [0, 0],
+      [100, 0],
+      [0, 10],
+      [100, 10],
+    ]);
+    expect(labelsOf(shortenLoop(zigzag))).toEqual([0, 2, 3, 1]);
   });
 });

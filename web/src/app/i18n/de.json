@@ -211,9 +211,14 @@
       "maxGapMeters": "Größter Abstand zwischen Caches (m)",
       "minCaches": "Mindestens Caches pro Trail",
       "maxWalkKilometers": "Längste Tour (km)",
+      "maxReturnMeters": "Längster Rückweg zum Start (m)",
       "walkingSpeedKmh": "Gehtempo (km/h)",
       "minutesPerCache": "Minuten pro Cache",
       "detourFactor": "Umwegfaktor (Weg statt Luftlinie)"
+    },
+    "loops": {
+      "toggle": "Nur Rundwege",
+      "help": "Jede Tour wird so geordnet, dass sie nahe am Start endet, gut fürs Parken. Touren, deren letzter Cache weiter als der längste Rückweg vom ersten entfernt ist, fallen weg."
     },
     "error": {
       "number": "Gib eine Zahl ein.",

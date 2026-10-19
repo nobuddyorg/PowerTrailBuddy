@@ -211,9 +211,14 @@
       "maxGapMeters": "Largest gap between caches (m)",
       "minCaches": "Fewest caches per trail",
       "maxWalkKilometers": "Longest walk (km)",
+      "maxReturnMeters": "Longest way back to the start (m)",
       "walkingSpeedKmh": "Walking speed (km/h)",
       "minutesPerCache": "Minutes per cache",
       "detourFactor": "Detour factor (path vs. straight line)"
+    },
+    "loops": {
+      "toggle": "Round trips only",
+      "help": "Each walk is ordered to end near where it starts, handy for parking. Walks whose last cache is farther than the longest way back from the first are left out."
     },
     "error": {
       "number": "Enter a number.",

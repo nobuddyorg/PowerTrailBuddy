@@ -12,7 +12,8 @@ function trailId(caches: readonly Geocache[]): string {
   return `${smallestCode}-${caches.length}`;
 }
 
-function walkingMeters(
+/** Along the order and back to the first: each leg by legMeters; non-empty input. */
+export function walkingMeters(
   caches: readonly Geocache[],
   legMeters: LegMeters,
 ): number {

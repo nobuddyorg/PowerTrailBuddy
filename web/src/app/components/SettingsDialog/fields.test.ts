@@ -50,10 +50,10 @@ describe('NUMERIC_FIELDS', () => {
     );
   });
 
-  it('lists every setting but the cache types', () => {
+  it('lists every setting but the cache types and round trips only', () => {
     expect(NUMERIC_FIELDS.map((field) => field.name).sort()).toEqual(
       Object.keys(DEFAULT_TRAIL_SETTINGS)
-        .filter((key) => key !== 'cacheTypes')
+        .filter((key) => key !== 'cacheTypes' && key !== 'loopsOnly')
         .sort(),
     );
   });
@@ -188,9 +188,10 @@ describe('draftSettings', () => {
     fc.assert(
       fc.property(
         fc.subarray([...CACHE_TYPES], { minLength: 1 }),
+        fc.boolean(),
         fc.constantFrom('de', 'en'),
-        (cacheTypes, locale) => {
-          const settings = { ...DEFAULT_TRAIL_SETTINGS, cacheTypes };
+        (cacheTypes, loopsOnly, locale) => {
+          const settings = { ...DEFAULT_TRAIL_SETTINGS, cacheTypes, loopsOnly };
           expect(draftSettings(toDraft(settings, locale))).toEqual(settings);
         },
       ),

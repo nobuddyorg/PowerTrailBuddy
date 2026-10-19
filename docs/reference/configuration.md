@@ -5,7 +5,7 @@
 `TrailSettings` in `web/src/app/lib/trails/types.ts`; defaults in
 `DEFAULT_TRAIL_SETTINGS`, the user's values in IndexedDB under `settings`
 ([Architecture](architecture.md#storage)). On load, `data/sanitizeSettings.ts`
-drops unknown keys, gives a missing or non-numeric field its default, and
+drops unknown keys, gives a missing or mistyped field its default, and
 clamps (and, where a step is given, rounds) each number into its range; an
 empty or unknown cache-type list falls back to the default. The settings
 dialog refuses values outside the same ranges before Apply.
@@ -18,6 +18,8 @@ dialog refuses values outside the same ranges before Apply.
 | `maxGapMeters` | `300` | 10–2000 (1) | Two caches closer than this, straight line, are linked into one group |
 | `minCaches` | `10` | 2–1000 (1) | Groups and walks with fewer caches are not trails |
 | `maxWalkKilometers` | `10` | 1–100 | Longer chains are split into several walks no longer than this (walking distance, return included) |
+| `loopsOnly` | `false` | on or off | Round trips only: each walk is reordered to end next to its start, and kept only if its way back is within `maxReturnMeters` |
+| `maxReturnMeters` | `500` | 10–10000 (1) | With `loopsOnly`, the longest walking distance from a walk's last cache back to its first |
 | `walkingSpeedKmh` | `4` | 1–10 | Speed for the time estimate |
 | `minutesPerCache` | `3` | 1–60 | Time spent at each cache: search, log, back on the path |
 | `detourFactor` | `1.3` | 1–3 | Straight-line distance × this ≈ distance on real paths, for every leg without a routed distance |

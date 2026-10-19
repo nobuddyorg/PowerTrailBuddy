@@ -43,6 +43,8 @@ function fieldLabel(t: Translate, name: NumericField): string {
       return t('settings.field.minCaches');
     case 'maxWalkKilometers':
       return t('settings.field.maxWalkKilometers');
+    case 'maxReturnMeters':
+      return t('settings.field.maxReturnMeters');
     case 'walkingSpeedKmh':
       return t('settings.field.walkingSpeedKmh');
     case 'minutesPerCache':
@@ -78,6 +80,7 @@ const TRAIL_FIELDS: readonly NumericField[] = [
   'maxGapMeters',
   'minCaches',
   'maxWalkKilometers',
+  'maxReturnMeters',
   'maxDifficulty',
   'maxTerrain',
 ];
@@ -113,6 +116,7 @@ export function SettingsDialog({
   const valid = Object.keys(errors).length === 0;
   const typesErrorId = useId();
   const routesHelpId = useId();
+  const loopsHelpId = useId();
   const preset = draftPreset(draft);
 
   const toggleType = (type: CacheType, checked: boolean) =>
@@ -211,6 +215,23 @@ export function SettingsDialog({
               TRAIL_FIELDS.includes(spec.name),
             ).map(field)}
           </div>
+          <label className="flex min-h-11 items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              data-testid="setting-loopsOnly"
+              checked={draft.loopsOnly}
+              aria-describedby={loopsHelpId}
+              onChange={(event) => {
+                const loopsOnly = event.currentTarget.checked;
+                setDraft((current) => ({ ...current, loopsOnly }));
+              }}
+              className="h-5 w-5 accent-[var(--primary)]"
+            />
+            {t('settings.loops.toggle')}
+          </label>
+          <p id={loopsHelpId} className="text-xs text-muted-foreground">
+            {t('settings.loops.help')}
+          </p>
         </fieldset>
         <fieldset
           aria-describedby={errors.cacheTypes ? typesErrorId : undefined}

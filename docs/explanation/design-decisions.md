@@ -114,6 +114,19 @@ deterministic and testable. Long chains are then **split greedily** along the
 order into walks that fit `maxWalkKilometers` including the walk back to the
 start, which is how people actually walk long trails: one section per outing.
 
+## Why round trips are opt-in, and closed after the split
+
+A walk is already scored with its way back, but in an open order that way
+back is a long walk past caches already found, and the car is at the start.
+**Round trips only** reorders each walk so it ends next to where it starts:
+2-opt over the closed tour, which minimises exactly the walk the score
+counts, then the start moves to just after the shortest leg. A chain along a
+road becomes out along it and back to the car, no longer than before. It
+works on each walk after the greedy split, not on the whole group, so the
+round trips still fit `maxWalkKilometers`; the setting adds a limit on the
+way back, and walks that cannot meet it are dropped. It is off by default so
+the open walks people know, starting at one end of a chain, stay as they are.
+
 ## Why trails are sorted by caches per hour
 
 The point of a power trail is a high find rate for the time spent. Caches per

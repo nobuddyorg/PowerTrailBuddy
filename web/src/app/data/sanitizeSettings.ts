@@ -4,7 +4,7 @@ import {
   type TrailSettings,
 } from '../lib/trails/types';
 
-type NumericSetting = Exclude<keyof TrailSettings, 'cacheTypes'>;
+type NumericSetting = Exclude<keyof TrailSettings, 'cacheTypes' | 'loopsOnly'>;
 
 interface Range {
   min: number;
@@ -20,6 +20,7 @@ const RANGES: Record<NumericSetting, Range> = {
   maxGapMeters: { min: 10, max: 2000, step: 1 },
   minCaches: { min: 2, max: 1000, step: 1 },
   maxWalkKilometers: { min: 1, max: 100 },
+  maxReturnMeters: { min: 10, max: 10000, step: 1 },
   walkingSpeedKmh: { min: 1, max: 10 },
   minutesPerCache: { min: 1, max: 60 },
   detourFactor: { min: 1, max: 3 },
@@ -67,7 +68,7 @@ function sanitizeCacheTypes(value: unknown): CacheType[] {
   return unique.length > 0 ? unique : [...DEFAULT_TRAIL_SETTINGS.cacheTypes];
 }
 
-/** Settings as stored by any version, or anything else, made into valid TrailSettings: unknown keys dropped, missing ones defaulted, numbers clamped. */
+/** Settings as stored by any version, or anything else, made into valid TrailSettings: unknown keys dropped, missing or mistyped ones defaulted, numbers clamped. */
 export function sanitizeSettings(value: unknown): TrailSettings {
   const stored = isRecord(value) ? value : {};
   const numbers = Object.fromEntries(
@@ -76,5 +77,12 @@ export function sanitizeSettings(value: unknown): TrailSettings {
       sanitizeNumber(stored[setting], setting),
     ]),
   ) as Record<NumericSetting, number>;
-  return { cacheTypes: sanitizeCacheTypes(stored.cacheTypes), ...numbers };
+  return {
+    cacheTypes: sanitizeCacheTypes(stored.cacheTypes),
+    loopsOnly:
+      typeof stored.loopsOnly === 'boolean'
+        ? stored.loopsOnly
+        : DEFAULT_TRAIL_SETTINGS.loopsOnly,
+    ...numbers,
+  };
 }

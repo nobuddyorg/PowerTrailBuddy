@@ -63,6 +63,30 @@ test.describe('the trail settings', () => {
     await expect(app.trails.locators.count).toHaveText('2 trails');
   });
 
+  test('round trips only keeps the trails that end near their start, and stays set', async ({
+    on,
+    page,
+  }) => {
+    const app = on(page);
+    await app.settings.do.open();
+    await app.settings.do.toggleLoopsOnly();
+    await app.settings.do.apply();
+    await expect(app.trails.locators.count).toHaveText('2 trails');
+
+    await app.settings.do.open();
+    await app.settings.do.change({ maxReturnMeters: '10' });
+    await app.settings.do.apply();
+    await expect(app.trails.locators.count).toHaveText('0 trails');
+
+    await app.home.do.reload();
+    await expect(app.trails.locators.count).toHaveText('0 trails');
+    await app.settings.do.open();
+    await expect(app.settings.locators.loopsOnly).toBeChecked();
+    await expect(app.settings.locators.field('maxReturnMeters')).toHaveValue(
+      '10',
+    );
+  });
+
   test('cancelling changes nothing', async ({ on, page }) => {
     const app = on(page);
     await app.settings.do.open();

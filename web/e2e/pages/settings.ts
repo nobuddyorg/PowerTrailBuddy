@@ -6,6 +6,7 @@ type SettingField =
   | 'maxGapMeters'
   | 'minCaches'
   | 'maxWalkKilometers'
+  | 'maxReturnMeters'
   | 'walkingSpeedKmh'
   | 'minutesPerCache'
   | 'detourFactor';
@@ -24,10 +25,12 @@ interface Settings {
     open(): Promise<void>;
     unignore(code: string): Promise<void>;
     toggleCacheType(type: string): Promise<void>;
+    toggleLoopsOnly(): Promise<void>;
     toggleWalkingRoutes(): Promise<void>;
     resetToDefaults(): Promise<void>;
   };
   locators: {
+    loopsOnly: Locator;
     walkingRoutes: Locator;
     buttons: {
       apply: Locator;
@@ -54,6 +57,7 @@ export function initSettings(page: Page): Settings {
     cacheType: (type: string) => root.getByTestId(`cache-type-${type}`),
     ignoredCaches: root.getByTestId('ignored-cache'),
     field: (name: SettingField) => root.getByTestId(`setting-${name}`),
+    loopsOnly: root.getByTestId('setting-loopsOnly'),
     walkingRoutes: root.getByTestId('walking-routes'),
   };
   const interactions = {
@@ -97,6 +101,11 @@ export function initSettings(page: Page): Settings {
     },
     toggleCacheType: async (type: string) => {
       await locators.cacheType(type).click();
+    },
+    toggleLoopsOnly: async () => {
+      const checked = await locators.loopsOnly.isChecked();
+      await locators.loopsOnly.click();
+      await expect(locators.loopsOnly).toBeChecked({ checked: !checked });
     },
     toggleWalkingRoutes: async () => {
       const checked = await locators.walkingRoutes.isChecked();

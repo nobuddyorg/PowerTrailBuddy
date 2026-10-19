@@ -65,6 +65,8 @@ const anySettings: fc.Arbitrary<TrailSettings> = fc.record({
   maxGapMeters: fc.integer({ min: 50, max: 600 }),
   minCaches: fc.integer({ min: 1, max: 8 }),
   maxWalkKilometers: fc.double({ min: 0.2, max: 8, noNaN: true }),
+  loopsOnly: fc.boolean(),
+  maxReturnMeters: fc.integer({ min: 10, max: 800 }),
   walkingSpeedKmh: fc.double({ min: 2, max: 6, noNaN: true }),
   minutesPerCache: fc.integer({ min: 1, max: 10 }),
   detourFactor: fc.double({ min: 1, max: 2, noNaN: true }),
@@ -147,6 +149,50 @@ describe('findTrails, for random caches and settings', () => {
               settings.maxWalkKilometers * 1000,
             );
         }
+      }),
+    );
+  });
+
+  it('ends every round trip within maxReturnMeters of its start', () => {
+    fc.assert(
+      fc.property(anyInput, ([caches, settings, locallyFound]) => {
+        const loops = { ...settings, loopsOnly: true };
+        for (const trail of findTrails(caches, {
+          settings: loops,
+          locallyFound,
+        })) {
+          expect(
+            trail.returnMeters * settings.detourFactor,
+          ).toBeLessThanOrEqual(settings.maxReturnMeters);
+        }
+      }),
+    );
+  });
+
+  it('closes round trips no longer than the same caches walked in the open order', () => {
+    fc.assert(
+      fc.property(anyInput, ([caches, settings, locallyFound]) => {
+        const walkMetersByCodes = (loopsOnly: boolean) =>
+          new Map(
+            findTrails(caches, {
+              settings: { ...settings, loopsOnly, maxReturnMeters: 10_000 },
+              locallyFound,
+            }).map((trail) => [
+              trail.caches
+                .map((cache) => cache.code)
+                .sort()
+                .join(),
+              trail.walkMeters,
+            ]),
+          );
+        const open = walkMetersByCodes(false);
+        const loops = walkMetersByCodes(true);
+        expect([...loops.keys()]).toEqual(
+          expect.arrayContaining([...open.keys()]),
+        );
+        // A round trip started elsewhere adds the same legs in another order: a micrometre of rounding.
+        for (const [codes, walkMeters] of loops)
+          expect(walkMeters).toBeLessThanOrEqual((open.get(codes) ?? 0) + 1e-6);
       }),
     );
   });

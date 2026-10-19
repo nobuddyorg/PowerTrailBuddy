@@ -153,7 +153,10 @@ Under **Settings**: a preset (**Standard**, **Classic power trail**,
 **Relaxed**) or your own largest gap between two caches and fewest caches per
 trail; the longest single walk, the highest difficulty and terrain, which
 cache types count, and the walking speed, minutes per cache and detour factor
-used for the time estimate. Nothing changes until **Apply**; **Reset to
+used for the time estimate. Tick **Round trips only** to have every walk end
+near where it starts, which makes parking easy: the order is rearranged into
+a loop, and walks whose last cache is farther from the first than the
+**longest way back to the start** are left out. Nothing changes until **Apply**; **Reset to
 defaults** restores the defaults. Values and ranges:
 [Configuration](../reference/configuration.md).
 
