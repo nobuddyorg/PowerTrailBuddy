@@ -19,7 +19,11 @@ describe('ImportSummary', () => {
     const onDismiss = vi.fn();
     renderWithI18n(
       <ImportSummary
-        summary={{ cacheCount: 1, files: [{ name: 'pq.zip', cacheCount: 1 }] }}
+        summary={{
+          cacheCount: 1,
+          files: [{ name: 'pq.zip', cacheCount: 1 }],
+          removedCount: 0,
+        }}
         onDismiss={onDismiss}
       />,
     );
@@ -45,6 +49,7 @@ describe('ImportSummary', () => {
             { name: 'broken.gpx', cacheCount: 0, error: 'unreadable' },
             { name: 'huge.zip', cacheCount: 0, error: 'too-large' },
           ],
+          removedCount: 0,
         }}
         onDismiss={onDismiss}
       />,
@@ -65,5 +70,48 @@ describe('ImportSummary', () => {
     expect(onDismiss).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
     expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it('says how many caches a query imported again no longer lists', () => {
+    const { rerender } = renderWithI18n(
+      <ImportSummary
+        summary={{
+          cacheCount: 40,
+          files: [{ name: 'pq.zip', cacheCount: 40 }],
+          removedCount: 3,
+        }}
+        onDismiss={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId('import-removed')).toHaveTextContent(
+      'Removed 3 caches the queries no longer list.',
+    );
+    rerender(
+      <ImportSummary
+        summary={{
+          cacheCount: 40,
+          files: [{ name: 'pq.zip', cacheCount: 40 }],
+          removedCount: 1,
+        }}
+        onDismiss={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId('import-removed')).toHaveTextContent(
+      'Removed 1 cache the query no longer lists.',
+    );
+  });
+
+  it('says nothing of removed caches when none went', () => {
+    renderWithI18n(
+      <ImportSummary
+        summary={{
+          cacheCount: 40,
+          files: [{ name: 'pq.zip', cacheCount: 40 }],
+          removedCount: 0,
+        }}
+        onDismiss={vi.fn()}
+      />,
+    );
+    expect(screen.queryByTestId('import-removed')).not.toBeInTheDocument();
   });
 });

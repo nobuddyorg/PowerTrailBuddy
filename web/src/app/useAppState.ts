@@ -43,6 +43,8 @@ export interface ImportSummary {
   /** Caches read from this import, before merging with what was there. */
   cacheCount: number;
   files: ImportedFile[];
+  /** Stored caches gone because the queries that had them were imported again without them. */
+  removedCount: number;
 }
 
 const EMPTY_DATA: StoredData = {
@@ -135,7 +137,10 @@ export function useAppState() {
       setImporting(true);
       try {
         const result = await importFiles(files);
-        const caches = mergeCaches(dataRef.current.caches, result.caches);
+        const { caches, removedCount } = mergeCaches(
+          dataRef.current.caches,
+          result,
+        );
         const importInfo: ImportInfo = {
           at: new Date().toISOString(),
           cacheCount: result.caches.length,
@@ -145,6 +150,7 @@ export function useAppState() {
         setLastImport({
           cacheCount: result.caches.length,
           files: result.files,
+          removedCount,
         });
         persist(saveCaches(caches));
         persist(saveImportInfo(importInfo));

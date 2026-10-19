@@ -75,13 +75,15 @@ async function loadCodes(key: string): Promise<Set<string>> {
   return new Set(Array.isArray(stored) ? stored.filter(isString) : []);
 }
 
-// Caches stored before owner, hint and logs were read get them empty, so the UI never meets a missing field.
+// Caches stored before owner, hint, logs and sources were read get them empty, so the UI never meets a missing field.
 function withLaterFields(cache: Record<string, unknown>): Geocache {
   return {
     placedBy: '',
     hint: '',
     recentLogs: [],
     ...cache,
+    // No sources: a later import of any query keeps the cache rather than guessing which query it came from.
+    sources: isStringArray(cache.sources) ? cache.sources : [],
   } as unknown as Geocache;
 }
 

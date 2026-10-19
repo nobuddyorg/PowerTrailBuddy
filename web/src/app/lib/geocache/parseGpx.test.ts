@@ -66,6 +66,7 @@ const EXPECTED_BENCH: Geocache = {
   placedBy: 'Synthetic Owner',
   hint: 'Under the bench',
   recentLogs: [{ type: 'found', date: '2001-02-03' }],
+  sources: [],
   latitude: 52.123456,
   longitude: 13.654321,
 };

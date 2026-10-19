@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 
+import { sourcesOf } from './mergeCaches';
 import { withParking, type ParkingArea } from './parking';
 import { GpxParseError, parseGpx } from './parseGpx';
 import type { Geocache } from './types';
@@ -13,10 +14,12 @@ export interface ImportedFile {
 }
 
 export interface ImportResult {
-  /** Deduplicated by code, a later file winning; parking areas match across every file given. */
+  /** Deduplicated by code, a later file winning, each with every query that had it; parking areas match across every file given. */
   caches: Geocache[];
   /** One entry per file given, in the order given. */
   files: ImportedFile[];
+  /** The queries read in full, sorted: every GPX document that parsed, the ones without caches too. */
+  sources: string[];
 }
 
 /** Larger than any Pocket Query (1,000 caches is a few MB); applies to a file and to the GPX inside an archive. */
@@ -50,6 +53,18 @@ interface EntryStream {
   resume(): EntryStream;
 }
 
+/** A query's name as its GPX file gives it, the same across a zip's renaming and a browser's ` (1)` for a repeated download. */
+export function sourceName(fileName: string): string {
+  const baseName = fileName.slice(
+    Math.max(fileName.lastIndexOf('/'), fileName.lastIndexOf('\\')) + 1,
+  );
+  return baseName
+    .replace(/\.gpx$/i, '')
+    .replace(/\(\d+\)$/, '')
+    .trim()
+    .toLowerCase();
+}
+
 /** The lower-cased extension, '' when the name has none. */
 function extensionOf(name: string): string {
   return /\.([^./\\]+)$/.exec(name)?.[1].toLowerCase() ?? '';
@@ -74,16 +89,22 @@ function isArchive(name: string, bytes: Uint8Array): boolean {
   throw new ImportFailure('unsupported');
 }
 
-/** What one GPX document contributes: its caches and its parking areas. */
+/** What GPX documents contribute: their caches, their parking areas and the queries they are. */
 interface GpxContent {
   caches: Geocache[];
   parkingAreas: ParkingArea[];
+  sources: string[];
 }
 
-function contentOf(text: string): GpxContent {
+function contentOf(text: string, fileName: string): GpxContent {
+  const source = sourceName(fileName);
   try {
     const { caches, parkingAreas } = parseGpx(text);
-    return { caches, parkingAreas };
+    return {
+      caches: caches.map((cache) => ({ ...cache, sources: [source] })),
+      parkingAreas,
+      sources: [source],
+    };
   } catch (error) {
     if (!(error instanceof GpxParseError)) throw error;
     throw new ImportFailure(
@@ -150,11 +171,15 @@ async function contentOfArchive(bytes: Uint8Array): Promise<GpxContent> {
     0,
   );
   if (declared > MAX_IMPORT_BYTES) throw new ImportFailure('too-large');
-  const content: GpxContent = { caches: [], parkingAreas: [] };
+  const content: GpxContent = { caches: [], parkingAreas: [], sources: [] };
   for (const entry of gpxEntries) {
-    const { caches, parkingAreas } = contentOf(await textOf(entry));
+    const { caches, parkingAreas, sources } = contentOf(
+      await textOf(entry),
+      entry.name,
+    );
     content.caches.push(...caches);
     content.parkingAreas.push(...parkingAreas);
+    content.sources.push(...sources);
   }
   return content;
 }
@@ -173,7 +198,7 @@ async function contentOfFile(file: File): Promise<GpxContent> {
   const bytes = await bytesOf(file);
   return isArchive(file.name, bytes)
     ? contentOfArchive(bytes)
-    : contentOf(new TextDecoder().decode(bytes));
+    : contentOf(new TextDecoder().decode(bytes), file.name);
 }
 
 async function importFile(
@@ -188,6 +213,7 @@ async function importFile(
     return {
       caches: [],
       parkingAreas: [],
+      sources: [],
       report: { name: file.name, cacheCount: 0, error: error.code },
     };
   }
@@ -200,14 +226,23 @@ export async function importFiles(
   const byCode = new Map<string, Geocache>();
   const parkingAreas: ParkingArea[] = [];
   const reports: ImportedFile[] = [];
+  const sources: string[] = [];
   for (const file of files) {
     const imported = await importFile(file);
-    for (const cache of imported.caches) byCode.set(cache.code, cache);
+    for (const cache of imported.caches) {
+      const earlier = byCode.get(cache.code)?.sources ?? [];
+      byCode.set(cache.code, {
+        ...cache,
+        sources: sourcesOf(earlier, cache.sources),
+      });
+    }
     parkingAreas.push(...imported.parkingAreas);
     reports.push(imported.report);
+    sources.push(...imported.sources);
   }
   return {
     caches: withParking([...byCode.values()], parkingAreas),
     files: reports,
+    sources: sourcesOf(sources),
   };
 }

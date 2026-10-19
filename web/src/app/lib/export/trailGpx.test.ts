@@ -177,7 +177,7 @@ const cacheArbitrary = fc.record({
 /** Everything but the positions, which come back rounded. */
 function detailsOf(
   cache: Geocache,
-): Omit<Geocache, 'latitude' | 'longitude' | 'parking'> {
+): Omit<Geocache, 'latitude' | 'longitude' | 'parking' | 'sources'> {
   const { code, name, type, difficulty, terrain, container } = cache;
   const { available, archived, found, placedBy, hint, recentLogs } = cache;
   return {

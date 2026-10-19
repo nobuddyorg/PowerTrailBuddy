@@ -89,6 +89,7 @@ const CACHE: Geocache = {
   placedBy: 'Nobody Real',
   hint: 'Under the stone',
   recentLogs: [{ type: 'found', date: '2026-05-01' }],
+  sources: ['26071826'],
   parking: { latitude: 47.11, longitude: 8.21 },
   latitude: 47.1,
   longitude: 8.2,
@@ -133,15 +134,33 @@ describe('caches', () => {
     expect(await loadCaches()).toEqual([]);
   });
 
-  it('gives a cache stored by an older build an empty owner, hint and log list', async () => {
-    const laterFields = new Set(['placedBy', 'hint', 'recentLogs', 'parking']);
+  it('gives a cache stored by an older build an empty owner, hint, log and source list', async () => {
+    const laterFields = new Set([
+      'placedBy',
+      'hint',
+      'recentLogs',
+      'parking',
+      'sources',
+    ]);
     const older = Object.fromEntries(
       Object.entries(CACHE).filter(([key]) => !laterFields.has(key)),
     );
     storeRaw('caches', [older, 'junk', null]);
 
     expect(await loadCaches()).toEqual([
-      { ...older, placedBy: '', hint: '', recentLogs: [] },
+      { ...older, placedBy: '', hint: '', recentLogs: [], sources: [] },
+    ]);
+  });
+
+  it('reads sources in the wrong shape as none', async () => {
+    storeRaw('caches', [
+      { ...CACHE, sources: '26071826' },
+      { ...CACHE, code: 'GC0TES2', sources: ['26071826', 7] },
+    ]);
+
+    expect(await loadCaches()).toEqual([
+      { ...CACHE, sources: [] },
+      { ...CACHE, code: 'GC0TES2', sources: [] },
     ]);
   });
 });

@@ -17,14 +17,21 @@ import {
   importFiles,
   MAX_ARCHIVE_ENTRIES,
   MAX_IMPORT_BYTES,
+  sourceName,
   type ImportedFile,
 } from './importFiles';
+import type { Geocache } from './types';
 
 const caches = [syntheticCache(1), syntheticCache(2), syntheticCache(3)];
 const gpx = gpxOf(caches);
 const additionalWaypoints = buildGpx([
   { code: 'PK0TEST1', lat: 10, lon: 20, sym: 'Parking Area' },
 ]);
+
+/** `list` as one query delivers it. */
+function from(source: string, list: readonly Geocache[]): Geocache[] {
+  return list.map((cache) => ({ ...cache, sources: [source] }));
+}
 
 async function reportOf(file: File): Promise<ImportedFile | undefined> {
   return (await importFiles([file])).files[0];
@@ -44,14 +51,15 @@ async function zipFile(
 describe('importFiles: GPX files', () => {
   it('imports the caches of a .gpx file and reports their count', async () => {
     expect(await importFiles([fileOf(gpx, 'caches.gpx')])).toEqual({
-      caches,
+      caches: from('caches', caches),
       files: [{ name: 'caches.gpx', cacheCount: 3 }],
+      sources: ['caches'],
     });
   });
 
   it('reads a file starting with a UTF-8 byte order mark', async () => {
     const file = fileOf(`﻿${gpx}`, 'caches.gpx');
-    expect((await importFiles([file])).caches).toEqual(caches);
+    expect((await importFiles([file])).caches).toEqual(from('caches', caches));
   });
 
   it('reports a .gpx file with only additional waypoints as zero caches, not an error', async () => {
@@ -158,8 +166,13 @@ describe('importFiles: zip archives', () => {
       '1234567-wpts.gpx': buildGpx([parkingWaypoint(caches[0].code, parking)]),
     });
     expect(await importFiles([file])).toEqual({
-      caches: [{ ...caches[0], parking }, caches[1], caches[2]],
+      caches: from('1234567', [
+        { ...caches[0], parking },
+        caches[1],
+        caches[2],
+      ]),
       files: [{ name: 'pocket-query.zip', cacheCount: 3 }],
+      sources: ['1234567', '1234567-wpts'],
     });
   });
 
@@ -170,7 +183,10 @@ describe('importFiles: zip archives', () => {
       'folder/': '',
       'folder/second.GPX': gpxOf(more),
     });
-    expect((await importFiles([file])).caches).toEqual([...caches, ...more]);
+    expect((await importFiles([file])).caches).toEqual([
+      ...from('first', caches),
+      ...from('second', more),
+    ]);
   });
 
   it('ignores entries that are not GPX, nested archives included', async () => {
@@ -183,8 +199,9 @@ describe('importFiles: zip archives', () => {
       'caches.gpx': gpx,
     });
     expect(await importFiles([file])).toEqual({
-      caches,
+      caches: from('caches', caches),
       files: [{ name: 'pocket-query.zip', cacheCount: 3 }],
+      sources: ['caches'],
     });
   });
 
@@ -198,8 +215,9 @@ describe('importFiles: zip archives', () => {
       '._top.gpx': appleDouble,
     });
     expect(await importFiles([file])).toEqual({
-      caches,
+      caches: from('1234567', caches),
       files: [{ name: 'pocket-query.zip', cacheCount: 3 }],
+      sources: ['1234567'],
     });
   });
 
@@ -209,12 +227,15 @@ describe('importFiles: zip archives', () => {
       'my__MACOSX/a._b.gpx': gpx,
       'x__MACOSX._.gpx': gpxOf(more),
     });
-    expect((await importFiles([file])).caches).toEqual([...caches, ...more]);
+    expect((await importFiles([file])).caches).toEqual([
+      ...from('a._b', caches),
+      ...from('x__macosx._', more),
+    ]);
   });
 
   it('reads an entry whose name climbs out of the archive like any other', async () => {
     const file = await zipFile({ '../../../etc/caches.gpx': gpx });
-    expect((await importFiles([file])).caches).toEqual(caches);
+    expect((await importFiles([file])).caches).toEqual(from('caches', caches));
   });
 
   it('refuses an archive without GPX entries as unsupported', async () => {
@@ -260,7 +281,7 @@ describe('importFiles: zip archives', () => {
     const name = '€ä😀'.repeat(30_000);
     const cache = syntheticCache(1, { name });
     const file = await zipFile({ 'caches.gpx': gpxOf([cache]) });
-    expect((await importFiles([file])).caches).toEqual([cache]);
+    expect((await importFiles([file])).caches).toEqual(from('caches', [cache]));
   });
 });
 
@@ -335,7 +356,11 @@ describe('importFiles: limits', () => {
 
 describe('importFiles: batches', () => {
   it('returns nothing for no files', async () => {
-    expect(await importFiles([])).toEqual({ caches: [], files: [] });
+    expect(await importFiles([])).toEqual({
+      caches: [],
+      files: [],
+      sources: [],
+    });
   });
 
   it('imports the good files of a batch and reports the bad one, in order', async () => {
@@ -346,22 +371,25 @@ describe('importFiles: batches', () => {
       fileOf(gpxOf(more), 'three.gpx'),
     ]);
     expect(result).toEqual({
-      caches: [...caches, ...more],
+      caches: [...from('one', caches), ...from('three', more)],
       files: [
         { name: 'one.gpx', cacheCount: 3 },
         { name: 'two.zip', cacheCount: 0, error: 'unreadable' },
         { name: 'three.gpx', cacheCount: 1 },
       ],
+      sources: ['one', 'three'],
     });
   });
 
-  it('keeps one cache per code, the later file winning', async () => {
+  it('keeps one cache per code, the later file winning, with every query that has it', async () => {
     const disabled = caches.map((cache) => ({ ...cache, available: false }));
     const result = await importFiles([
       fileOf(gpx, 'old.gpx'),
       fileOf(gpxOf(disabled), 'new.gpx'),
     ]);
-    expect(result.caches).toEqual(disabled);
+    expect(result.caches).toEqual(
+      disabled.map((cache) => ({ ...cache, sources: ['new', 'old'] })),
+    );
   });
 
   it('keeps the later of two caches with one code within a file', async () => {
@@ -369,15 +397,17 @@ describe('importFiles: batches', () => {
     const second = { ...first, name: 'Renamed' };
     const file = fileOf(gpxOf([first, second]), 'caches.gpx');
     expect(await importFiles([file])).toEqual({
-      caches: [second],
+      caches: from('caches', [second]),
       files: [{ name: 'caches.gpx', cacheCount: 2 }],
+      sources: ['caches'],
     });
   });
 
   it('imports the same file twice without duplicates', async () => {
     const file = fileOf(gpx, 'caches.gpx');
     const result = await importFiles([file, file]);
-    expect(result.caches).toEqual(caches);
+    expect(result.caches).toEqual(from('caches', caches));
+    expect(result.sources).toEqual(['caches']);
   });
 });
 
@@ -391,7 +421,11 @@ describe('importFiles: parking areas', () => {
       fileOf(buildGpx([parkingWaypoint(first.code, near)]), 'wpts.gpx'),
       fileOf(gpx, 'caches.gpx'),
     ]);
-    expect(result.caches[0]).toEqual({ ...first, parking: near });
+    expect(result.caches[0]).toEqual({
+      ...first,
+      parking: near,
+      sources: ['caches'],
+    });
   });
 
   it('picks the nearest parking area across files', async () => {
@@ -409,7 +443,9 @@ describe('importFiles: parking areas', () => {
       fileOf(gpxOf([{ ...first, parking: near }]), 'old.gpx'),
       fileOf(gpxOf([renamed]), 'new.gpx'),
     ]);
-    expect(result.caches).toEqual([{ ...renamed, parking: near }]);
+    expect(result.caches).toEqual([
+      { ...renamed, parking: near, sources: ['new', 'old'] },
+    ]);
   });
 
   it('takes no parking area from a file that could not be read', async () => {
@@ -420,6 +456,58 @@ describe('importFiles: parking areas', () => {
         'broken.gpx',
       ),
     ]);
-    expect(result.caches).toEqual(caches);
+    expect(result.caches).toEqual(from('caches', caches));
+  });
+});
+
+describe('importFiles: the queries it read', () => {
+  it('names each query after its GPX file, without the folder, extension or a repeated download’s number', () => {
+    const names: [string, string][] = [
+      ['26071826.gpx', '26071826'],
+      ['26071826.GPX', '26071826'],
+      ['pq/26071826.gpx', '26071826'],
+      ['pq\\26071826.gpx', '26071826'],
+      ['26071826 (1).gpx', '26071826'],
+      ['26071826(12).gpx', '26071826'],
+      ['26071826-wpts.gpx', '26071826-wpts'],
+      [' My Area .gpx', 'my area'],
+      ['shared-file', 'shared-file'],
+      ['notes (draft).gpx', 'notes (draft)'],
+    ];
+    expect(names.map(([name]) => sourceName(name))).toEqual(
+      names.map(([, source]) => source),
+    );
+  });
+
+  it('names a query inside a zip after its GPX entry, whatever the zip is called', async () => {
+    const file = await zipFile(
+      { '26071826.gpx': gpx, '26071826-wpts.gpx': additionalWaypoints },
+      '26071826 (3).zip',
+    );
+    const result = await importFiles([file]);
+    expect(result.sources).toEqual(['26071826', '26071826-wpts']);
+    expect(result.caches.map((cache) => cache.sources)).toEqual([
+      ['26071826'],
+      ['26071826'],
+      ['26071826'],
+    ]);
+  });
+
+  it('counts a query that lists no cache, and none from a refused file', async () => {
+    const result = await importFiles([
+      fileOf(additionalWaypoints, 'empty.gpx'),
+      fileOf('<gpx><wpt>', 'broken.gpx'),
+      await zipFile({ 'good.gpx': gpx, 'bad.gpx': '<gpx><wpt>' }),
+    ]);
+    expect(result.sources).toEqual(['empty']);
+  });
+
+  it('lists the queries sorted, each once', async () => {
+    const result = await importFiles([
+      fileOf(gpx, 'b.gpx'),
+      fileOf(gpx, 'a.gpx'),
+      fileOf(gpx, 'b (1).gpx'),
+    ]);
+    expect(result.sources).toEqual(['a', 'b']);
   });
 });

@@ -48,6 +48,8 @@
     "fileCount": "{count} Dateien",
     "fileCount_one": "{count} Datei",
     "fileFailed": "{name}: {reason}",
+    "removed": "{count} Caches entfernt, die die Queries nicht mehr enthalten.",
+    "removed_one": "{count} Cache entfernt, den die Query nicht mehr enthält.",
     "error": {
       "unsupported": "keine Geocache-.zip- oder -.gpx-Datei",
       "unreadable": "die Datei ist beschädigt und ließ sich nicht lesen",
@@ -267,7 +269,7 @@
     "locallyFound": "Hier als gefunden markiert",
     "ignored": "Ignoriert",
     "lastImport": "Letzter Import",
-    "importHelp": "Weitere Pocket Query importieren: Sie wird mit dem Vorhandenen zusammengeführt, neuere Daten gewinnen.",
+    "importHelp": "Weitere Pocket Query oder einen neueren Lauf importieren: Sie wird mit dem Vorhandenen zusammengeführt, neuere Daten gewinnen; ein Cache, den ein neuerer Lauf nicht mehr enthält, wird entfernt.",
     "import": "Weitere importieren",
     "privacy": "Alles wird nur in diesem Browser gespeichert.",
     "clear": "Alle Daten löschen"

@@ -21,6 +21,7 @@ export function makeCache(overrides: Partial<Geocache> = {}): Geocache {
     placedBy: '',
     hint: '',
     recentLogs: [],
+    sources: [],
     latitude: 0,
     longitude: 0,
     ...overrides,
