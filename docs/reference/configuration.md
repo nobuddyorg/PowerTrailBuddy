@@ -102,6 +102,6 @@ mutant. They run in `npm test` as usual.
 
 Every test gets two fixtures automatically: `tiles` answers requests to
 `tile.openstreetmap.org` with a blank 1×1 PNG, so no test reaches the real tile
-server, and `pageProblems` fails the test on any uncaught error or console
-error in the page (a failed tile load excepted, which only the tile-outage
-spec causes).
+server, and `pageProblems` fails the test on any uncaught error, console
+error or Content-Security-Policy violation in the page (a failed tile load
+excepted, which only the tile-outage spec causes).

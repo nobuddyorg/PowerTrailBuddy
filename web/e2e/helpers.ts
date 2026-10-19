@@ -5,11 +5,18 @@ import {
   type Page,
 } from '@playwright/test';
 
-export type PageProblems = { errors: string[]; console: string[] };
+export type PageProblems = {
+  errors: string[];
+  console: string[];
+  cspViolations: string[];
+};
+
+// A page may be watched twice (a spec plus the automatic fixture); each watcher needs its own binding name.
+let cspReporters = 0;
 
 /** Call before the first navigation -- listeners attached later miss everything from page load. */
-export function collectPageProblems(page: Page): PageProblems {
-  const problems: PageProblems = { errors: [], console: [] };
+export async function collectPageProblems(page: Page): Promise<PageProblems> {
+  const problems: PageProblems = { errors: [], console: [], cspViolations: [] };
   page.on('pageerror', (error) => problems.errors.push(String(error.stack)));
   page.on('console', (message) => {
     if (message.type() !== 'error') return;
@@ -17,13 +24,27 @@ export function collectPageProblems(page: Page): PageProblems {
     if (TILE_HOST.test(message.location().url)) return;
     problems.console.push(message.text());
   });
+  // Chromium reports a blocked eval only through this event, never on the console as Firefox does.
+  const reporter = `reportCspViolation${++cspReporters}`;
+  await page.exposeFunction(reporter, (violation: string) =>
+    problems.cspViolations.push(violation),
+  );
+  await page.addInitScript((name) => {
+    const report = (
+      window as unknown as Record<string, (text: string) => void>
+    )[name];
+    document.addEventListener('securitypolicyviolation', (event) =>
+      report(`${event.violatedDirective} ${event.sourceFile}`),
+    );
+  }, reporter);
   return problems;
 }
 
-/** Console errors are held to the same standard as thrown ones. */
+/** Console errors and CSP violations are held to the same standard as thrown errors. */
 export function expectNoPageProblems(problems: PageProblems) {
   expect(problems.errors, 'uncaught errors').toEqual([]);
   expect(problems.console, 'console errors').toEqual([]);
+  expect(problems.cspViolations, 'CSP violations').toEqual([]);
 }
 
 // The smallest valid PNG: one transparent pixel.

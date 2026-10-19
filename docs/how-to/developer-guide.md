@@ -161,9 +161,11 @@ grep -rn 'getByTestId\|getByRole\|locator(' web/e2e --include=*.spec.ts
   every test whose pages or service worker contacted any other origin, so
   each journey (import, map, walk, share, export) checks that nothing leaves
   the device.
-- The `pageProblems` fixture (automatic) fails a test on any uncaught error
-  or console error in the page, so a rejected background promise cannot hide
-  behind a passing assertion. `failMapTiles` in `e2e/helpers.ts` takes the
+- The `pageProblems` fixture (automatic) fails a test on any uncaught error,
+  console error or CSP violation in the page, so a rejected background
+  promise cannot hide behind a passing assertion. CSP violations are read
+  from the `securitypolicyviolation` event, because Chromium reports a
+  blocked `eval` only there while Firefox logs it to the console. `failMapTiles` in `e2e/helpers.ts` takes the
   tile server down for the one spec that checks the app without it.
 - Import fixtures are generated, not committed: `e2e/pocketQuery.ts` writes a
   synthetic Pocket Query (two trails, three caches the default settings leave

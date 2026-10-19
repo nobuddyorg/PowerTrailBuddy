@@ -32,7 +32,7 @@ export const test = base.extend<{
   // Automatic, so a rejected background promise behind a passing assertion still fails the test.
   pageProblems: [
     async ({ page }, provide) => {
-      const problems = collectPageProblems(page);
+      const problems = await collectPageProblems(page);
       await provide();
       expectNoPageProblems(problems);
     },

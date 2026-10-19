@@ -12,7 +12,7 @@ test.use({ locale: 'en-GB' });
 // Prerendering runs in Node, so only a browser catches code that breaks as a bundle.
 test.describe('the deployed bundle', () => {
   test('loads without throwing', async ({ on, page }) => {
-    const problems = collectPageProblems(page);
+    const problems = await collectPageProblems(page);
     await on(page).home.do.open();
     await expect(page).toHaveTitle(/PowerTrailBuddy/);
     await expect(on(page).home.locators.title).toHaveText('PowerTrailBuddy');

@@ -27,6 +27,12 @@ const nextConfig: NextConfig = {
   },
   // Set only by the builds that feed e2e/coverage.ts; the deployed build must not ship source maps.
   productionBrowserSourceMaps: process.env.E2E_COVERAGE_SOURCEMAPS === 'true',
+  turbopack: {
+    resolveAlias: {
+      // jszip's Node entry pulls in stream/util polyfills that try `Function()` at load, which the CSP blocks.
+      jszip: { browser: 'jszip/dist/jszip.min.js' },
+    },
+  },
 };
 
 export default nextConfig;
