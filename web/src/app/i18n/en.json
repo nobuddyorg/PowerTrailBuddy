@@ -162,7 +162,19 @@
     "markFound": "Mark as found",
     "unmarkFound": "Not found after all",
     "ignore": "Ignore",
-    "unignore": "Stop ignoring"
+    "unignore": "Stop ignoring",
+    "startWalkHere": "Start the walk here",
+    "leftOut": {
+      "title": "Not in any trail",
+      "type": "{type} is not one of your trail cache types.",
+      "difficulty": "Difficulty {rating} is above your limit of {limit}.",
+      "terrain": "Terrain {rating} is above your limit of {limit}.",
+      "disabled": "It is disabled.",
+      "archived": "It is archived.",
+      "found": "The Pocket Query lists it as found.",
+      "marked": "You marked it as found or ignore it.",
+      "noTrail": "It meets your limits, but no walk of at least {count} caches forms around it."
+    }
   },
   "health": {
     "disabled": "Disabled",

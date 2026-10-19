@@ -4,6 +4,7 @@ import { useI18n } from '../../i18n/useI18n';
 import { compassPoint } from '../../lib/format/compass';
 import { formatDistance } from '../../lib/format/format';
 import type { Coordinates, Geocache } from '../../lib/geocache/types';
+import type { Trail } from '../../lib/trails/types';
 import { bearingDegrees, distanceMeters } from '../../lib/trails/geo';
 import { Icon } from '../Icon';
 import { directionName } from '../labels';
@@ -13,21 +14,25 @@ import { HealthBadge } from './HealthBadge';
 import { HintSpoiler } from './HintSpoiler';
 import { MarkButtons } from './MarkButtons';
 import { RecentLogs } from './RecentLogs';
+import { TrailMembership, type Membership } from './TrailMembership';
 
 interface CacheDetailsProps {
   cache: Geocache;
   position?: Coordinates;
-  /** The trail this cache walks in, with its rank, when it is on one. */
-  trail?: { id: string; rank: number };
+  membership: Membership;
   onOpenTrail: (trailId: string) => void;
+  onStartWalkHere: (trail: Trail) => void;
+  onOpenSettings: () => void;
 }
 
 /** Everything about one cache, and every way to reach it. */
 export function CacheDetails({
   cache,
   position,
-  trail,
+  membership,
   onOpenTrail,
+  onStartWalkHere,
+  onOpenSettings,
 }: CacheDetailsProps) {
   const { t, locale } = useI18n();
   return (
@@ -68,20 +73,13 @@ export function CacheDetails({
         )}
       </header>
       <CacheLinks cache={cache} />
-      {trail && (
-        <button
-          type="button"
-          onClick={() => onOpenTrail(trail.id)}
-          data-testid="cache-trail"
-          className="flex min-h-11 w-full items-center justify-between rounded-xl bg-muted px-3 text-sm font-semibold hover:brightness-95"
-        >
-          <span className="flex items-center gap-2">
-            <Icon name="route" />
-            {t('cache.onTrail', { rank: trail.rank })}
-          </span>
-          <Icon name="chevron" />
-        </button>
-      )}
+      <TrailMembership
+        cache={cache}
+        membership={membership}
+        onOpenTrail={onOpenTrail}
+        onStartWalkHere={onStartWalkHere}
+        onOpenSettings={onOpenSettings}
+      />
       <section className="space-y-2">
         <h3 className="text-sm font-semibold">{t('cache.recentLogs')}</h3>
         <RecentLogs logs={cache.recentLogs} />

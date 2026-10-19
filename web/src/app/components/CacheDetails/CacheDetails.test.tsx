@@ -2,12 +2,15 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { DEFAULT_TRAIL_SETTINGS } from '../../lib/trails/types';
 import {
   makeCache,
   makeMarks,
+  makeTrail,
   renderWithProviders,
 } from '../fixtures.test-support';
 import { CacheDetails } from '.';
+import type { Membership } from './TrailMembership';
 
 const CACHE = makeCache({
   code: 'GCSU42',
@@ -32,13 +35,35 @@ function renderDetails(
   overrides: Partial<Parameters<typeof CacheDetails>[0]> = {},
   marks = makeMarks(),
 ) {
-  const onOpenTrail = vi.fn();
+  const callbacks = {
+    onOpenTrail: vi.fn(),
+    onStartWalkHere: vi.fn(),
+    onOpenSettings: vi.fn(),
+  };
   const view = renderWithProviders(
-    <CacheDetails cache={CACHE} onOpenTrail={onOpenTrail} {...overrides} />,
+    <CacheDetails
+      cache={CACHE}
+      membership={leftOut([])}
+      {...callbacks}
+      {...overrides}
+    />,
     { marks },
   );
-  return { ...view, onOpenTrail };
+  return { ...view, ...callbacks };
 }
+
+function leftOut(
+  reasons: Extract<Membership, { kind: 'left-out' }>['reasons'],
+) {
+  return {
+    kind: 'left-out',
+    reasons,
+    settings: DEFAULT_TRAIL_SETTINGS,
+  } satisfies Membership;
+}
+
+const reasonLines = () =>
+  screen.getAllByTestId('left-out-reason').map((line) => line.textContent);
 
 function stubClipboard(writeText: (text: string) => Promise<void>) {
   Object.defineProperty(navigator, 'clipboard', {
@@ -211,17 +236,79 @@ describe('CacheDetails', () => {
       '740 m away, to the east',
     );
   });
+});
+
+describe('the trail of a cache', () => {
+  const TRAIL = makeTrail({ id: 'T1' });
 
   it('opens the trail the cache belongs to', () => {
-    const { onOpenTrail } = renderDetails({ trail: { id: 'T1', rank: 3 } });
+    const { onOpenTrail } = renderDetails({
+      membership: { kind: 'on-trail', trail: TRAIL, rank: 3 },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Part of trail #3' }));
     expect(onOpenTrail).toHaveBeenCalledWith('T1');
+    expect(screen.queryByTestId('cache-left-out')).not.toBeInTheDocument();
   });
 
-  it('has no trail link for a cache on no trail', () => {
+  it("starts that trail's walk at this cache", () => {
+    const { onStartWalkHere } = renderDetails({
+      membership: { kind: 'on-trail', trail: TRAIL, rank: 3 },
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Start the walk here' }),
+    );
+    expect(onStartWalkHere).toHaveBeenCalledWith(TRAIL);
+  });
+
+  it('has no trail link and no walk for a cache on no trail', () => {
     renderDetails();
     expect(
       screen.queryByRole('button', { name: /Part of trail/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Start the walk here' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('passing every filter, blames the trail size and leads to the settings', () => {
+    const { onOpenSettings } = renderDetails();
+    expect(
+      screen.getByRole('heading', { name: 'Not in any trail' }),
+    ).toBeInTheDocument();
+    expect(reasonLines()).toEqual([
+      'It meets your limits, but no walk of at least 10 caches forms around it.',
+    ]);
+    fireEvent.click(screen.getByRole('button', { name: 'Open settings' }));
+    expect(onOpenSettings).toHaveBeenCalledTimes(1);
+  });
+
+  it('names each setting it misses, with the limit', () => {
+    renderDetails({
+      cache: { ...CACHE, type: 'mystery', difficulty: 3, terrain: 2.5 },
+      membership: leftOut(['type', 'difficulty', 'terrain']),
+    });
+    expect(reasonLines()).toEqual([
+      'Mystery is not one of your trail cache types.',
+      'Difficulty 3 is above your limit of 2.',
+      'Terrain 2.5 is above your limit of 2.',
+    ]);
+    expect(
+      screen.getByRole('button', { name: 'Open settings' }),
+    ).toBeInTheDocument();
+  });
+
+  it('names its state and marks, which no setting changes', () => {
+    renderDetails({
+      membership: leftOut(['disabled', 'archived', 'found', 'marked']),
+    });
+    expect(reasonLines()).toEqual([
+      'It is disabled.',
+      'It is archived.',
+      'The Pocket Query lists it as found.',
+      'You marked it as found or ignore it.',
+    ]);
+    expect(
+      screen.queryByRole('button', { name: 'Open settings' }),
     ).not.toBeInTheDocument();
   });
 });

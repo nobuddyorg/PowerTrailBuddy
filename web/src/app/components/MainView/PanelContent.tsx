@@ -2,12 +2,14 @@
 
 import { useI18n } from '../../i18n/useI18n';
 import type { Coordinates } from '../../lib/geocache/types';
+import { exclusionReasons } from '../../lib/trails/filterCaches';
 import type { Trail } from '../../lib/trails/types';
 import type { TrailCard } from '../../lib/ui-logic/trailCards';
 import type { TrailFilter } from '../../lib/ui-logic/trailSort';
 import type { AppState } from '../../useAppState';
 import type { RouteCheck } from '../../useWalkingDistances';
 import { CacheDetails } from '../CacheDetails';
+import type { Membership } from '../CacheDetails/TrailMembership';
 import { Icon } from '../Icon';
 import { RouteStatus } from '../RouteStatus';
 import { CacheSearch } from '../Search';
@@ -76,10 +78,20 @@ export function PanelContent(props: PanelContentProps) {
   if (view.kind === 'cache') {
     const cache = app.caches.find((each) => each.code === view.code);
     if (!cache) return <Gone onBack={onBack} />;
-    const rank =
-      trails.findIndex((trail) =>
-        trail.caches.some((each) => each.code === cache.code),
-      ) + 1;
+    const trail = trails.find((each) =>
+      each.caches.some((member) => member.code === cache.code),
+    );
+    const membership: Membership = trail
+      ? { kind: 'on-trail', trail, rank: trails.indexOf(trail) + 1 }
+      : {
+          kind: 'left-out',
+          // Ignored caches leave the trails the same way found ones do.
+          reasons: exclusionReasons(cache, {
+            settings: app.settings,
+            locallyFound: new Set([...app.locallyFound, ...app.ignored]),
+          }),
+          settings: app.settings,
+        };
     return (
       <div className="space-y-2">
         <button
@@ -94,8 +106,12 @@ export function PanelContent(props: PanelContentProps) {
         <CacheDetails
           cache={cache}
           position={position}
-          trail={rank > 0 ? { id: trails[rank - 1].id, rank } : undefined}
+          membership={membership}
           onOpenTrail={onSelectTrail}
+          onStartWalkHere={(onTrail) =>
+            app.startWalk(onTrail, { fromCode: cache.code })
+          }
+          onOpenSettings={props.onOpenSettings}
         />
       </div>
     );

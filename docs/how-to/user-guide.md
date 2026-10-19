@@ -123,11 +123,20 @@ puts its coordinates on the clipboard as geocachers write them
 Both show a message with **Undo**. **Settings** lists the ignored caches, to
 bring one back, and forgets every cache marked found at once.
 
+A cache on a trail links to it and offers **Start the walk here**, to begin
+the walk at that cache: on a round trip, the one next to your parking or
+stop. A cache on no trail says why: a type, difficulty or terrain outside your
+[trail settings](#change-the-trail-settings) (with a link to them), disabled,
+archived, found, or marked in the app. One that passes them all has too few
+caches close by for a trail.
+
 ## Walk a trail
 
 **Start walk** begins at the first cache of the order shown; once the app
 knows where you are, **Start at the nearest end** begins at whichever end is
-closer. The walk shows the next cache, its distance and direction with a
+closer; **Start the walk here** on a cache begins at that cache, going on in
+the trail's order (on a trail that is not a round trip, the walk then crosses
+from its last cache back to its first). The walk shows the next cache, its distance and direction with a
 compass arrow (allow location access, and on iPhone tap **Use the compass**),
 and how accurate your position is. Within 30 m it says you are close and the
 phone vibrates once.

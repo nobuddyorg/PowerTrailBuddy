@@ -11,12 +11,16 @@ interface CacheDetails {
     markFound(): Promise<void>;
     showHint(): Promise<void>;
     openTrail(): Promise<void>;
+    openSettingsFromReasons(): Promise<void>;
+    startWalkHere(): Promise<void>;
   };
   locators: {
     buttons: {
       back: Locator;
       ignore: Locator;
       markFound: Locator;
+      reasonsSettings: Locator;
+      startWalkHere: Locator;
       trail: Locator;
       unignore: Locator;
       unmarkFound: Locator;
@@ -25,6 +29,8 @@ interface CacheDetails {
     distance: Locator;
     health: Locator;
     hint: Locator;
+    /** Why the cache is in no trail, one line per reason. */
+    leftOutReasons: Locator;
     recentLogs: Locator;
     links: CacheLinks;
   };
@@ -39,6 +45,8 @@ export function initCacheDetails(page: Page): CacheDetails {
       back: panel.getByTestId('cache-back'),
       ignore: root.getByTestId('ignore-cache'),
       markFound: root.getByTestId('mark-found'),
+      reasonsSettings: root.getByTestId('left-out-settings'),
+      startWalkHere: root.getByTestId('start-walk-here'),
       trail: root.getByTestId('cache-trail'),
       unignore: root.getByTestId('unignore-cache'),
       unmarkFound: root.getByTestId('unmark-found'),
@@ -47,6 +55,7 @@ export function initCacheDetails(page: Page): CacheDetails {
     distance: root.getByTestId('cache-distance'),
     health: root.getByTestId('health-badge'),
     hint: root.getByTestId('hint'),
+    leftOutReasons: root.getByTestId('left-out-reason'),
     recentLogs: root.getByTestId('recent-log'),
     links: initCacheLinks(root),
   };
@@ -70,6 +79,14 @@ export function initCacheDetails(page: Page): CacheDetails {
     openTrail: async () => {
       await locators.buttons.trail.click();
       await expect(panel.getByTestId('trail-detail')).toBeVisible();
+    },
+    openSettingsFromReasons: async () => {
+      await locators.buttons.reasonsSettings.click();
+      await expect(page.getByTestId('settings-dialog')).toBeVisible();
+    },
+    startWalkHere: async () => {
+      await locators.buttons.startWalkHere.click();
+      await expect(page.getByTestId('walk-view')).toBeVisible();
     },
   };
   return Object.assign(() => root, { locators, do: interactions });
