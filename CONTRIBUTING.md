@@ -26,9 +26,9 @@ npm install
 npm run dev     # http://localhost:3000
 ```
 
-To try it, import a Pocket Query `.zip` or `.gpx` of your own, or one of the
-synthetic fixtures under `web/e2e/fixtures/` once they exist. Never commit a
-real Pocket Query.
+To try it, choose **Try with sample data** (invented caches, served from
+`web/public/sample/`), or import a Pocket Query `.zip` or `.gpx` of your own.
+Never commit a real Pocket Query.
 
 ## Commit hooks
 

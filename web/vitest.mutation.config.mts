@@ -1,4 +1,4 @@
-import { mergeConfig } from 'vitest/config';
+import { configDefaults, mergeConfig } from 'vitest/config';
 import type { VitestPluginContext } from 'vitest/node';
 
 import baseConfig from './vitest.config.mts';
@@ -24,6 +24,8 @@ const strykerTestNameSeparator = {
 export default mergeConfig(baseConfig, {
   plugins: [strykerTestNameSeparator],
   test: {
+    // Wall-clock bounds measure the uninstrumented code; under Stryker they fail its first run and kill no mutant.
+    exclude: [...configDefaults.exclude, 'src/**/*.performance.test.ts'],
     // Vitest auto-adds its `github-actions` reporter under GITHUB_ACTIONS; a killed mutant is an expected failure, not an annotation.
     reporters: ['dot'],
   },

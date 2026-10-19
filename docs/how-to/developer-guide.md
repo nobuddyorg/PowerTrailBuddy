@@ -46,9 +46,9 @@ coverage treats as test code.
 - **Size limits are tested with generated input**, not committed large files.
 - **No randomness, no clock** in code under test; pure logic takes what it
   needs as parameters.
-- Write repeated cases as plain `it()` calls in a `for` loop, not `it.each`:
-  Stryker's per-test filter does not match an `it.each` title, so a mutant
-  only it kills survives.
+- `it.each` is fine for repeated cases: the separator plugin in
+  `vitest.mutation.config.mts` makes Stryker's per-test filter match the
+  suite paths Vitest joins with `>`, `it.each` titles included.
 
 ```bash
 cd web
@@ -78,7 +78,8 @@ npm run test:mutation
 
 Stryker mutates exactly the files in [`mutation-targets.mjs`](../../web/mutation-targets.mjs),
 which `vitest.config.mts` also reads for its per-file 100% coverage floors, so
-the two cannot drift. There is no `Stryker disable` or `/* v8 ignore */` in
+the two cannot drift. It runs the suite through `vitest.mutation.config.mts`,
+which leaves out the `*.performance.test.ts` timing tests. There is no `Stryker disable` or `/* v8 ignore */` in
 `src/`; a survivor is a missing assertion or dead code to delete.
 
 Runs are incremental: Stryker keeps every mutant's result in
@@ -156,21 +157,53 @@ grep -rn 'getByTestId\|getByRole\|locator(' web/e2e --include=*.spec.ts
 ### Faked tiles, import fixtures, device APIs
 
 - The `tiles` fixture (automatic) answers every `tile.openstreetmap.org`
-  request with a blank PNG; `collectForeignRequests` in `e2e/helpers.ts`
-  fails a test that contacts any other origin.
-- Import fixtures are small synthetic `.gpx` and `.zip` files under
-  `web/e2e/fixtures/`, set on the file input through the page object.
-- Geolocation: `test.use({ geolocation: {...}, permissions: ['geolocation'] })`,
-  or no permission to test the fallback.
-- The share sheet cannot be driven; a spec POSTs `multipart/form-data` to
-  `share-target/` once the service worker controls the page.
+  request with a blank PNG. The `foreignRequests` fixture (automatic) fails
+  every test whose pages or service worker contacted any other origin, so
+  each journey (import, map, walk, share, export) checks that nothing leaves
+  the device.
+- The `pageProblems` fixture (automatic) fails a test on any uncaught error,
+  console error or CSP violation in the page, so a rejected background
+  promise cannot hide behind a passing assertion. CSP violations are read
+  from the `securitypolicyviolation` event, because Chromium reports a
+  blocked `eval` only there while Firefox logs it to the console. `failMapTiles` in `e2e/helpers.ts` takes the
+  tile server down for the one spec that checks the app without it.
+- Import fixtures are generated, not committed: `e2e/pocketQuery.ts` writes a
+  synthetic Pocket Query (two trails, three caches the default settings leave
+  out, a parking area in the `-wpts.gpx`) and zips it with JSZip, as bytes.
+  Generated rather than checked in as TEST_STRATEGY §8 suggests, so the specs
+  know every code and coordinate they assert on (`QUICK_TRAIL`, `LONG_TRAIL`,
+  `offset()`). The page objects set the files on the import input.
+- Geolocation: `placeDevice(context, position)` sets the position, then
+  grants the permission (in that order: Firefox's emulation never hands a
+  later fix to a watch whose first try failed), `moveDevice` walks it somewhere else, `denyLocation` refuses
+  the permission for the fallback (both engines deny every permission an empty
+  grant leaves out).
+- Downloads (`Export GPX`, `Export field notes`) are read with
+  `downloadedBytes(download)`; the specs assert the file name and content.
+- The share sheet cannot be driven; `share-target.spec.ts` submits a
+  `multipart/form-data` form to `share-target/` from inside the page once the
+  service worker controls it, the navigation Android's share sheet makes (a
+  `fetch()` POST is not one, and Firefox refuses the worker's redirect for
+  it), and lands where the redirect leads.
+- Offline through the service worker runs in Chromium only
+  (`SW_ONLY_IN_CHROMIUM` in `e2e/helpers.ts`): Playwright drives service
+  workers there alone, and its Firefox offline mode fails a navigation
+  before the worker sees it. The worker's offline logic is unit-tested from
+  source in `sw.test.ts` for every engine.
+- `offerInstall(page)` fires the `beforeinstallprompt` event Chromium sends
+  once the install criteria hold, which no headless run does by itself.
+- `bottom-sheet.spec.ts` sets a phone-sized viewport for every project, as the
+  sheet exists only below the wide layout.
 
 ### The e2e coverage report
 
 With `E2E_COVERAGE_SOURCEMAPS=true` for both `npm run build` and
 `npm run e2e`, the Chromium projects collect JS/CSS coverage through
 Playwright's `page.coverage` and write `web/coverage-e2e/`. CI's `e2e` job does
-this; the floor in `e2e/coverage.ts` is set once the app's journeys exist.
+this, and fails below the floor in `e2e/coverage.ts`
+([Configuration](../reference/configuration.md#coverage-and-mutation-thresholds)).
+To find what no journey reaches, read the function coverage per file in
+`web/coverage-e2e/index.html`, not the line coverage.
 
 ## Deploy to GitHub Pages
 

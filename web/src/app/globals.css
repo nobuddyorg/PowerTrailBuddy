@@ -1,38 +1,32 @@
 @import 'tailwindcss';
 
-/* Colours as tokens, so every component follows the OS theme without its own dark: variants. */
+/* One light theme: a dark interface over light OpenStreetMap tiles looks wrong (design-decisions.md). */
 :root {
   color-scheme: light;
 
   --background: #f3f5ef;
-  --foreground: #18211a;
+  --foreground: #142019;
   --card: #ffffff;
-  --card-foreground: #18211a;
-  --primary: #1f5130;
+  --card-foreground: #142019;
+  --primary: #1d6b3a;
+  --primary-strong: #145230;
+  --primary-soft: #e2f0e5;
   --primary-foreground: #ffffff;
-  --border: #d9ded3;
-  --muted: #e6eae1;
-  --muted-foreground: #556055;
-  --destructive: #a32017;
+  --accent: #c2410c;
+  --accent-bright: #f97316;
+  --accent-soft: #fff1e6;
+  --accent-foreground: #ffffff;
+  --border: #dbe2d6;
+  --muted: #edf1e9;
+  --muted-foreground: #556257;
+  --warning: #92400e;
+  --warning-soft: #fef3c7;
+  --destructive: #b42318;
+  --destructive-soft: #fdecea;
   --destructive-foreground: #ffffff;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-
-    --background: #151a14;
-    --foreground: #eef2ea;
-    --card: #1f261d;
-    --card-foreground: #eef2ea;
-    --primary: #8fd19e;
-    --primary-foreground: #151a14;
-    --border: #344032;
-    --muted: #283126;
-    --muted-foreground: #a9b5a5;
-    --destructive: #e06a5e;
-    --destructive-foreground: #151a14;
-  }
+  --position: #2563eb;
+  /* The "Buddy" orange every nobuddyorg app's wordmark shares. */
+  --brand-accent: #ad5725;
 }
 
 @theme inline {
@@ -41,12 +35,28 @@
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
+  --color-primary-soft: var(--primary-soft);
   --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-bright: var(--accent-bright);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-foreground: var(--accent-foreground);
   --color-border: var(--border);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
   --color-destructive: var(--destructive);
+  --color-destructive-soft: var(--destructive-soft);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-position: var(--position);
+  --color-brand-accent: var(--brand-accent);
+  --font-display: var(--font-display-family), ui-sans-serif, sans-serif;
+  --shadow-soft:
+    0 1px 2px rgb(20 32 25 / 0.06), 0 4px 16px rgb(20 32 25 / 0.08);
+  --shadow-lifted:
+    0 -2px 6px rgb(20 32 25 / 0.06), 0 -12px 32px rgb(20 32 25 / 0.12);
 }
 
 body {
@@ -58,4 +68,125 @@ body {
     'Segoe UI',
     Roboto,
     sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Map overlays drawn by components/Map/elements.ts as DOM nodes. */
+.ptb-badge {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+  border: 2px solid #ffffff;
+  color: #ffffff;
+  font:
+    700 12px/1 system-ui,
+    sans-serif;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
+}
+
+.ptb-parking {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  border: 2px solid #ffffff;
+  background: #1e40af;
+  color: #ffffff;
+  font:
+    800 12px/1 system-ui,
+    sans-serif;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
+}
+
+.ptb-found {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  border: 2px solid #ffffff;
+  background: #6b7280;
+  color: #ffffff;
+  font:
+    800 12px/1 system-ui,
+    sans-serif;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+}
+
+.ptb-position {
+  position: relative;
+  width: 44px;
+  height: 44px;
+}
+
+.ptb-position__cone {
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(
+    from -30deg,
+    rgb(37 99 235 / 0.35) 0deg 60deg,
+    transparent 60deg
+  );
+  border-radius: 9999px;
+  -webkit-mask: radial-gradient(circle, #000 0 22px, transparent 22px);
+  mask: radial-gradient(circle, #000 0 22px, transparent 22px);
+}
+
+.ptb-position__dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 9999px;
+  background: var(--position);
+  border: 3px solid #ffffff;
+  box-shadow:
+    0 0 0 1px rgb(37 99 235 / 0.4),
+    0 1px 4px rgb(0 0 0 / 0.35);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ptb-target-pulse {
+    animation: ptb-pulse 1.6s ease-out infinite;
+  }
+}
+
+.ptb-target-pulse {
+  width: 34px;
+  height: 34px;
+  border-radius: 9999px;
+  border: 3px solid var(--accent-bright);
+}
+
+@keyframes ptb-pulse {
+  from {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* Leaflet's attribution and zoom controls, in the app's type and above the bottom sheet's peek. */
+.leaflet-container {
+  font-family: inherit;
+  background: #e8ece4;
+}
+
+@keyframes ptb-toast-in {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
 }

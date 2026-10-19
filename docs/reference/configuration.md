@@ -4,28 +4,47 @@
 
 `TrailSettings` in `web/src/app/lib/trails/types.ts`; defaults in
 `DEFAULT_TRAIL_SETTINGS`, the user's values in IndexedDB under `settings`
-([Architecture](architecture.md#storage)). A stored value missing a field gets
-that field's default.
+([Architecture](architecture.md#storage)). On load, `data/sanitizeSettings.ts`
+drops unknown keys, gives a missing or non-numeric field its default, and
+clamps (and, where a step is given, rounds) each number into its range; an
+empty or unknown cache-type list falls back to the default. The settings
+dialog refuses values outside the same ranges before Apply.
 
-| Setting | Default | Meaning |
-| --- | --- | --- |
-| `cacheTypes` | `['traditional']` | Only these types count toward a trail |
-| `maxDifficulty` | `2` | Highest difficulty rating (1–5) a trail cache may have |
-| `maxTerrain` | `2` | Highest terrain rating (1–5) a trail cache may have |
-| `maxGapMeters` | `300` | Two caches closer than this, straight line, are linked into one group |
-| `minCaches` | `10` | Groups and walks with fewer caches are not trails |
-| `maxWalkKilometers` | `10` | Longer chains are split into several walks no longer than this (walking distance, return included) |
-| `walkingSpeedKmh` | `4` | Speed for the time estimate |
-| `minutesPerCache` | `3` | Time spent at each cache: search, log, back on the path |
-| `detourFactor` | `1.3` | Straight-line distance × this ≈ distance on real paths |
+| Setting | Default | Range (step) | Meaning |
+| --- | --- | --- | --- |
+| `cacheTypes` | `['traditional']` | at least one type | Only these types count toward a trail |
+| `maxDifficulty` | `2` | 1–5 (0.5) | Highest difficulty rating a trail cache may have |
+| `maxTerrain` | `2` | 1–5 (0.5) | Highest terrain rating a trail cache may have |
+| `maxGapMeters` | `300` | 10–2000 (1) | Two caches closer than this, straight line, are linked into one group |
+| `minCaches` | `10` | 2–1000 (1) | Groups and walks with fewer caches are not trails |
+| `maxWalkKilometers` | `10` | 1–100 | Longer chains are split into several walks no longer than this (walking distance, return included) |
+| `walkingSpeedKmh` | `4` | 1–10 | Speed for the time estimate |
+| `minutesPerCache` | `3` | 1–60 | Time spent at each cache: search, log, back on the path |
+| `detourFactor` | `1.3` | 1–3 | Straight-line distance × this ≈ distance on real paths |
+
+Presets (`lib/ui-logic/presets.ts`) set only the gap and the trail size:
+**Standard** 300 m / 10 caches (the defaults), **Classic power trail** 200 m /
+20, **Relaxed** 500 m / 6. Any other pair shows as **Custom**.
 
 Derived per trail ([Architecture](architecture.md#libtrailstypests)):
 `walkMeters = (pathMeters + returnMeters) × detourFactor`;
 `durationMinutes = walkMeters / 1000 / walkingSpeedKmh × 60 + caches ×
 minutesPerCache`; `cachesPerHour = caches / durationMinutes × 60`.
+The floor of 1 minute per cache keeps `durationMinutes` positive, and so the
+rate finite, even for caches that share one spot.
 
 Caches the Pocket Query marks as found, disabled (`available = false`) or
-archived, and caches marked found in the app, never count.
+archived, and caches marked found or ignored in the app, never count.
+
+## Fixed thresholds in the UI
+
+| Constant | Where | Value | Effect |
+| --- | --- | --- | --- |
+| `SHORT_WALK_METERS` | `lib/ui-logic/trailCards.ts` | 5,000 m | The "≤ 5 km" filter |
+| `QUICK_WALK_MINUTES` | same | 120 min | The "≤ 2 h" filter |
+| `NEAR_METERS` | same | 10,000 m | The "Near me" filter: a trail's nearest cache within this |
+| `CLOSE_METERS` | `lib/ui-logic/walkStats.ts` | 30 m | On a walk, closer than this shows "You're close" and vibrates once |
+| `MAX_RECENT_LOGS` | `lib/geocache/recentLogs.ts` | 5 | Logs kept per cache |
 
 ## Import limits
 
@@ -33,8 +52,12 @@ archived, and caches marked found in the app, never count.
 
 | Limit | Value | Why |
 | --- | --- | --- |
-| Entries per `.zip` | 50 | A Pocket Query zip holds two files; anything far beyond that is not one |
-| Uncompressed size per `.zip`, total | 100 MB | 1,000 caches with logs is a few MB; the limit keeps a hostile archive from exhausting a phone's memory |
+| Entries per `.zip` (`MAX_ARCHIVE_ENTRIES`) | 50 | A Pocket Query zip holds two files; anything far beyond that is not one |
+| Uncompressed size of a `.zip`'s GPX entries, total (`MAX_IMPORT_BYTES`) | 100 MiB, by the declared sizes and again while inflating | 1,000 caches with logs is a few MB; the limit keeps a hostile archive from exhausting a phone's memory |
+| Size of any one imported file | 100 MiB | Refused before it is read |
+
+The service worker's share target has its own limits (`public/sw.js`): at most
+20 files and 100 MB in one share, refused whole past either.
 
 ## Build and environment variables
 
@@ -54,16 +77,22 @@ There are no secrets and no `.env` file.
 | Unit coverage, per file | same file, `PER_FILE_FLOOR`, over `mutation-targets.mjs` | 100% |
 | Unit coverage, what counts | same file, `coverage.exclude` | Product code only; left out: `types.ts`, `*.test-support.*`, the dictionaries, `*.d.ts`, and the glue Playwright verifies (`layout.tsx`, `page.tsx`, `components/Map/index.tsx`) |
 | Mutation score | `web/stryker.config.mjs` `thresholds.break` | 99 — one below 100, so a single new equivalent mutant cannot block unrelated work |
-| E2E JS/CSS coverage | `web/e2e/coverage.ts` `COVERAGE_THRESHOLDS` | Not yet set (0): set about 3 points under the first measured run of the finished app |
+| E2E JS/CSS coverage | `web/e2e/coverage.ts` `COVERAGE_THRESHOLDS` | 88% statements, 74% branches, 88% functions, 88% lines — about 3 points under the first full run (chromium and mobile: 91.1%, 76.9%, 90.9%, 91.4%) |
 
 Every floor is raised by hand when a real run reports a higher number, and
 never lowered to make a change fit. `autoUpdate` is off in Vitest.
+
+Stryker runs the unit suite through `web/vitest.mutation.config.mts`, which
+leaves out `*.performance.test.ts`: their wall-clock bounds hold for the plain
+code, not under Stryker's instrumentation, and a timing assertion kills no
+mutant. They run in `npm test` as usual.
 
 ## End-to-end tests
 
 [`web/playwright.config.ts`](../../web/playwright.config.ts), specs in
 `web/e2e/public/`. Projects: `chromium` (Desktop Chrome), `mobile` (Pixel 7),
-`firefox`.
+`firefox`. The three offline-through-the-worker cases run in the Chromium
+projects only (developer-guide.md, "Offline through the service worker").
 
 | Variable | Effect |
 | --- | --- |
@@ -72,6 +101,8 @@ never lowered to make a change fit. `autoUpdate` is off in Vitest.
 | `E2E_PORT` | Local server port, default `4173` |
 | `PLAYWRIGHT_CHROMIUM_EXECUTABLE` | Launches the `chromium` and `mobile` projects with this Chrome binary, for a machine whose preinstalled Chromium is not the revision Playwright pins |
 
-Every test gets the `tiles` fixture automatically: requests to
-`tile.openstreetmap.org` are answered with a blank 1×1 PNG, so no test reaches
-the real tile server.
+Every test gets two fixtures automatically: `tiles` answers requests to
+`tile.openstreetmap.org` with a blank 1×1 PNG, so no test reaches the real tile
+server, and `pageProblems` fails the test on any uncaught error, console
+error or Content-Security-Policy violation in the page (a failed tile load
+excepted, which only the tile-outage spec causes).

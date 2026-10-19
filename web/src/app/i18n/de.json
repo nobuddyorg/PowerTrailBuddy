@@ -1,9 +1,333 @@
 {
   "brand": {
-    "name": "PowerTrailBuddy"
+    "name": "PowerTrailBuddy",
+    "trail": "PowerTrail",
+    "buddy": "Buddy"
   },
   "page": {
-    "tagline": "Power-Trails in deinen Pocket Queries finden und zu Fuß ablaufen",
-    "intro": "Importiere eine Pocket Query (.zip) oder GPX-Datei, um loszulegen."
+    "tagline": "Finde Powertrails in deinen Pocket Queries und lauf sie ab"
+  },
+  "common": {
+    "close": "Schließen",
+    "cancel": "Abbrechen",
+    "dismiss": "Ausblenden",
+    "loading": "Wird geladen …",
+    "back": "Zurück",
+    "undo": "Rückgängig"
+  },
+  "header": {
+    "data": "Deine Daten",
+    "settings": "Einstellungen",
+    "install": "App installieren",
+    "offline": "Offline",
+    "language": "Sprache",
+    "german": "DE",
+    "english": "EN"
+  },
+  "empty": {
+    "title": "Finde die besten Powertrails in deiner Nähe",
+    "lead": "Ein Powertrail ist eine Kette schneller Caches mit kurzen Wegen dazwischen. PowerTrailBuddy findet sie in deiner eigenen Pocket Query und führt dich von Cache zu Cache.",
+    "step1": {
+      "title": "Pocket Query anlegen",
+      "text": "Auf geocaching.com (Premium): Gebiet wählen, Traditional Caches, bis zu 1000 Treffer, dazu „Ich habe nicht gefunden“ und „Ist aktiviert“ ankreuzen.",
+      "link": "Pocket Queries öffnen"
+    },
+    "step2": {
+      "title": ".zip herunterladen",
+      "text": "Lade sie auf der Pocket-Query-Seite herunter oder öffne sie direkt aus der E-Mail, die du bekommst."
+    },
+    "step3": {
+      "title": "Hier importieren",
+      "text": "Wähle unten die .zip oder .gpx. Unter Android kannst du die Datei nach der Installation auch direkt an PowerTrailBuddy teilen."
+    },
+    "sample": "Mit Beispieldaten ausprobieren",
+    "privacy": "Deine Dateien bleiben auf diesem Gerät: Nichts wird hochgeladen, es gibt kein Konto. Nur die Kartenkacheln kommen von OpenStreetMap."
+  },
+  "import": {
+    "button": "Pocket Query importieren",
+    "importing": "Wird importiert …",
+    "summary": "{caches} aus {files} importiert.",
+    "cacheCount": "{count} Caches",
+    "cacheCount_one": "{count} Cache",
+    "fileCount": "{count} Dateien",
+    "fileCount_one": "{count} Datei",
+    "fileFailed": "{name}: {reason}",
+    "error": {
+      "unsupported": "keine Geocache-.zip- oder -.gpx-Datei",
+      "unreadable": "die Datei ist beschädigt und ließ sich nicht lesen",
+      "tooLarge": "zu groß (mehr als 50 Dateien oder 100 MB entpackt)"
+    }
+  },
+  "error": {
+    "loadFailed": "Deine gespeicherten Daten ließen sich nicht lesen. Du kannst weiter Dateien importieren, sie werden aber vielleicht nicht behalten.",
+    "importFailed": "Der Import ist fehlgeschlagen. Bitte versuche es noch einmal.",
+    "saveFailed": "Speichern in diesem Browser ist fehlgeschlagen, deine letzten Änderungen gehen beim Neuladen vielleicht verloren.",
+    "sampleFailed": "Die Beispieldaten ließen sich nicht laden. Bist du offline?",
+    "shareEmpty": "Beim Teilen ist keine Datei angekommen. Teile eine Pocket-Query-.zip oder -.gpx mit höchstens 100 MB und 20 Dateien, oder importiere sie hier."
+  },
+  "main": {
+    "cacheCount": "{count} Caches importiert",
+    "cacheCount_one": "{count} Cache importiert"
+  },
+  "panel": {
+    "label": "Trails und Caches",
+    "gone": "Das gibt es hier nicht mehr: Die Einstellungen oder deine Funde haben die Trails verändert.",
+    "toList": "Alle Trails"
+  },
+  "search": {
+    "label": "Cache suchen",
+    "placeholder": "Cache nach Code oder Name suchen",
+    "results": "Passende Caches",
+    "none": "Kein Cache passt."
+  },
+  "trails": {
+    "title": "{count} Trails",
+    "title_one": "{count} Trail",
+    "updating": "Wird aktualisiert …",
+    "none": "Mit diesen Einstellungen gibt es keine Powertrails. Erlaube einen größeren Abstand, weniger Caches pro Trail oder mehr Cachetypen.",
+    "noneFiltered": "Kein Trail passt zu diesen Filtern.",
+    "openSettings": "Einstellungen öffnen",
+    "name": "Trail #{rank}",
+    "caches": "{count} Caches",
+    "caches_one": "{count} Cache",
+    "perHour": "{rate} Caches/h",
+    "away": "{distance} entfernt",
+    "shape": {
+      "line": "Linie",
+      "area": "Fläche"
+    },
+    "sort": {
+      "label": "Trails sortieren",
+      "rate": "Beste Rate",
+      "caches": "Meiste Caches",
+      "nearest": "Am nächsten",
+      "shortest": "Kürzeste"
+    },
+    "filter": {
+      "label": "Trails filtern",
+      "short": "≤ 5 km",
+      "quick": "≤ 2 h",
+      "near": "In meiner Nähe"
+    },
+    "health": {
+      "dnf": "{count} mit DNF-Serie",
+      "dnf_one": "{count} mit DNF-Serie",
+      "maintenance": "{count} brauchen Wartung",
+      "maintenance_one": "{count} braucht Wartung",
+      "disabled": "{count} deaktiviert",
+      "disabled_one": "{count} deaktiviert"
+    }
+  },
+  "detail": {
+    "stat": {
+      "caches": "Caches",
+      "rate": "Tempo",
+      "walk": "Strecke",
+      "duration": "Dauer",
+      "shape": "Form",
+      "away": "Von dir"
+    },
+    "doubtful": "{count} Caches wirken fraglich (DNF-Serie, Wartung oder deaktiviert). Prüfe sie vor dem Losgehen.",
+    "doubtful_one": "{count} Cache wirkt fraglich (DNF-Serie, Wartung oder deaktiviert). Prüfe ihn vor dem Losgehen.",
+    "parking": "Nächster Parkplatz",
+    "parkingLabel": "Parkplatz, Trail #{rank}",
+    "startWalk": "Tour starten",
+    "startNearest": "Am nächsten Ende starten ({distance} entfernt)",
+    "reverse": "Umdrehen",
+    "exportGpx": "GPX exportieren",
+    "cacheList": "Caches in Laufreihenfolge",
+    "openCache": "Auf der Karte zeigen"
+  },
+  "cache": {
+    "page": "Cache-Seite",
+    "navigate": "Navigieren",
+    "directions": "Zu Fuß",
+    "copy": "Kopieren",
+    "copyLabel": "Koordinaten {coordinates} kopieren",
+    "rating": "D {difficulty} / T {terrain}",
+    "size": "Größe: {size}",
+    "placedBy": "von {owner}",
+    "away": "{distance} entfernt, Richtung {direction}",
+    "onTrail": "Teil von Trail #{rank}",
+    "recentLogs": "Letzte Logs",
+    "noLogs": "Keine Logs in der Datei.",
+    "showHint": "Hinweis zeigen",
+    "hideHint": "Hinweis verbergen",
+    "noHint": "Kein Hinweis.",
+    "markFound": "Als gefunden markieren",
+    "unmarkFound": "Doch nicht gefunden",
+    "ignore": "Ignorieren",
+    "unignore": "Nicht mehr ignorieren"
+  },
+  "health": {
+    "disabled": "Deaktiviert",
+    "dnfStreak": "DNF-Serie",
+    "needsMaintenance": "Braucht Wartung"
+  },
+  "log": {
+    "found": "Gefunden",
+    "dnf": "Nicht gefunden",
+    "note": "Notiz",
+    "maintenance": "Wartung nötig",
+    "disabled": "Deaktiviert",
+    "other": "Anderes Log"
+  },
+  "toast": {
+    "copied": "Kopiert: {coordinates}",
+    "copyFailed": "Kopieren ist hier nicht erlaubt.",
+    "markedFound": "{code} als gefunden markiert",
+    "unmarkedFound": "{code} nicht mehr als gefunden markiert",
+    "ignored": "{code} wird ignoriert",
+    "unignored": "{code} ist wieder in den Trails",
+    "gpxSaved": "GPX-Datei gespeichert",
+    "notesSaved": "Field Notes gespeichert"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "preset": {
+      "label": "Voreinstellung",
+      "standard": "Standard",
+      "classic": "Klassischer Powertrail",
+      "relaxed": "Entspannt",
+      "custom": "Eigene",
+      "hint": "{name}: Abstand und Trailgröße wie voreingestellt.",
+      "customHint": "{name}: dein eigener Abstand und deine eigene Trailgröße."
+    },
+    "trailGroup": "Trails finden",
+    "walkGroup": "Laufen",
+    "cacheTypes": "Cachetypen",
+    "field": {
+      "maxDifficulty": "Höchste Schwierigkeit",
+      "maxTerrain": "Höchstes Gelände",
+      "maxGapMeters": "Größter Abstand zwischen Caches (m)",
+      "minCaches": "Mindestens Caches pro Trail",
+      "maxWalkKilometers": "Längste Tour (km)",
+      "walkingSpeedKmh": "Gehtempo (km/h)",
+      "minutesPerCache": "Minuten pro Cache",
+      "detourFactor": "Umwegfaktor (Weg statt Luftlinie)"
+    },
+    "error": {
+      "number": "Gib eine Zahl ein.",
+      "range": "Gib einen Wert von {min} bis {max} ein.",
+      "step": "Gib ein Vielfaches von {step} ein.",
+      "whole": "Gib eine ganze Zahl ein.",
+      "cacheTypes": "Wähle mindestens einen Cachetyp."
+    },
+    "resetDefaults": "Auf Standard zurücksetzen",
+    "apply": "Übernehmen",
+    "locallyFound": "In der App als gefunden markiert",
+    "resetLocallyFound": "{count} als gefunden markierte Caches vergessen",
+    "resetLocallyFound_one": "{count} als gefunden markierten Cache vergessen",
+    "ignored": "Ignorierte Caches ({count})",
+    "ignored_one": "Ignorierter Cache ({count})",
+    "noneIgnored": "Du ignorierst keinen Cache.",
+    "unignore": "{code} nicht mehr ignorieren"
+  },
+  "cacheType": {
+    "traditional": "Traditional",
+    "multi": "Multi-Cache",
+    "mystery": "Mystery",
+    "letterbox": "Letterbox",
+    "wherigo": "Wherigo",
+    "earthcache": "EarthCache",
+    "virtual": "Virtual",
+    "webcam": "Webcam",
+    "event": "Event",
+    "other": "Sonstige"
+  },
+  "data": {
+    "title": "Deine Daten",
+    "caches": "Importierte Caches",
+    "trails": "Trails",
+    "locallyFound": "Hier als gefunden markiert",
+    "ignored": "Ignoriert",
+    "lastImport": "Letzter Import",
+    "importHelp": "Weitere Pocket Query importieren: Sie wird mit dem Vorhandenen zusammengeführt, neuere Daten gewinnen.",
+    "import": "Weitere importieren",
+    "privacy": "Alles wird nur in diesem Browser gespeichert.",
+    "clear": "Alle Daten löschen"
+  },
+  "clear": {
+    "title": "Alle Daten löschen?",
+    "message": "Damit werden alle importierten Caches, deine Einstellungen, die als gefunden markierten und ignorierten Caches und eine laufende Tour aus diesem Browser entfernt.",
+    "confirm": "Daten löschen"
+  },
+  "shared": {
+    "title": "Geteilte Dateien importieren?",
+    "message": "Ihre Caches kommen zu den vorhandenen hinzu und ersetzen die mit demselben Code. Importiere nur Dateien, die du selbst geteilt hast.",
+    "confirm": "Importieren"
+  },
+  "map": {
+    "region": "Karte",
+    "attribution": "OpenStreetMap-Mitwirkende",
+    "zoomIn": "Hineinzoomen",
+    "zoomOut": "Herauszoomen",
+    "locate": "Meine Position zeigen und folgen",
+    "otherCaches": "Caches außerhalb von Trails zeigen"
+  },
+  "sheet": {
+    "handle": "Bereich anpassen, jetzt {state}",
+    "peek": "klein",
+    "half": "halbe Höhe",
+    "full": "volle Höhe"
+  },
+  "location": {
+    "denied": "Der Standortzugriff ist blockiert. Erlaube ihn in den Website-Einstellungen deines Browsers, um Entfernung und Richtung zu sehen.",
+    "unavailable": "Deine Position ist gerade nicht verfügbar.",
+    "waiting": "Position wird gesucht …"
+  },
+  "walk": {
+    "title": "Tour",
+    "next": "Nächster Cache",
+    "direction": "{direction}, {degrees}°",
+    "accuracy": "±{accuracy}",
+    "close": "Du bist nah dran – such los!",
+    "found": "Gefunden",
+    "dnf": "Nicht gefunden",
+    "skip": "Überspringen",
+    "undo": "Rückgängig",
+    "reverse": "Restliche Caches umdrehen",
+    "finish": "Beenden",
+    "progressLabel": "Fortschritt der Tour",
+    "stat": {
+      "done": "Erledigt",
+      "foundDnf": "Fund / DNF",
+      "elapsed": "Zeit",
+      "rate": "Pro Stunde",
+      "remaining": "Noch"
+    },
+    "compass": {
+      "facing": "Pfeil zum Cache, {degrees}° im Uhrzeigersinn von deiner Blickrichtung",
+      "north": "Pfeil zum Cache, {degrees}° im Uhrzeigersinn von Norden",
+      "northMark": "N",
+      "sourceCompass": "Kompass",
+      "sourceGps": "Richtung aus deiner Bewegung",
+      "sourceNone": "Kein Kompass: Norden ist oben",
+      "enable": "Kompass verwenden"
+    }
+  },
+  "summary": {
+    "title": "Tour geschafft!",
+    "paused": "Tour vorzeitig beendet",
+    "shareText": "Powertrail-Tour mit PowerTrailBuddy: {found} von {total} Caches gefunden in {duration} ({rate} pro Stunde).",
+    "found": "Gefunden",
+    "dnf": "Nicht gefunden",
+    "exportNotes": "Field Notes exportieren",
+    "notesHelp": "Speichert geocache_visits.txt. Lade sie auf geocaching.com unter „Entwürfe“ (Drafts) hoch, um alle Besuche auf einmal zu loggen.",
+    "notesLink": "Entwürfe hochladen",
+    "share": "Teilen",
+    "resume": "Tour fortsetzen",
+    "done": "Zurück zu den Trails",
+    "shareTextShort": "Powertrail-Tour mit PowerTrailBuddy: {found} von {total} Caches gefunden in {duration}."
+  },
+  "direction": {
+    "N": "Norden",
+    "NE": "Nordosten",
+    "E": "Osten",
+    "SE": "Südosten",
+    "S": "Süden",
+    "SW": "Südwesten",
+    "W": "Westen",
+    "NW": "Nordwesten"
   }
 }

@@ -5,7 +5,7 @@ export function mergeCaches(
   existing: readonly Geocache[],
   incoming: readonly Geocache[],
 ): Geocache[] {
-  void existing;
-  void incoming;
-  throw new Error('not implemented');
+  const byCode = new Map(existing.map((cache) => [cache.code, cache]));
+  for (const cache of incoming) byCode.set(cache.code, cache);
+  return [...byCode.values()];
 }

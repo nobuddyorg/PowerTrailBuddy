@@ -26,6 +26,12 @@ nothing can break when the site changes its HTML, and there is nothing to
 rate-limit or ban. This is a hard rule in [CLAUDE.md](../../CLAUDE.md), not a
 v1 shortcut.
 
+The same rule decides how a walk is logged: the app never logs anything on
+the user's behalf. It writes the finds and DNFs as **field notes**
+(`geocache_visits.txt`), the format geocaching.com's own **Drafts** upload
+reads, and the user uploads the file themselves. A trail leaves the app the
+same way, as a GPX file for another navigation app.
+
 ## Why e-mail or download, and the 1,000-cache ceiling
 
 A Pocket Query returns at most 1,000 caches. Results up to 500 caches are also
@@ -111,11 +117,36 @@ time is needed.
 The worker has three small jobs — cache the shell per build, delete old
 builds' caches, receive shared files — and each is a few lines of the Cache
 API. A generated worker (Workbox and friends) would add a build plugin and a
-configuration layer larger than the worker itself. Its decision functions are
+configuration layer larger than the worker itself; the one thing it needs
+from the build, the list of hashed assets to precache, is a short script that
+`npm run build` runs after `next build`. Its decision functions are
 kept as small named functions so `sw.test.ts` can extract and test them from
 the source text; shell caches are prefixed `powertrailbuddy-shell-` so the
 cleanup can never delete the `powertrailbuddy-shared-files` cache a share is
 waiting in.
+
+## Why there is only a light theme
+
+The map is most of the screen, and OpenStreetMap's standard tiles are light.
+A dark header, panel and bottom sheet around a bright map read as two apps
+glued together and make the map look glaring, while dark tiles would mean a
+second tile server, against the one-outside-request rule. So `globals.css`
+defines one light palette (forest green for trails and actions, orange for the
+walk's current target), `layout.tsx` declares `color-scheme: light` and one
+`theme-color`, and nothing reacts to `prefers-color-scheme`.
+
+## Why the header looks like the other nobuddyorg apps
+
+PowerTrailBuddy is one of a family of Buddy apps (CollectionBuddy, BikeBuddy,
+FairBuddy and others) that share one mark, so a user recognises the family:
+a flat amber icon with a thick dark-brown outline (here a geocache box with a
+lightning bolt at the end of a dotted trail, `web/public/logo.svg`), and a
+wordmark in Archivo bold with an ink rule under the first word and "Buddy" in
+the shared brand orange (`--brand-accent`). Archivo comes through
+`next/font`, which self-hosts the files at build time, so the CSP's
+`font-src 'self'` and the one-outside-request rule still hold, and the
+service worker precaches the font with the rest of the bundle. After changing
+`logo.svg`, `node scripts/make-icons.mjs` regenerates the PNG icons.
 
 ## Why mutation testing is scoped to a list of files
 

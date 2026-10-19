@@ -27,8 +27,9 @@ there is no need to unzip it.
 
 ## 3. Open the app and import
 
-Open PowerTrailBuddy and choose **Import**, then pick the `.zip` (or the
-`.gpx` files). On Android, after installing the app (step 6), you can also
+Open PowerTrailBuddy and choose **Import Pocket Query**, then pick the
+`.zip` (or the `.gpx` files). No Pocket Query yet? **Try with sample data**
+shows the app with invented caches. On Android, after installing the app (step 6), you can also
 **share** the file to PowerTrailBuddy straight from your e-mail or files app.
 
 The app reads the caches into your browser. Nothing is uploaded.
@@ -36,16 +37,22 @@ The app reads the caches into your browser. Nothing is uploaded.
 ## 4. Pick a trail
 
 The app lists the trails it found, best first: caches per hour, number of
-caches, walking distance and time. Open one to see it on the map.
+caches, walking distance and time. Open one to see it on the map, with its
+caches in walking order and the nearest parking.
 
 Nothing found? Widen the limits in **Settings** — a larger gap between
 caches, fewer caches per trail — or import a query for a denser area.
 
 ## 5. Walk it
 
-Start the walk. The app shows the next cache with its distance and
-direction; mark each one **found** or **skip** it. Your progress is kept if
-you close the app, and caches you mark found are left out of future trails.
+Allow location access and choose **Start at the nearest end**. The app shows
+the next cache with its distance and a compass arrow; mark each one
+**Found**, **Not found** or **Skip** (**Undo** takes it back). Your progress
+is kept if you close the app, and caches you mark found are left out of
+future trails.
+
+At the end, **Export field notes** and upload the file on geocaching.com under
+**Drafts** to log every find at once.
 
 ## 6. Install it
 

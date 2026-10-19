@@ -1,9 +1,333 @@
 {
   "brand": {
-    "name": "PowerTrailBuddy"
+    "name": "PowerTrailBuddy",
+    "trail": "PowerTrail",
+    "buddy": "Buddy"
   },
   "page": {
-    "tagline": "Find power trails in your Pocket Queries and walk them",
-    "intro": "Import a Pocket Query (.zip) or GPX file to get started."
+    "tagline": "Find power trails in your Pocket Queries and walk them"
+  },
+  "common": {
+    "close": "Close",
+    "cancel": "Cancel",
+    "dismiss": "Dismiss",
+    "loading": "Loading…",
+    "back": "Back",
+    "undo": "Undo"
+  },
+  "header": {
+    "data": "Your data",
+    "settings": "Settings",
+    "install": "Install app",
+    "offline": "Offline",
+    "language": "Language",
+    "german": "DE",
+    "english": "EN"
+  },
+  "empty": {
+    "title": "Find the best power trails near you",
+    "lead": "A power trail is a chain of quick caches a short walk apart. PowerTrailBuddy finds them in your own Pocket Query and guides you from cache to cache.",
+    "step1": {
+      "title": "Create a Pocket Query",
+      "text": "On geocaching.com (Premium): pick an area, Traditional caches, up to 1000 results, and tick “I haven't found” and “Is enabled”.",
+      "link": "Open Pocket Queries"
+    },
+    "step2": {
+      "title": "Download the .zip",
+      "text": "Download it from the Pocket Query page, or open it straight from the e-mail you get."
+    },
+    "step3": {
+      "title": "Import it here",
+      "text": "Pick the .zip or .gpx below. On Android, once the app is installed, you can also share the file to PowerTrailBuddy."
+    },
+    "sample": "Try with sample data",
+    "privacy": "Your files stay on this device: nothing is uploaded and there is no account. Only map tiles come from OpenStreetMap."
+  },
+  "import": {
+    "button": "Import Pocket Query",
+    "importing": "Importing…",
+    "summary": "Imported {caches} from {files}.",
+    "cacheCount": "{count} caches",
+    "cacheCount_one": "{count} cache",
+    "fileCount": "{count} files",
+    "fileCount_one": "{count} file",
+    "fileFailed": "{name}: {reason}",
+    "error": {
+      "unsupported": "not a geocache .zip or .gpx file",
+      "unreadable": "the file is damaged and could not be read",
+      "tooLarge": "too large (more than 50 files or 100 MB unpacked)"
+    }
+  },
+  "error": {
+    "loadFailed": "Your stored data could not be read. You can still import files, but they may not be kept.",
+    "importFailed": "The import failed. Please try again.",
+    "saveFailed": "Saving to this browser failed, so your latest changes may be lost on reload.",
+    "sampleFailed": "The sample data could not be loaded. Are you offline?",
+    "shareEmpty": "No file arrived from the share. Share a Pocket Query .zip or .gpx of at most 100 MB and 20 files, or import it here."
+  },
+  "main": {
+    "cacheCount": "{count} caches imported",
+    "cacheCount_one": "{count} cache imported"
+  },
+  "panel": {
+    "label": "Trails and caches",
+    "gone": "This is no longer here: the settings or your finds have changed the trails.",
+    "toList": "All trails"
+  },
+  "search": {
+    "label": "Find a cache",
+    "placeholder": "Find a cache by code or name",
+    "results": "Matching caches",
+    "none": "No cache matches."
+  },
+  "trails": {
+    "title": "{count} trails",
+    "title_one": "{count} trail",
+    "updating": "Updating…",
+    "none": "No power trails with the current settings. Allow a larger gap, fewer caches per trail or more cache types.",
+    "noneFiltered": "No trail matches these filters.",
+    "openSettings": "Open settings",
+    "name": "Trail #{rank}",
+    "caches": "{count} caches",
+    "caches_one": "{count} cache",
+    "perHour": "{rate} caches/h",
+    "away": "{distance} away",
+    "shape": {
+      "line": "Line",
+      "area": "Area"
+    },
+    "sort": {
+      "label": "Sort trails",
+      "rate": "Best rate",
+      "caches": "Most caches",
+      "nearest": "Nearest to me",
+      "shortest": "Shortest"
+    },
+    "filter": {
+      "label": "Filter trails",
+      "short": "≤ 5 km",
+      "quick": "≤ 2 h",
+      "near": "Near me"
+    },
+    "health": {
+      "dnf": "{count} with recent DNFs",
+      "dnf_one": "{count} with recent DNFs",
+      "maintenance": "{count} need maintenance",
+      "maintenance_one": "{count} needs maintenance",
+      "disabled": "{count} disabled",
+      "disabled_one": "{count} disabled"
+    }
+  },
+  "detail": {
+    "stat": {
+      "caches": "Caches",
+      "rate": "Pace",
+      "walk": "Walk",
+      "duration": "Time",
+      "shape": "Shape",
+      "away": "From you"
+    },
+    "doubtful": "{count} caches look doubtful (recent DNFs, maintenance or disabled). Check them before you go.",
+    "doubtful_one": "{count} cache looks doubtful (recent DNFs, maintenance or disabled). Check it before you go.",
+    "parking": "Nearest parking",
+    "parkingLabel": "Parking, trail #{rank}",
+    "startWalk": "Start walk",
+    "startNearest": "Start at the nearest end ({distance} away)",
+    "reverse": "Reverse",
+    "exportGpx": "Export GPX",
+    "cacheList": "Caches in walking order",
+    "openCache": "Show on map"
+  },
+  "cache": {
+    "page": "Cache page",
+    "navigate": "Navigate",
+    "directions": "Walk there",
+    "copy": "Copy",
+    "copyLabel": "Copy coordinates {coordinates}",
+    "rating": "D {difficulty} / T {terrain}",
+    "size": "Size: {size}",
+    "placedBy": "by {owner}",
+    "away": "{distance} away, to the {direction}",
+    "onTrail": "Part of trail #{rank}",
+    "recentLogs": "Latest logs",
+    "noLogs": "No logs in the file.",
+    "showHint": "Show hint",
+    "hideHint": "Hide hint",
+    "noHint": "No hint.",
+    "markFound": "Mark as found",
+    "unmarkFound": "Not found after all",
+    "ignore": "Ignore",
+    "unignore": "Stop ignoring"
+  },
+  "health": {
+    "disabled": "Disabled",
+    "dnfStreak": "Recent DNFs",
+    "needsMaintenance": "Needs maintenance"
+  },
+  "log": {
+    "found": "Found it",
+    "dnf": "Didn't find it",
+    "note": "Note",
+    "maintenance": "Needs maintenance",
+    "disabled": "Disabled",
+    "other": "Other log"
+  },
+  "toast": {
+    "copied": "Copied: {coordinates}",
+    "copyFailed": "Copying is not allowed here.",
+    "markedFound": "{code} marked as found",
+    "unmarkedFound": "{code} no longer marked as found",
+    "ignored": "{code} ignored",
+    "unignored": "{code} is back in the trails",
+    "gpxSaved": "GPX file saved",
+    "notesSaved": "Field notes saved"
+  },
+  "settings": {
+    "title": "Settings",
+    "preset": {
+      "label": "Preset",
+      "standard": "Standard",
+      "classic": "Classic power trail",
+      "relaxed": "Relaxed",
+      "custom": "Custom",
+      "hint": "{name}: gap and trail size as the preset sets them.",
+      "customHint": "{name}: your own gap and trail size."
+    },
+    "trailGroup": "Finding trails",
+    "walkGroup": "Walking",
+    "cacheTypes": "Cache types",
+    "field": {
+      "maxDifficulty": "Highest difficulty",
+      "maxTerrain": "Highest terrain",
+      "maxGapMeters": "Largest gap between caches (m)",
+      "minCaches": "Fewest caches per trail",
+      "maxWalkKilometers": "Longest walk (km)",
+      "walkingSpeedKmh": "Walking speed (km/h)",
+      "minutesPerCache": "Minutes per cache",
+      "detourFactor": "Detour factor (path vs. straight line)"
+    },
+    "error": {
+      "number": "Enter a number.",
+      "range": "Enter a value from {min} to {max}.",
+      "step": "Enter a multiple of {step}.",
+      "whole": "Enter a whole number.",
+      "cacheTypes": "Choose at least one cache type."
+    },
+    "resetDefaults": "Reset to defaults",
+    "apply": "Apply",
+    "locallyFound": "Marked found in this app",
+    "resetLocallyFound": "Forget {count} caches marked found",
+    "resetLocallyFound_one": "Forget {count} cache marked found",
+    "ignored": "Ignored caches ({count})",
+    "ignored_one": "Ignored cache ({count})",
+    "noneIgnored": "You have not ignored any cache.",
+    "unignore": "Stop ignoring {code}"
+  },
+  "cacheType": {
+    "traditional": "Traditional",
+    "multi": "Multi-cache",
+    "mystery": "Mystery",
+    "letterbox": "Letterbox",
+    "wherigo": "Wherigo",
+    "earthcache": "EarthCache",
+    "virtual": "Virtual",
+    "webcam": "Webcam",
+    "event": "Event",
+    "other": "Other"
+  },
+  "data": {
+    "title": "Your data",
+    "caches": "Imported caches",
+    "trails": "Trails",
+    "locallyFound": "Marked found here",
+    "ignored": "Ignored",
+    "lastImport": "Last import",
+    "importHelp": "Import another Pocket Query: it is merged with what is here, newer data wins.",
+    "import": "Import more",
+    "privacy": "Everything is stored in this browser only.",
+    "clear": "Clear all data"
+  },
+  "clear": {
+    "title": "Clear all data?",
+    "message": "This removes every imported cache, your settings, the caches you marked found or ignored and any walk in progress from this browser.",
+    "confirm": "Clear data"
+  },
+  "shared": {
+    "title": "Import the shared files?",
+    "message": "Their caches join the ones already here and replace any with the same code. Import only files you shared yourself.",
+    "confirm": "Import"
+  },
+  "map": {
+    "region": "Map",
+    "attribution": "OpenStreetMap contributors",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "locate": "Show and follow my position",
+    "otherCaches": "Show caches outside trails"
+  },
+  "sheet": {
+    "handle": "Resize panel, now {state}",
+    "peek": "small",
+    "half": "half height",
+    "full": "full height"
+  },
+  "location": {
+    "denied": "Location access is blocked. Allow it in your browser's site settings to see distance and direction.",
+    "unavailable": "Your position is not available right now.",
+    "waiting": "Finding your position…"
+  },
+  "walk": {
+    "title": "Walk",
+    "next": "Next cache",
+    "direction": "{direction}, {degrees}°",
+    "accuracy": "±{accuracy}",
+    "close": "You're close – start searching!",
+    "found": "Found",
+    "dnf": "Not found",
+    "skip": "Skip",
+    "undo": "Undo",
+    "reverse": "Reverse the remaining caches",
+    "finish": "Finish",
+    "progressLabel": "Walk progress",
+    "stat": {
+      "done": "Done",
+      "foundDnf": "Found / DNF",
+      "elapsed": "Time",
+      "rate": "Per hour",
+      "remaining": "To go"
+    },
+    "compass": {
+      "facing": "Arrow to the cache, {degrees}° clockwise from where you face",
+      "north": "Arrow to the cache, {degrees}° clockwise from north",
+      "northMark": "N",
+      "sourceCompass": "Compass",
+      "sourceGps": "Direction from your movement",
+      "sourceNone": "No compass: north is up",
+      "enable": "Use the compass"
+    }
+  },
+  "summary": {
+    "title": "Walk complete!",
+    "paused": "Walk finished early",
+    "shareText": "Power trail walk with PowerTrailBuddy: {found} of {total} caches found in {duration} ({rate} per hour).",
+    "found": "Found",
+    "dnf": "Not found",
+    "exportNotes": "Export field notes",
+    "notesHelp": "Saves geocache_visits.txt. Upload it at geocaching.com under Drafts to log every visit at once.",
+    "notesLink": "Upload drafts",
+    "share": "Share",
+    "resume": "Resume walk",
+    "done": "Back to trails",
+    "shareTextShort": "Power trail walk with PowerTrailBuddy: {found} of {total} caches found in {duration}."
+  },
+  "direction": {
+    "N": "north",
+    "NE": "north-east",
+    "E": "east",
+    "SE": "south-east",
+    "S": "south",
+    "SW": "south-west",
+    "W": "west",
+    "NW": "north-west"
   }
 }
