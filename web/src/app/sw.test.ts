@@ -1,21 +1,18 @@
 import fc from 'fast-check';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { type FakeCacheStorage } from './data/cacheStorage.test-support';
 import { SHARED_FILES_CACHE, takeSharedFiles } from './data/sharedFiles';
-import { installCaches, loadWorker, ORIGIN } from './sw.test-support';
+import {
+  installCaches,
+  loadWorker,
+  ORIGIN,
+  sharePost,
+} from './sw.test-support';
 
 const SHELL_CACHE = 'powertrailbuddy-shell-b1';
+const PREVIOUS_CACHE = 'powertrailbuddy-shell-b0';
 const MB = 1024 * 1024;
-
-function sharePost(files: File[], field = 'files') {
-  const form = new FormData();
-  for (const file of files) form.append(field, file);
-  return new Request(`${ORIGIN}/PowerTrailBuddy/share-target/`, {
-    method: 'POST',
-    body: form,
-  });
-}
 
 function sized(name: string, size: number): File {
   const file = new File(['x'], name);
@@ -74,27 +71,47 @@ describe('basePathFor', () => {
 
   it('is empty for a site served from the root', () => {
     expect(worker.basePathFor('/sw.js')).toBe('');
-    expect(loadWorker(`${ORIGIN}/sw.js`).worker.WORKER.basePath).toBe('');
+    expect(
+      loadWorker({ scriptUrl: `${ORIGIN}/sw.js` }).worker.WORKER.basePath,
+    ).toBe('');
   });
 });
 
 describe('isStaleCache', () => {
   const { worker } = loadWorker();
+  const kept = [SHELL_CACHE, PREVIOUS_CACHE];
 
-  it("deletes an older build's shell cache and keeps the current one", () => {
-    expect(worker.isStaleCache('powertrailbuddy-shell-old', SHELL_CACHE)).toBe(
-      true,
-    );
-    expect(worker.isStaleCache(SHELL_CACHE, SHELL_CACHE)).toBe(false);
+  it("deletes an older build's shell cache and keeps the ones it is told to", () => {
+    expect(worker.isStaleCache('powertrailbuddy-shell-old', kept)).toBe(true);
+    expect(worker.isStaleCache(SHELL_CACHE, kept)).toBe(false);
+    expect(worker.isStaleCache(PREVIOUS_CACHE, kept)).toBe(false);
   });
 
   // The share target parks files there between the POST and the page that imports them.
   it('never deletes the shared-files cache', () => {
-    expect(worker.isStaleCache(SHARED_FILES_CACHE, SHELL_CACHE)).toBe(false);
+    expect(worker.isStaleCache(SHARED_FILES_CACHE, kept)).toBe(false);
   });
 
   it("never deletes another site's cache on the same origin", () => {
-    expect(worker.isStaleCache('collectionbuddy-1', SHELL_CACHE)).toBe(false);
+    expect(worker.isStaleCache('collectionbuddy-1', kept)).toBe(false);
+    expect(worker.isOwnShellCache('collectionbuddy-1')).toBe(false);
+    expect(worker.isOwnShellCache('x-powertrailbuddy-shell-b1')).toBe(false);
+  });
+});
+
+describe('shellCachesToKeep', () => {
+  const { worker } = loadWorker();
+
+  it("keeps the build's own cache and that of the worker it replaces", () => {
+    expect(
+      worker.shellCachesToKeep(SHELL_CACHE, {
+        scriptURL: `${ORIGIN}/PowerTrailBuddy/sw.js?build=b0`,
+      }),
+    ).toEqual([SHELL_CACHE, PREVIOUS_CACHE]);
+  });
+
+  it('keeps only its own cache on a first install', () => {
+    expect(worker.shellCachesToKeep(SHELL_CACHE, null)).toEqual([SHELL_CACHE]);
   });
 });
 
@@ -118,6 +135,12 @@ describe('strategyFor', () => {
       'pass-through',
     );
     expect(strategy('https://a.tile.openstreetmap.org/1/0/0.png')).toBe(
+      'pass-through',
+    );
+    expect(strategy('https://tile.openstreetmap.org/x/1/0/0.png')).toBe(
+      'pass-through',
+    );
+    expect(strategy('https://tile.openstreetmap.org/1/0/0.png.gz')).toBe(
       'pass-through',
     );
   });
@@ -219,7 +242,11 @@ describe('sharedFilePath', () => {
 });
 
 describe('sharedFilesWithinLimits', () => {
-  const { worker } = loadWorker();
+  // Loaded per test, not per file: the limits are computed as the script runs.
+  let worker: ReturnType<typeof loadWorker>['worker'];
+  beforeEach(() => {
+    worker = loadWorker().worker;
+  });
 
   it('keeps the files and drops text fields sent along', () => {
     const file = new File(['<gpx/>'], 'a.gpx');
@@ -300,6 +327,7 @@ describe('receiveShare', () => {
 
   it('stores nothing, and drops an earlier share, for a body it cannot read', async () => {
     const fake = installCaches();
+    const consoleError = vi.spyOn(console, 'error');
     const { worker } = loadWorker();
     await worker.receiveShare(sharePost([new File(['1'], 'first.gpx')]));
 
@@ -315,7 +343,9 @@ describe('receiveShare', () => {
     expect(response.headers.get('location')).toBe(
       `${ORIGIN}/PowerTrailBuddy/?shared=1`,
     );
-    expect(fake.urls(SHARED_FILES_CACHE)).toEqual([]);
+    expect(await fake.storage.keys()).not.toContain(SHARED_FILES_CACHE);
+    // Nothing to store is no failure to store.
+    expect(consoleError).not.toHaveBeenCalled();
   });
 
   it('stores nothing for a share past a limit', async () => {
@@ -327,7 +357,7 @@ describe('receiveShare', () => {
     );
 
     expect(response.status).toBe(303);
-    expect(fake.urls(SHARED_FILES_CACHE)).toEqual([]);
+    expect(await fake.storage.keys()).not.toContain(SHARED_FILES_CACHE);
   });
 
   it('stores none of the files when storing one fails, and says why', async () => {
@@ -348,169 +378,5 @@ describe('receiveShare', () => {
       'Storing the shared files failed:',
       expect.any(DOMException),
     );
-  });
-});
-
-describe('lifecycle events', () => {
-  const base = `${ORIGIN}/PowerTrailBuddy`;
-  const SHELL = [
-    `${base}/`,
-    `${base}/site.webmanifest`,
-    `${base}/logo.svg`,
-    `${base}/favicon.ico`,
-    `${base}/favicon-32x32.png`,
-    `${base}/apple-touch-icon.png`,
-  ];
-  const ASSETS = ['/_next/static/chunks/app.js', '/_next/static/media/a.png'];
-
-  // The host: the precache manifest, then every file it and the shell name, unless `missing` says otherwise.
-  function serveBuild(missing: string[] = []) {
-    const fetched: Request[] = [];
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (request: Request) => {
-        fetched.push(request);
-        if (missing.includes(request.url))
-          return new Response('', { status: 404 });
-        if (request.url === `${base}/precache-manifest.json`)
-          return Response.json(ASSETS);
-        return new Response(request.url);
-      }),
-    );
-    return fetched;
-  }
-
-  async function install() {
-    const { self, listeners } = loadWorker();
-    let work: Promise<unknown> = Promise.resolve();
-    listeners.get('install')?.({
-      waitUntil: (promise) => {
-        work = promise;
-      },
-      respondWith: vi.fn(),
-    });
-    return { self, work };
-  }
-
-  it('keeps the page, the shell and every asset of its build before taking over', async () => {
-    const fake = installCaches();
-    const fetched = serveBuild();
-
-    const { self, work } = await install();
-    await work;
-
-    expect(fake.urls(SHELL_CACHE)).toEqual([
-      ...SHELL,
-      ...ASSETS.map((asset) => `${base}${asset}`),
-    ]);
-    expect(await (await caches.match(`${base}/`))?.text()).toBe(`${base}/`);
-    // A page or list from the HTTP cache could name an older build's assets.
-    expect(fetched.map((request) => request.cache)).toEqual(
-      fetched.map(() => 'no-cache'),
-    );
-    expect(self.skipWaiting).toHaveBeenCalledOnce();
-  });
-
-  it('does not install without the list of assets to keep', async () => {
-    const fake = installCaches();
-    serveBuild([`${base}/precache-manifest.json`]);
-
-    const { self, work } = await install();
-
-    await expect(work).rejects.toThrow('Precache manifest: HTTP 404');
-    expect(fake.urls(SHELL_CACHE)).toEqual([]);
-    expect(self.skipWaiting).not.toHaveBeenCalled();
-  });
-
-  it('does not install, keeping nothing, when one file of the shell is missing', async () => {
-    const fake = installCaches();
-    serveBuild([`${base}/_next/static/chunks/app.js`]);
-
-    const { self, work } = await install();
-
-    await expect(work).rejects.toThrow();
-    expect(fake.urls(SHELL_CACHE)).toEqual([]);
-    expect(self.skipWaiting).not.toHaveBeenCalled();
-  });
-
-  it("deletes only older builds' shell caches on activate, then claims open pages", async () => {
-    const fake = installCaches();
-    for (const name of [
-      'powertrailbuddy-shell-old',
-      SHELL_CACHE,
-      SHARED_FILES_CACHE,
-      'collectionbuddy-1',
-    ]) {
-      await fake.storage.open(name);
-    }
-    const { self, listeners } = loadWorker();
-    let work: Promise<unknown> = Promise.resolve();
-
-    listeners.get('activate')?.({
-      waitUntil: (promise) => {
-        work = promise;
-      },
-      respondWith: vi.fn(),
-    });
-    await work;
-
-    expect(await fake.storage.keys()).toEqual([
-      SHELL_CACHE,
-      SHARED_FILES_CACHE,
-      'collectionbuddy-1',
-    ]);
-    expect(self.clients.claim).toHaveBeenCalledOnce();
-  });
-
-  it('lets a request to the routing server go to the network untouched', () => {
-    const { listeners } = loadWorker();
-    const respondWith = vi.fn();
-
-    listeners.get('fetch')?.({
-      request: new Request(
-        'https://routing.openstreetmap.de/routed-foot/table/v1/foot/1,2;3,4',
-      ),
-      respondWith,
-      waitUntil: vi.fn(),
-    });
-
-    expect(respondWith).not.toHaveBeenCalled();
-  });
-
-  it('answers a map tile itself', async () => {
-    installCaches();
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response('tile')),
-    );
-    const { listeners } = loadWorker();
-    let answer: Promise<Response> | undefined;
-
-    listeners.get('fetch')?.({
-      request: new Request('https://tile.openstreetmap.org/1/0/0.png'),
-      respondWith: (response) => {
-        answer = response;
-      },
-      waitUntil: vi.fn(),
-    });
-
-    expect(await (await answer)?.text()).toBe('tile');
-  });
-
-  it('answers a share target POST with the stored share', async () => {
-    const fake = installCaches();
-    const { listeners } = loadWorker();
-    let answer: Promise<Response> | undefined;
-
-    listeners.get('fetch')?.({
-      request: sharePost([new File(['<gpx/>'], 'a.gpx')]),
-      respondWith: (response) => {
-        answer = response;
-      },
-      waitUntil: vi.fn(),
-    });
-
-    expect((await answer)?.status).toBe(303);
-    expect(fake.urls(SHARED_FILES_CACHE)).toHaveLength(1);
   });
 });

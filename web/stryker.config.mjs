@@ -1,4 +1,4 @@
-import { MUTATE_TARGETS } from './mutation-targets.mjs';
+import { MUTATE_ONLY_TARGETS, MUTATE_TARGETS } from './mutation-targets.mjs';
 
 // The dashboard reporter needs CI's API key; `json` feeds scripts/mutation-summary.mjs.
 const reporters = ['html', 'clear-text', 'progress', 'json'];
@@ -13,6 +13,8 @@ const config = {
   // A vitest config without the `github-actions` reporter: a killed mutant is not a real test failure.
   vitest: {
     configFile: 'vitest.mutation.config.mts',
+    // public/sw.js is read as text by its tests, never imported, so no test is "related" to it.
+    related: false,
   },
   htmlReporter: {
     fileName: 'reports/mutation/index.html',
@@ -35,7 +37,7 @@ const config = {
   // A mutant covered by hundreds of tests runs the whole suite; the 5s default reported honest failures as timeouts.
   timeoutMS: 20_000,
   // Shared with vitest.config.mts's per-file coverage floors so the two lists cannot drift.
-  mutate: MUTATE_TARGETS,
+  mutate: [...MUTATE_TARGETS, ...MUTATE_ONLY_TARGETS],
   // Blind to non-mutated, non-test files, so main forces a full run.
   incremental: true,
   // One below 100, so a single new equivalent mutant cannot block unrelated work.

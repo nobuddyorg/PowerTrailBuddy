@@ -93,7 +93,8 @@ There are no secrets and no `.env` file.
 | --- | --- | --- |
 | Unit coverage, global | `web/vitest.config.mts` `GLOBAL_COVERAGE_THRESHOLDS` | 99% statements, branches, functions, lines |
 | Unit coverage, per file | same file, `PER_FILE_FLOOR`, over `mutation-targets.mjs` | 100% |
-| Unit coverage, what counts | same file, `coverage.exclude` | Product code only; left out: `types.ts`, `*.test-support.*`, the dictionaries, `*.d.ts`, and the glue Playwright verifies (`layout.tsx`, `page.tsx`, `components/Map/index.tsx`) |
+| Unit coverage, what counts | same file, `coverage.include`, `coverage.exclude` | Product code under `src/app/` only; left out: `types.ts`, `*.test-support.*`, the dictionaries, `*.d.ts`, and the glue Playwright verifies (`layout.tsx`, `page.tsx`, `components/Map/index.tsx`). `public/sw.js` is not measured: its tests evaluate the source text with `new Function`, which V8 cannot attribute to the file, so it is mutation-tested instead |
+| Mutation targets | `web/mutation-targets.mjs` | `MUTATE_TARGETS`, which also get the per-file coverage floor, plus `MUTATE_ONLY_TARGETS` (`public/sw.js`), mutated without one |
 | Mutation score | `web/stryker.config.mjs` `thresholds.break` | 99 — one below 100, so a single new equivalent mutant cannot block unrelated work |
 | E2E JS/CSS coverage | `web/e2e/coverage.ts` `COVERAGE_THRESHOLDS` | 88% statements, 74% branches, 88% functions, 88% lines — about 3 points under the first full run (chromium and mobile: 91.1%, 76.9%, 90.9%, 91.4%) |
 
@@ -103,7 +104,10 @@ never lowered to make a change fit. `autoUpdate` is off in Vitest.
 Stryker runs the unit suite through `web/vitest.mutation.config.mts`, which
 leaves out `*.performance.test.ts`: their wall-clock bounds hold for the plain
 code, not under Stryker's instrumentation, and a timing assertion kills no
-mutant. They run in `npm test` as usual.
+mutant. They run in `npm test` as usual. `vitest.related` is off: no test
+imports `public/sw.js` (its tests read it as text, which in Stryker's sandbox
+is the instrumented copy), so Vitest's related-file lookup would run none of
+them.
 
 ## End-to-end tests
 

@@ -250,9 +250,11 @@ them.
 Installed, the app opens full screen and works offline once it has been
 loaded, with your trails and any walk in progress; an **Offline** badge shows
 while there is no connection. On a weak signal it opens its kept copy after
-about three seconds instead of waiting for the network. An installed app has
-no reload button: tap the logo or the name at the top to reload it, with your
-data, finds and any walk kept.
+about three seconds instead of waiting for the network. After an update the
+browser keeps the previous version's files as well, so a window still open
+from before keeps working; the version before that is removed. An installed
+app has no reload button: tap the logo or the name at the top to reload it,
+with your data, finds and any walk kept.
 
 The map keeps the tiles you viewed while online (the latest 2,000 or so, about
 30–50 MB), so a trail you looked at at home still has its map in the woods.

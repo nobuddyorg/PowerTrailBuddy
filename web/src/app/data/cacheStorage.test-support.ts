@@ -78,9 +78,15 @@ export function fakeCacheStorage({
       open: async (name) => asCache(cacheNamed(name)),
       delete: async (name) => caches.delete(name),
       keys: async () => [...caches.keys()],
+      // As in a browser, `cacheName` searches that cache alone, and never creates it.
       match: async (input, options) => {
-        for (const entries of caches.values()) {
-          const hit = matchIn(entries, input, options);
+        const names =
+          options?.cacheName === undefined
+            ? [...caches.keys()]
+            : [options.cacheName];
+        for (const name of names) {
+          const entries = caches.get(name);
+          const hit = entries && matchIn(entries, input, options);
           if (hit) return hit;
         }
         return undefined;

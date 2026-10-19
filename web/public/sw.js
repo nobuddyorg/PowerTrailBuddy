@@ -45,8 +45,18 @@ const WORKER = {
 };
 
 // The prefix spares other sites' caches: every project page of an account shares one github.io origin.
-function isStaleCache(key, current) {
-  return key.startsWith(CACHE_PREFIX) && key !== current;
+function isOwnShellCache(key) {
+  return key.startsWith(CACHE_PREFIX);
+}
+
+function isStaleCache(key, kept) {
+  return isOwnShellCache(key) && !kept.includes(key);
+}
+
+// While a worker installs, the one it replaces is still active, and that build's open pages may yet load lazy chunks.
+function shellCachesToKeep(current, active) {
+  if (!active) return [current];
+  return [current, cacheNameFor(new URL(active.scriptURL).search)];
 }
 
 function isHashedStaticAsset(pathname) {
@@ -164,8 +174,19 @@ async function receiveShare(request) {
   return Response.redirect(landing.href, 303);
 }
 
+// Never `caches.match` across the origin: another app on the shared github.io origin owns caches too.
+async function matchOwnShell(request) {
+  const names = (await caches.keys()).filter(isOwnShellCache);
+  for (const cacheName of names) {
+    const cached = await caches.match(request, { cacheName });
+    if (cached) return cached;
+  }
+  return undefined;
+}
+
+// A hashed asset is the same file in every build's cache, so the previous build's open page finds its chunks too.
 async function cacheFirst(request) {
-  const cached = await caches.match(request);
+  const cached = await matchOwnShell(request);
   if (cached) return cached;
   const response = await fetch(request);
   if (response.ok) {
@@ -181,17 +202,14 @@ function settlesWithin(promise, timeoutMs) {
       () => reject(new Error(`No answer within ${timeoutMs} ms`)),
       timeoutMs,
     );
-    promise.then(resolve, reject).finally(() => clearTimeout(timer));
+    promise.finally(() => clearTimeout(timer)).then(resolve, reject);
   });
 }
 
+// Never writes the answer: after a deploy it is the next build's page, whose chunks this build's cache lacks.
 async function networkFirst(request, timeoutMs = NETWORK_TIMEOUT_MS) {
   const cache = await caches.open(CACHE_NAME);
-  // A late answer still updates the kept shell, for the next start.
-  const network = fetch(request).then((response) => {
-    if (response.ok) void cache.put(request, response.clone());
-    return response;
-  });
+  const network = fetch(request);
   try {
     return await settlesWithin(network, timeoutMs);
   } catch {
@@ -244,11 +262,11 @@ async function tileFirst(request, now = Date.now()) {
   }
 }
 
-async function deleteStaleCaches(current) {
+async function deleteStaleCaches(kept) {
   const keys = await caches.keys();
   await Promise.all(
     keys
-      .filter((key) => isStaleCache(key, current))
+      .filter((key) => isStaleCache(key, kept))
       .map((key) => caches.delete(key)),
   );
 }
@@ -260,15 +278,22 @@ const STRATEGIES = {
   tile: tileFirst,
 };
 
+// Cleanup runs here, not on activate: only now is the replaced worker, and so the previous build, still known.
+async function install() {
+  await precacheShell(CACHE_NAME);
+  await deleteStaleCaches(
+    shellCachesToKeep(CACHE_NAME, self.registration.active),
+  );
+  // Pages already serves only the new build, and the previous build's cache stays for its open pages.
+  await self.skipWaiting();
+}
+
 self.addEventListener('install', (event) => {
-  // Pages already serves only the new build, so waiting for old tabs to close protects nothing.
-  event.waitUntil(precacheShell(CACHE_NAME).then(() => self.skipWaiting()));
+  event.waitUntil(install());
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    deleteStaleCaches(CACHE_NAME).then(() => self.clients.claim()),
-  );
+  event.waitUntil(self.clients.claim());
 });
 
 self.addEventListener('fetch', (event) => {

@@ -425,7 +425,7 @@ Everything the app keeps, all in the user's browser, all per origin.
 | same | `preferences` | `{ sort, showOtherCaches, walkingRoutes }`: the trail list's sort, whether caches outside trails are drawn, whether walking routes are on | `data/store.ts` |
 | same | `last-import` | `{ at, cacheCount, fileNames }` of the latest import | `data/store.ts` |
 | same | `walking-distances` | `Map<string, number>` of routed walking metres by cache pair (`Infinity` where no path) | `data/store.ts` |
-| Cache Storage | `powertrailbuddy-shell-<build id>` | The app shell and hashed assets of one build | `public/sw.js` |
+| Cache Storage | `powertrailbuddy-shell-<build id>` | The app shell and hashed assets of one build; the current build's and the one it replaced are kept | `public/sw.js` |
 | Cache Storage | `powertrailbuddy-shared-files` | Files received by the share target until the page imports them | `public/sw.js`, emptied by `data/sharedFiles.ts` |
 | Cache Storage | `powertrailbuddy-tiles` | Up to 2,000 OpenStreetMap tiles the map showed, each with the time it was kept | `public/sw.js` |
 | `localStorage` | `lang` | `de` or `en` | `i18n/I18nProvider.tsx` |
@@ -467,20 +467,32 @@ so `next dev` never pins its changing chunks.
   Leaflet's images included. On `install` the worker fetches that list and
   adds `<base>/`, the shell files below and every listed asset to its build's
   cache, all revalidated (`cache: 'no-cache'`) so an old build's page or list
-  never slips in. Only then does it take over (`skipWaiting`); if any file is
-  missing, the install fails and the old worker and its cache stay. So the
-  app opens offline after a single visit, and after each deploy.
+  never slips in. It then deletes every `powertrailbuddy-shell-*` cache but
+  its own and the one of the worker it replaces (the registration's `active`
+  worker, whose `?build=` names it; still known during `install`, no longer
+  on `activate`). Only then does it take over (`skipWaiting`, then
+  `clients.claim()` on activation); if any file is missing, the install
+  fails, nothing is deleted, and the old worker and its cache stay. So the
+  app opens offline after a single visit, and after each deploy, and a page
+  of the previous build that is still open keeps loading its lazy chunks
+  (the map, fonts) from that build's cache after the new worker claims it.
+  The prefix spares the shared-files and tile caches and other sites' caches
+  on the shared `github.io` origin.
 - **Caching**: cache-first for hashed `/_next/static/**`, network-first for
   navigations and the files every page links by URL (the manifest,
   `logo.svg`, `favicon.ico`, `favicon-32x32.png`, `apple-touch-icon.png`),
-  one shell cache per build. Network-first waits `NETWORK_TIMEOUT_MS` (3 s)
-  for an answer; offline, or past that on a weak signal, the request is
-  answered by the kept page whatever its query, so the share target's
-  `?shared=1` landing opens too, and a late answer still updates the kept
-  copy. With nothing kept it waits for the network after all. On activation
-  it deletes every `powertrailbuddy-shell-*` cache but the current one. The
-  prefix spares the shared-files and tile caches and other sites' caches on
-  the shared `github.io` origin.
+  one shell cache per build. Cache-first looks only in this app's shell
+  caches (`caches.match(request, { cacheName })` for each
+  `powertrailbuddy-shell-*` name), never across the origin's caches, which
+  sibling apps on `github.io` own too; a hashed URL is the same file in
+  either build's cache. A miss is fetched and kept in the current build's
+  cache. Network-first waits `NETWORK_TIMEOUT_MS` (3 s) for an answer;
+  offline, or past that on a weak signal, the request is answered by the
+  kept page whatever its query, so the share target's `?shared=1` landing
+  opens too. With nothing kept it waits for the network after all. Its
+  answers are never stored: after a deploy the network's page is the next
+  build's, whose chunks this build's cache lacks, so the build's own install
+  is the only writer of the kept shell.
 - **Map tiles**: a GET of `https://tile.openstreetmap.org/{z}/{x}/{y}.png`
   (the map loads them with CORS, `crossOrigin` in `components/Map/`, so the
   response is readable) is answered cache-first from
