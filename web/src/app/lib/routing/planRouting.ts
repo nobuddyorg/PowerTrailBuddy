@@ -37,19 +37,25 @@ function windows(group: readonly Geocache[]): Geocache[][] {
   }
 }
 
-/** The way back of every trail whose ends no window held together, two caches each, packed into batches. */
-function wayBackBatches(
+/** Each leg of a trail, the way back first. */
+function legsOf(caches: readonly Geocache[]): Geocache[][] {
+  const previous = [caches[caches.length - 1], ...caches];
+  return caches.map((cache, index) => [previous[index], cache]);
+}
+
+/** Every leg of every trail, way back included, that no window held together, two caches each, packed into batches. */
+function trailLegBatches(
   caches: readonly Geocache[],
   input: TrailInput,
   distances: WalkingDistances,
 ): Geocache[][] {
-  const ends = findTrails(caches, input)
-    .map((trail) => [trail.caches[trail.caches.length - 1], trail.caches[0]])
-    .filter(([last, first]) => !distances.has(pairKey(last, first)))
+  const legs = findTrails(caches, input)
+    .flatMap((trail) => legsOf(trail.caches))
+    .filter(([from, to]) => !distances.has(pairKey(from, to)))
     .flat();
   const batches: Geocache[][] = [];
-  for (let start = 0; start < ends.length; start += BATCH_SIZE) {
-    batches.push(ends.slice(start, start + BATCH_SIZE));
+  for (let start = 0; start < legs.length; start += BATCH_SIZE) {
+    batches.push(legs.slice(start, start + BATCH_SIZE));
   }
   return batches;
 }
@@ -64,6 +70,6 @@ export function routingBatches(
     .groups.filter((group) => group.length >= input.settings.minCaches)
     .flatMap(windows)
     .filter((batch) => hasUnroutedPair(batch, distances));
-  // The way back waits for the gaps: until they are routed, the trails it would join may still split.
-  return along.length > 0 ? along : wayBackBatches(caches, input, distances);
+  // Trail legs wait for the gaps: until they are routed, the trails they would join may still split.
+  return along.length > 0 ? along : trailLegBatches(caches, input, distances);
 }

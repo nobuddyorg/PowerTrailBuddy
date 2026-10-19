@@ -12,6 +12,7 @@ export type NumericField =
   | 'maxGapMeters'
   | 'minCaches'
   | 'maxWalkKilometers'
+  | 'maxReturnMeters'
   | 'walkingSpeedKmh'
   | 'minutesPerCache'
   | 'detourFactor';
@@ -31,6 +32,7 @@ export const NUMERIC_FIELDS: readonly FieldSpec[] = [
   { name: 'maxGapMeters', min: 10, max: 2000, step: 1 },
   { name: 'minCaches', min: 2, max: 1000, step: 1 },
   { name: 'maxWalkKilometers', min: 1, max: 100, step: 0 },
+  { name: 'maxReturnMeters', min: 10, max: 10000, step: 1 },
   { name: 'walkingSpeedKmh', min: 1, max: 10, step: 0 },
   { name: 'minutesPerCache', min: 1, max: 60, step: 0 },
   { name: 'detourFactor', min: 1, max: 3, step: 0 },
@@ -52,6 +54,7 @@ export const CACHE_TYPES: readonly CacheType[] = [
 /** The form's state: numbers as typed, so a half-typed "1," is kept rather than lost. */
 export interface Draft {
   cacheTypes: CacheType[];
+  loopsOnly: boolean;
   values: Record<NumericField, string>;
 }
 
@@ -69,7 +72,11 @@ export function toDraft(settings: TrailSettings, locale: string): Draft {
   const values = Object.fromEntries(
     NUMERIC_FIELDS.map(({ name }) => [name, format.format(settings[name])]),
   ) as Record<NumericField, string>;
-  return { cacheTypes: [...settings.cacheTypes], values };
+  return {
+    cacheTypes: [...settings.cacheTypes],
+    loopsOnly: settings.loopsOnly,
+    values,
+  };
 }
 
 // To a millionth of a step: 0.1 + 0.2 must still count as a multiple of 0.1.
@@ -110,7 +117,7 @@ export function draftSettings(draft: Draft): TrailSettings {
   const cacheTypes = CACHE_TYPES.filter((type) =>
     draft.cacheTypes.includes(type),
   );
-  return { ...numbers, cacheTypes };
+  return { ...numbers, cacheTypes, loopsOnly: draft.loopsOnly };
 }
 
 /** The preset the typed gap and trail size match; 'custom' while either matches none, unreadable text included. */

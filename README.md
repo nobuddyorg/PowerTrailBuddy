@@ -36,7 +36,8 @@ hour. Then it guides you through one, cache by cache, on a map.
   lies between two caches.
 - **Trail finder** with your own limits, or a preset: cache types,
   difficulty and terrain, the largest gap between caches, the smallest trail
-  worth walking, the longest walk.
+  worth walking, the longest walk, and round trips only, ending back near the
+  start.
 - **Ranked trails** with distance, time, caches per hour, line or area, how
   far away they are, and warnings for caches with recent DNFs, maintenance
   requests or a disabled listing; sort, filter and search.

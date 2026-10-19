@@ -69,19 +69,42 @@ function reverseSegment(
     });
 }
 
-/** 2-opt with free endpoints: reverse path[start ..= end] whenever that shortens it, within the move budget. */
-function improveByTwoOpt(path: PathPoint[], maxMoveEvaluations: number): void {
+/** An open path's ends join nothing; a closed tour's last point joins its first. */
+type Ends = 'open' | 'closed';
+
+/** The length of edge path[from] → path[to]: an open path has none past either end, a closed tour wraps round. */
+function edgeOf(
+  path: readonly PathPoint[],
+  ends: Ends,
+): (from: number, to: number) => number {
   const last = path.length - 1;
-  // An edge past either end of the open path does not exist, so it costs nothing.
-  const edge = (from: number, to: number): number =>
-    from < 0 || to > last ? 0 : planeDistance(path[from], path[to]);
+  switch (ends) {
+    case 'open':
+      return (from, to) =>
+        from < 0 || to > last ? 0 : planeDistance(path[from], path[to]);
+    case 'closed': {
+      const wrap = (position: number) => (position + path.length) % path.length;
+      return (from, to) => planeDistance(path[wrap(from)], path[wrap(to)]);
+    }
+  }
+}
+
+/** 2-opt: reverse path[start ..= end] whenever that shortens the path or tour, within the move budget. */
+function improveByTwoOpt(
+  path: PathPoint[],
+  { ends, maxMoveEvaluations }: { ends: Ends; maxMoveEvaluations: number },
+): void {
+  const last = path.length - 1;
+  const edge = edgeOf(path, ends);
+  // A tour reversed whole is the same tour, so its first point stays put.
+  const firstStart = ends === 'closed' ? 1 : 0;
   let evaluations = 0;
   let improved = true;
   while (improved) {
     improved = false;
     for (let end = 1; end <= last; end++) {
       let rightEdge = edge(end, end + 1);
-      for (let start = end - 1; start >= 0; start--) {
+      for (let start = end - 1; start >= firstStart; start--) {
         if (evaluations >= maxMoveEvaluations) return;
         evaluations++;
         // Reversing swaps edges (start-1, start) and (end, end+1) for (start-1, end) and (start, end+1).
@@ -108,6 +131,19 @@ export function orderPath<T extends Coordinates>(
     ...plane[position],
     position,
   }));
-  improveByTwoOpt(path, maxMoveEvaluations);
+  improveByTwoOpt(path, { ends: 'open', maxMoveEvaluations });
   return path.map(({ position }) => points[position]);
+}
+
+/** The same points as a round trip back to the first: 2-opt over the closed tour, from the given order. */
+export function shortenLoop<T extends Coordinates>(
+  ordered: readonly T[],
+  maxMoveEvaluations = DEFAULT_MAX_MOVE_EVALUATIONS,
+): T[] {
+  const path = projectToPlane(ordered).map((point, position) => ({
+    ...point,
+    position,
+  }));
+  improveByTwoOpt(path, { ends: 'closed', maxMoveEvaluations });
+  return path.map(({ position }) => ordered[position]);
 }

@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Geocache } from '../geocache/types';
-import { eastwardChain, makeCache } from '../trails/trails.test-support';
+import {
+  DEGREES_PER_METER,
+  eastwardChain,
+  makeCache,
+} from '../trails/trails.test-support';
 import { DEFAULT_TRAIL_SETTINGS } from '../trails/types';
 import { pairKey } from '../trails/walkingDistances';
 import { BATCH_OVERLAP, BATCH_SIZE, routingBatches } from './planRouting';
@@ -142,6 +146,40 @@ describe('routingBatches', () => {
     expect(batches[0]).toHaveLength(2);
     const [last, first] = batches[0];
     expect([first.code, last.code].sort()).toEqual(['GCB000', 'GCB069']);
+  });
+
+  it('then asks for a round trip leg no window held, even where it is not the way back', () => {
+    // Out along one row and back along another 250 m north: the leg joining the rows' far ends closes the loop.
+    const caches = [
+      ...chain('GCU', BATCH_SIZE / 2 + 10),
+      ...chain('GCV', BATCH_SIZE / 2 + 10, 48 + 250 * DEGREES_PER_METER),
+    ];
+    const loops = { ...settings, loopsOnly: true };
+    const routed = new Map(
+      routingBatches(caches, {
+        settings: loops,
+        locallyFound: nothingFound,
+      }).flatMap((batch) => [...routedAll(batch)]),
+    );
+    const batches = routingBatches(caches, {
+      settings: loops,
+      locallyFound: nothingFound,
+      walkingDistances: routed,
+    });
+    expect([[['GCU000', 'GCV000']], [['GCU034', 'GCV034']]]).toContainEqual(
+      codesOf(batches).map((batch) => batch.sort()),
+    );
+  });
+
+  it('asks for a group of exactly minCaches', () => {
+    const caches = chain('GCM', settings.minCaches);
+    const batches = routingBatches(caches, {
+      settings,
+      locallyFound: nothingFound,
+    });
+    expect(codesOf(batches).map((batch) => batch.sort())).toEqual([
+      codesOf([caches])[0],
+    ]);
   });
 
   it('asks for nothing once every gap, leg and way back is routed', () => {

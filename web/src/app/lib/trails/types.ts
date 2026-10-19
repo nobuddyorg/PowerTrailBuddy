@@ -10,6 +10,10 @@ export interface TrailSettings {
   minCaches: number;
   /** Longer chains are split into several walks. */
   maxWalkKilometers: number;
+  /** Only round trips: each walk reordered to end near its start, and kept only within maxReturnMeters. */
+  loopsOnly: boolean;
+  /** Walking meters from a round trip's last cache back to its first. */
+  maxReturnMeters: number;
   walkingSpeedKmh: number;
   minutesPerCache: number;
   /** Straight line to real path, for every leg without a routed distance. */
@@ -23,6 +27,8 @@ export const DEFAULT_TRAIL_SETTINGS: TrailSettings = {
   maxGapMeters: 300,
   minCaches: 10,
   maxWalkKilometers: 10,
+  loopsOnly: false,
+  maxReturnMeters: 500,
   walkingSpeedKmh: 4,
   minutesPerCache: 3,
   detourFactor: 1.3,

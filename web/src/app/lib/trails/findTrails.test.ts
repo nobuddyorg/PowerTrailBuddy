@@ -323,6 +323,66 @@ describe('findTrails', () => {
       expect(trail.pathMeters).toBeCloseTo(11 * 150, 0);
   });
 
+  describe('round trips only', () => {
+    const chain = chainOfCaches('GCL', {
+      latitude: 48,
+      longitude: 11,
+      count: 12,
+      spacingMeters: 200,
+    });
+
+    it('walks a chain one way by default, ending at its far end', () => {
+      const [trail] = findTrails(chain, {
+        settings: DEFAULT_TRAIL_SETTINGS,
+        locallyFound: nothingFoundHere,
+      });
+      expect(trail.returnMeters).toBeCloseTo(11 * 200, 3);
+    });
+
+    it('starts the same chain next to where it ends, at no extra walk', () => {
+      const [open] = findTrails(chain, {
+        settings: DEFAULT_TRAIL_SETTINGS,
+        locallyFound: nothingFoundHere,
+      });
+      const [loop, ...rest] = findTrails(chain, {
+        settings: { ...DEFAULT_TRAIL_SETTINGS, loopsOnly: true },
+        locallyFound: nothingFoundHere,
+      });
+      expect(rest).toEqual([]);
+      expect(codesOf(loop.caches).sort()).toEqual(codesOf(chain));
+      expect(loop.returnMeters).toBeCloseTo(200, 3);
+      expect(loop.walkMeters).toBeCloseTo(open.walkMeters, 3);
+    });
+
+    it('keeps a round trip whose way back is exactly maxReturnMeters, and drops one beyond', () => {
+      const wayBack = 200 * DEFAULT_TRAIL_SETTINGS.detourFactor;
+      const trailsWithin = (maxReturnMeters: number) =>
+        findTrails(chain, {
+          settings: {
+            ...DEFAULT_TRAIL_SETTINGS,
+            loopsOnly: true,
+            maxReturnMeters,
+          },
+          locallyFound: nothingFoundHere,
+          // Every leg routed as the same whole number, so the way back is exact.
+          walkingDistances: new Map(
+            chain.flatMap((cache, index) =>
+              chain
+                .slice(index + 1)
+                .map((other) => [
+                  pairKey(cache, other),
+                  Math.round(
+                    wayBack * (index + 1 === chain.indexOf(other) ? 1 : 10),
+                  ),
+                ]),
+            ),
+          ),
+        });
+      expect(trailsWithin(Math.round(wayBack))).toHaveLength(1);
+      expect(trailsWithin(Math.round(wayBack) - 1)).toEqual([]);
+    });
+  });
+
   describe('with routed walking distances', () => {
     // Two rows of six on either side of a motorway, 150 m apart along it and 200 m across.
     const north = chainOfCaches('GCN', {

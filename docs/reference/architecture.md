@@ -219,6 +219,13 @@ routing planner.
    stay at or below `maxWalkKilometers`; walks with fewer than `minCaches` caches are
    dropped. This also drops the components smaller than `minCaches`: a small
    group can only split into small walks.
+   With `loopsOnly` (`roundTrips.ts`), each walk is then closed into a round
+   trip: 2-opt over the closed tour from the walk's order (`shortenLoop` in
+   `orderPath.ts`; the first cache stays put, the same work cap), kept only
+   if it walks shorter than the order it started from, then started after its
+   shortest leg, the earliest on a tie, so that leg is the way back. Walks
+   whose way back is longer than `maxReturnMeters` are dropped. A round trip
+   is never longer than its walk, so it stays within `maxWalkKilometers`.
 5. **Score** each walk (`scoreTrail.ts`, the `Trail` fields above). The id is
    the smallest code (plain character order, `compareCodes.ts`) + `-` + the
    cache count, the same whichever way the trail is walked. The shape is
@@ -246,9 +253,10 @@ joins them. `legMetersFor(distances, detourFactor)`, `isWalkableGap(legMeters,
 - `routingBatches(caches, input)` (`planRouting.ts`): the requests still
   needed, each up to `BATCH_SIZE` (50) caches. First, windows along each
   group of at least `minCaches` in walking order, overlapping by
-  `BATCH_OVERLAP` (10), that hold an unrouted pair. Once there are none, the
-  way back of every trail whose ends are still unrouted, two caches each,
-  packed into batches. Empty once everything is known.
+  `BATCH_OVERLAP` (10), that hold an unrouted pair. Once there are none,
+  every leg of every trail, the way back first, that is still unrouted, two
+  caches each, packed into batches: without `loopsOnly` only ways back are
+  left by then; a round trip can also join caches no window held together. Empty once everything is known.
 - `tableUrl(caches)` and `parseTable(caches, body)` (`osrmTable.ts`):
   `https://routing.openstreetmap.de/routed-foot/table/v1/foot/<lon,lat;…>?annotations=distance`
   (six decimals); every pair of the answer's metre matrix, the longer of
