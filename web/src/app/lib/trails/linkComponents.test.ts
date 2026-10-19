@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import type { Coordinates } from '../geocache/types';
 import { distanceMeters } from './geo';
-import { gridNeighbourhood, linkComponents } from './linkComponents';
+import {
+  gridNeighbourhood,
+  linkComponents,
+  linkComponentsWhere,
+} from './linkComponents';
 import { DEGREES_PER_METER, eastwardChain } from './trails.test-support';
 
 interface Labelled extends Coordinates {
@@ -242,5 +246,72 @@ describe('gridNeighbourhood', () => {
     ];
     expect(neighboursOf(points, 0)).toEqual([0, 1]);
     expect(neighboursOf(points, 1)).toEqual([0, 1]);
+  });
+});
+
+describe('linkComponentsWhere', () => {
+  const chain = labelled(
+    eastwardChain(
+      { latitude: 48, longitude: 11 },
+      { count: 6, spacingMeters: 250 },
+    ),
+    'c',
+  );
+  const blocking =
+    (...blocked: [string, string][]) =>
+    (a: Labelled, b: Labelled) =>
+      !blocked.some(
+        ([first, second]) =>
+          (a.label === first && b.label === second) ||
+          (a.label === second && b.label === first),
+      );
+
+  it('links like linkComponents when every gap is allowed', () => {
+    expect(
+      labelsOf(
+        linkComponentsWhere(chain, { maxGapMeters: 300, isLinked: () => true }),
+      ),
+    ).toEqual(labelsOf(linkComponents(chain, 300)));
+  });
+
+  it('splits a chain where its only link is refused, either way round', () => {
+    const expected = [
+      ['c0', 'c1', 'c2'],
+      ['c3', 'c4', 'c5'],
+    ];
+    expect(
+      labelsOf(
+        linkComponentsWhere(chain, {
+          maxGapMeters: 300,
+          isLinked: blocking(['c2', 'c3']),
+        }),
+      ),
+    ).toEqual(expected);
+    expect(
+      labelsOf(
+        linkComponentsWhere(chain, {
+          maxGapMeters: 300,
+          isLinked: blocking(['c3', 'c2']),
+        }),
+      ),
+    ).toEqual(expected);
+  });
+
+  it('keeps a group together while another link still joins it', () => {
+    // At 600 m every cache reaches the next two, so one refused gap leaves a way round.
+    expect(
+      labelsOf(
+        linkComponentsWhere(chain, {
+          maxGapMeters: 600,
+          isLinked: blocking(['c2', 'c3']),
+        }),
+      ),
+    ).toEqual([['c0', 'c1', 'c2', 'c3', 'c4', 'c5']]);
+  });
+
+  it('never links a gap over maxGapMeters, whatever isLinked says', () => {
+    expect(
+      linkComponentsWhere(chain, { maxGapMeters: 200, isLinked: () => true }),
+    ).toHaveLength(6);
   });
 });

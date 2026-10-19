@@ -41,7 +41,7 @@
       "text": "Pick the .zip or .gpx below. On Android, once the app is installed, you can also share the file to PowerTrailBuddy."
     },
     "sample": "Try with sample data",
-    "privacy": "Your files stay on this device: nothing is uploaded and there is no account. Only map tiles come from OpenStreetMap."
+    "privacy": "Your files stay on this device: nothing is uploaded and there is no account. Only map tiles come from OpenStreetMap, and, if you turn on walking routes in the settings, distances from its routing server."
   },
   "import": {
     "button": "Import Pocket Query",
@@ -117,6 +117,15 @@
       "disabled": "{count} disabled",
       "disabled_one": "{count} disabled"
     }
+  },
+  "routes": {
+    "checking": "Checking walking routes … ({count} requests left)",
+    "checking_one": "Checking walking routes … ({count} request left)",
+    "done": "Distances follow real footpaths.",
+    "limited": "Walking routes are checked for some trails only; the rest are estimated. Reload to check more.",
+    "failed": "Walking routes couldn't be checked; distances are estimated.",
+    "attribution": "Walking routes: FOSSGIS routing, map data © OpenStreetMap contributors",
+    "fixMap": "Fix the map"
   },
   "detail": {
     "stat": {
@@ -221,7 +230,12 @@
     "ignored": "Ignored caches ({count})",
     "ignored_one": "Ignored cache ({count})",
     "noneIgnored": "You have not ignored any cache.",
-    "unignore": "Stop ignoring {code}"
+    "unignore": "Stop ignoring {code}",
+    "routes": {
+      "title": "Walking routes",
+      "toggle": "Check trails on real footpaths",
+      "help": "Sends the coordinates of trail caches to the FOSSGIS routing server (routing.openstreetmap.de). Distances then follow real footpaths, and trails split where a motorway, river or other barrier lies between two caches. Off, everything stays on this device and distances are straight lines times the detour factor."
+    }
   },
   "cacheType": {
     "traditional": "Traditional",

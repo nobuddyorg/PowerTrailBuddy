@@ -6,8 +6,10 @@ import type { Trail } from '../../lib/trails/types';
 import type { TrailCard } from '../../lib/ui-logic/trailCards';
 import type { TrailFilter } from '../../lib/ui-logic/trailSort';
 import type { AppState } from '../../useAppState';
+import type { RouteCheck } from '../../useWalkingDistances';
 import { CacheDetails } from '../CacheDetails';
 import { Icon } from '../Icon';
+import { RouteStatus } from '../RouteStatus';
 import { CacheSearch } from '../Search';
 import { TrailDetail } from '../TrailDetail';
 import { TrailList } from '../TrailList';
@@ -22,6 +24,7 @@ interface PanelContentProps {
   trails: readonly Trail[];
   cards: readonly TrailCard[];
   pending: boolean;
+  routeCheck: RouteCheck;
   filters: readonly TrailFilter[];
   onFiltersChange: (filters: TrailFilter[]) => void;
   position?: Coordinates;
@@ -116,6 +119,7 @@ export function PanelContent(props: PanelContentProps) {
         onSelect={onSelectTrail}
         onOpenSettings={props.onOpenSettings}
       />
+      <RouteStatus check={props.routeCheck} />
     </div>
   );
 }

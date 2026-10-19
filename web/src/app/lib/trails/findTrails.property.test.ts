@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest';
 
 import type { CacheType, Geocache } from '../geocache/types';
 import { findTrails } from './findTrails';
+import { distanceMeters } from './geo';
 import { makeCache, pointsNear } from './trails.test-support';
 import type { TrailSettings } from './types';
+import { pairKey } from './walkingDistances';
 
 const cacheTypes: CacheType[] = [
   'traditional',
@@ -99,9 +101,9 @@ describe('findTrails, for random caches and settings', () => {
           ),
         ),
         ([caches, shuffled, settings, found]) => {
-          expect(findTrails(shuffled, settings, found)).toEqual(
-            findTrails(caches, settings, found),
-          );
+          expect(
+            findTrails(shuffled, { settings, locallyFound: found }),
+          ).toEqual(findTrails(caches, { settings, locallyFound: found }));
         },
       ),
     );
@@ -110,9 +112,10 @@ describe('findTrails, for random caches and settings', () => {
   it('never includes a cache a filter rejects, and uses each cache at most once', () => {
     fc.assert(
       fc.property(anyInput, ([caches, settings, locallyFound]) => {
-        const used = findTrails(caches, settings, locallyFound).flatMap(
-          (trail) => trail.caches,
-        );
+        const used = findTrails(caches, {
+          settings,
+          locallyFound,
+        }).flatMap((trail) => trail.caches);
         for (const cache of used) {
           expect(settings.cacheTypes).toContain(cache.type);
           expect(cache.difficulty).toBeLessThanOrEqual(settings.maxDifficulty);
@@ -132,7 +135,10 @@ describe('findTrails, for random caches and settings', () => {
   it('keeps every trail within maxWalkKilometers and at least minCaches, unless it is a single cache', () => {
     fc.assert(
       fc.property(anyInput, ([caches, settings, locallyFound]) => {
-        for (const trail of findTrails(caches, settings, locallyFound)) {
+        for (const trail of findTrails(caches, {
+          settings,
+          locallyFound,
+        })) {
           expect(trail.caches.length).toBeGreaterThanOrEqual(
             settings.minCaches,
           );
@@ -148,10 +154,36 @@ describe('findTrails, for random caches and settings', () => {
   it('lists trails by caches per hour, best first', () => {
     fc.assert(
       fc.property(anyInput, ([caches, settings, locallyFound]) => {
-        const rates = findTrails(caches, settings, locallyFound).map(
-          (trail) => trail.cachesPerHour,
-        );
+        const rates = findTrails(caches, {
+          settings,
+          locallyFound,
+        }).map((trail) => trail.cachesPerHour);
         expect(rates).toEqual([...rates].sort((a, b) => b - a));
+      }),
+    );
+  });
+
+  it('finds the same trails when every route is as long as the straight line times the detour factor', () => {
+    fc.assert(
+      fc.property(anyInput, ([caches, settings, locallyFound]) => {
+        const asEstimated = new Map(
+          caches.flatMap((cache, index) =>
+            caches
+              .slice(index + 1)
+              .map((other) => [
+                pairKey(cache, other),
+                distanceMeters(cache, other) * settings.detourFactor,
+              ]),
+          ),
+        );
+        const summary = (walkingDistances?: Map<string, number>) =>
+          findTrails(caches, { settings, locallyFound, walkingDistances }).map(
+            (trail) => ({
+              codes: trail.caches.map((cache) => cache.code),
+              walkMeters: Math.round(trail.walkMeters * 1000),
+            }),
+          );
+        expect(summary(asEstimated)).toEqual(summary());
       }),
     );
   });

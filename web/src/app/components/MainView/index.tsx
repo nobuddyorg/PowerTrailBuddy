@@ -13,6 +13,7 @@ import type { AppState } from '../../useAppState';
 import { useMediaQuery } from '../../useBrowserState';
 import { useFollow } from '../../useFollow';
 import type { GeolocationState } from '../../useGeolocation';
+import type { RouteCheck } from '../../useWalkingDistances';
 import { BottomSheet } from '../BottomSheet';
 import MapView from '../Map';
 import { overviewContent } from '../Map/content';
@@ -26,6 +27,7 @@ interface MainViewProps {
   app: AppState;
   trails: readonly Trail[];
   pending: boolean;
+  routeCheck: RouteCheck;
   location: GeolocationState;
   startLocation: () => void;
   onOpenSettings: () => void;
@@ -44,6 +46,7 @@ export function MainView({
   app,
   trails,
   pending,
+  routeCheck,
   location,
   startLocation,
   onOpenSettings,
@@ -156,6 +159,7 @@ export function MainView({
       trails={trails}
       cards={cards}
       pending={pending}
+      routeCheck={routeCheck}
       filters={filters}
       onFiltersChange={setFilters}
       position={position}

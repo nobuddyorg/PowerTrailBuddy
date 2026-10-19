@@ -4,7 +4,8 @@ A portable testing strategy for one shape of app: a **static-export frontend
 with no backend at all**, whose **only data is what the user imports from
 files**, kept **in the browser** (IndexedDB, Cache Storage, `localStorage`),
 with a **service worker as the only "server"** (offline shell, share target)
-and a **third-party tile server** as the only outside request. It says what
+a **third-party tile server** as the one outside request by default, and at
+most an **opt-in third-party lookup** the user turns on. It says what
 each test layer can and cannot prove in that architecture, and which layer owns
 which behavior. Copy it into a new project of the same shape, then localize it
 (§16). **This file names no real module, route, file path, or measured
@@ -26,7 +27,9 @@ the service worker caches.
 ## 0. When this applies
 
 - The frontend ships as static files. There is **no server runtime, no
-  account, no API of its own**; nothing the app holds ever leaves the device.
+  account, no API of its own**; nothing the app holds leaves the device
+  unless the user opts in to one named third-party lookup, and then only the
+  minimum it needs.
 - All domain data arrives as **files the user chooses** — a file picker, a
   drop, or the operating system's share sheet delivered through a service
   worker. The files are untrusted, however they arrive.
@@ -37,7 +40,7 @@ the service worker caches.
 
 If a backend appears — an API, a sync service, an account, a scraper, an
 upload of any kind — the central claims (**the parser is the trust boundary**
-and **nothing leaves the device**) stop holding. Rethink this document there;
+and **nothing leaves the device unasked**) stop holding. Rethink this document there;
 don't patch it.
 
 ---
@@ -83,9 +86,13 @@ Write this into the project's own docs with its real pieces:
    worker a multipart body; the worker must store exactly the files, under
    names it encodes, and hand control back to the page. A body it cannot read
    is refused, not half-stored.
-3. **App → third-party tiles.** The only network egress. Its URL reveals the
-   viewed area; nothing else may travel. A content security policy is the
-   enforcement; a browser test proves no other origin is contacted.
+3. **App → third-party tiles, and an opt-in lookup.** The network egress.
+   A tile URL reveals the viewed area; an opt-in lookup sends only what it
+   needs, only after the user turns it on, within the provider's usage policy.
+   Nothing else may travel. A content security policy is the enforcement; a
+   browser test proves no other origin is contacted, and that the lookup
+   stays silent until opted in. The lookup's answers are untrusted input,
+   parsed and validated like a file.
 4. **Device APIs.** A denied permission, a missing API, or an unavailable
    sensor is a normal state, not an error; the feature degrades.
 5. **Browser storage across versions.** Data written by build N is read by
@@ -142,7 +149,7 @@ and operations:
 | **Share target delivers nothing or the wrong files** | The main mobile entry point fails silently | Unit on the worker's handler from source; browser check of the manifest |
 | **Static-hosting or base-path faults** | A site that quietly breaks post-deploy | Serve the real artifact under its real path, locally and deployed |
 | **Stale shell after deploy / offline faults** | Old bundle forever, or no app offline | Unit on cache naming and cleanup; browser check that the worker registers |
-| **Data leaves the device** | Privacy breach | CSP source test + browser test that no other origin is contacted |
+| **Data leaves the device unasked** | Privacy breach | CSP source test + browser test that no other origin is contacted, and the opt-in lookup only after opting in |
 | **Third-party tile outage** | Map blank; the rest must work | Browser test with tiles failing; unit on the error branch |
 | **Device API denied or absent** | Feature crashes instead of degrading | Unit with the API faked away; component test of the fallback |
 | **Accessibility regressions** | Unusable with keyboard or screen reader | Static lint + runtime axe — §9 |
@@ -265,7 +272,7 @@ a network fetch or cold binary install belongs in CI only.
 ## 7. Security and privacy testing
 
 **The two properties that matter: hostile input cannot break the app, and
-nothing the user imported leaves the device.** No server means no
+nothing the user imported leaves the device unless they opt in.** No server means no
 authorization layer to test; it also means no second line of defense.
 
 ### Rules
@@ -278,9 +285,11 @@ authorization layer to test; it also means no second line of defense.
    with imported content; a component test renders a record whose name holds
    markup and asserts it appears literally.
 4. **The content security policy is source-tested**: `connect-src` allows the
-   app's own origin only, `img-src` adds exactly the tile host.
+   app's own origin and, if there is one, exactly the opt-in lookup's host;
+   `img-src` adds exactly the tile host.
 5. **The browser suite fails on any request to an origin other than the app's
-   own**, with tiles answered by a local fake.
+   own**, with tiles answered by a local fake; only the specs of the opt-in
+   lookup allow its host, and they answer it with a local fake too.
 6. **No credentials, no scraping, no unofficial access** to any third-party
    service exists in the code, so there is nothing of the kind to test; a
    change that adds one invalidates §0.

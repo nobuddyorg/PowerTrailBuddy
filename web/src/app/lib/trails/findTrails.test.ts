@@ -8,6 +8,7 @@ import {
   makeCache,
 } from './trails.test-support';
 import { DEFAULT_TRAIL_SETTINGS, type TrailSettings } from './types';
+import { BARRIER_FACTOR, pairKey } from './walkingDistances';
 
 const nothingFoundHere = new Set<string>();
 
@@ -41,9 +42,12 @@ function codesOf(caches: readonly Geocache[]): string[] {
 
 describe('findTrails', () => {
   it('finds nothing in nothing', () => {
-    expect(findTrails([], DEFAULT_TRAIL_SETTINGS, nothingFoundHere)).toEqual(
-      [],
-    );
+    expect(
+      findTrails([], {
+        settings: DEFAULT_TRAIL_SETTINGS,
+        locallyFound: nothingFoundHere,
+      }),
+    ).toEqual([]);
   });
 
   it('finds a chain of quick caches as one trail in walking order', () => {
@@ -53,11 +57,10 @@ describe('findTrails', () => {
       count: 12,
       spacingMeters: 200,
     });
-    const [trail, ...rest] = findTrails(
-      [...chain].reverse(),
-      DEFAULT_TRAIL_SETTINGS,
-      nothingFoundHere,
-    );
+    const [trail, ...rest] = findTrails([...chain].reverse(), {
+      settings: DEFAULT_TRAIL_SETTINGS,
+      locallyFound: nothingFoundHere,
+    });
     expect(rest).toEqual([]);
     expect([codesOf(chain), codesOf(chain).reverse()]).toContainEqual(
       codesOf(trail.caches),
@@ -81,11 +84,10 @@ describe('findTrails', () => {
       spacingMeters: 200,
     });
     expect(
-      findTrails(
-        [...nine, ...ten],
-        DEFAULT_TRAIL_SETTINGS,
-        nothingFoundHere,
-      ).map((trail) => trail.id),
+      findTrails([...nine, ...ten], {
+        settings: DEFAULT_TRAIL_SETTINGS,
+        locallyFound: nothingFoundHere,
+      }).map((trail) => trail.id),
     ).toEqual(['GCT001-10']);
   });
 
@@ -106,14 +108,16 @@ describe('findTrails', () => {
     });
     const settings = { ...DEFAULT_TRAIL_SETTINGS, maxGapMeters: 300 };
     expect(
-      findTrails([...west, ...east], settings, nothingFoundHere),
+      findTrails([...west, ...east], {
+        settings,
+        locallyFound: nothingFoundHere,
+      }),
     ).toHaveLength(2);
     expect(
-      findTrails(
-        [...west, ...east],
-        { ...settings, maxGapMeters: 320 },
-        nothingFoundHere,
-      ),
+      findTrails([...west, ...east], {
+        settings: { ...settings, maxGapMeters: 320 },
+        locallyFound: nothingFoundHere,
+      }),
     ).toHaveLength(1);
   });
 
@@ -125,7 +129,10 @@ describe('findTrails', () => {
       spacingMeters: 200,
     });
     chain[10] = { ...chain[10], terrain: 4 };
-    const trails = findTrails(chain, DEFAULT_TRAIL_SETTINGS, nothingFoundHere);
+    const trails = findTrails(chain, {
+      settings: DEFAULT_TRAIL_SETTINGS,
+      locallyFound: nothingFoundHere,
+    });
     expect(trails.map((trail) => trail.caches.length)).toEqual([10, 10]);
     expect(trails.flatMap((trail) => codesOf(trail.caches))).not.toContain(
       'GCF011',
@@ -139,11 +146,10 @@ describe('findTrails', () => {
       count: 11,
       spacingMeters: 200,
     });
-    const [trail] = findTrails(
-      chain,
-      DEFAULT_TRAIL_SETTINGS,
-      new Set(['GCL011']),
-    );
+    const [trail] = findTrails(chain, {
+      settings: DEFAULT_TRAIL_SETTINGS,
+      locallyFound: new Set(['GCL011']),
+    });
     expect(codesOf(trail.caches)).not.toContain('GCL011');
     expect(trail.caches).toHaveLength(10);
   });
@@ -158,9 +164,12 @@ describe('findTrails', () => {
       ...cache,
       found: true,
     }));
-    expect(findTrails(chain, DEFAULT_TRAIL_SETTINGS, nothingFoundHere)).toEqual(
-      [],
-    );
+    expect(
+      findTrails(chain, {
+        settings: DEFAULT_TRAIL_SETTINGS,
+        locallyFound: nothingFoundHere,
+      }),
+    ).toEqual([]);
   });
 
   it('splits a long chain into walks within maxWalkKilometers and drops a short remainder', () => {
@@ -175,15 +184,17 @@ describe('findTrails', () => {
       ...DEFAULT_TRAIL_SETTINGS,
       maxWalkKilometers: 5,
     };
-    const trails = findTrails(chain, settings, nothingFoundHere);
+    const trails = findTrails(chain, {
+      settings,
+      locallyFound: nothingFoundHere,
+    });
     expect(trails.map((trail) => trail.caches.length)).toEqual([10, 10]);
     for (const trail of trails)
       expect(trail.walkMeters).toBeLessThanOrEqual(5000);
-    const withRemainder = findTrails(
-      chain,
-      { ...settings, minCaches: 5 },
-      nothingFoundHere,
-    );
+    const withRemainder = findTrails(chain, {
+      settings: { ...settings, minCaches: 5 },
+      locallyFound: nothingFoundHere,
+    });
     expect(withRemainder.map((trail) => trail.caches.length)).toEqual([
       5, 10, 10,
     ]);
@@ -196,11 +207,10 @@ describe('findTrails', () => {
       count: 3,
       spacingMeters: 200,
     });
-    const trails = findTrails(
-      chain,
-      { ...DEFAULT_TRAIL_SETTINGS, minCaches: 1, maxGapMeters: 100 },
-      nothingFoundHere,
-    );
+    const trails = findTrails(chain, {
+      settings: { ...DEFAULT_TRAIL_SETTINGS, minCaches: 1, maxGapMeters: 100 },
+      locallyFound: nothingFoundHere,
+    });
     expect(trails.map((trail) => trail.id)).toEqual([
       'GCM001-1',
       'GCM002-1',
@@ -229,11 +239,10 @@ describe('findTrails', () => {
     });
     const settings = { ...DEFAULT_TRAIL_SETTINGS, maxWalkKilometers: 1000 };
     expect(
-      findTrails(
-        [...sparse, ...dense, ...sparseTwin],
+      findTrails([...sparse, ...dense, ...sparseTwin], {
         settings,
-        nothingFoundHere,
-      ).map((trail) => trail.id),
+        locallyFound: nothingFoundHere,
+      }).map((trail) => trail.id),
     ).toEqual(['GCD001-10', 'GCO001-10', 'GCP001-10']);
   });
 
@@ -257,9 +266,10 @@ describe('findTrails', () => {
       minutesPerCache: 1,
     };
     expect(
-      findTrails([...small, ...large], settings, nothingFoundHere).map(
-        (trail) => trail.id,
-      ),
+      findTrails([...small, ...large], {
+        settings,
+        locallyFound: nothingFoundHere,
+      }).map((trail) => trail.id),
     ).toEqual(['GCZ001-3', 'GCA001-2']);
   });
 
@@ -283,7 +293,10 @@ describe('findTrails', () => {
       makeCache({ code: codes[index], latitude: 0, longitude }),
     );
     const settings = { ...DEFAULT_TRAIL_SETTINGS, maxWalkKilometers: 2.7 };
-    const trails = findTrails(caches, settings, nothingFoundHere);
+    const trails = findTrails(caches, {
+      settings,
+      locallyFound: nothingFoundHere,
+    });
     expect(trails.map((trail) => trail.id)).toEqual(['GCB0-10', 'GCZ0-10']);
     expect(trails[0].cachesPerHour).toBe(trails[1].cachesPerHour);
   });
@@ -301,13 +314,108 @@ describe('findTrails', () => {
       count: 12,
       spacingMeters: 150,
     });
-    const trails = findTrails(
-      [...dateLine, ...arctic],
-      DEFAULT_TRAIL_SETTINGS,
-      nothingFoundHere,
-    );
+    const trails = findTrails([...dateLine, ...arctic], {
+      settings: DEFAULT_TRAIL_SETTINGS,
+      locallyFound: nothingFoundHere,
+    });
     expect(trails.map((trail) => trail.caches.length)).toEqual([12, 12]);
     for (const trail of trails)
       expect(trail.pathMeters).toBeCloseTo(11 * 150, 0);
+  });
+
+  describe('with routed walking distances', () => {
+    // Two rows of six on either side of a motorway, 150 m apart along it and 200 m across.
+    const north = chainOfCaches('GCN', {
+      latitude: 48.0018,
+      longitude: 11,
+      count: 6,
+      spacingMeters: 150,
+    });
+    const south = chainOfCaches('GCS', {
+      latitude: 48,
+      longitude: 11,
+      count: 6,
+      spacingMeters: 150,
+    });
+    const settings = { ...DEFAULT_TRAIL_SETTINGS, minCaches: 6 };
+    const acrossTheRoad = (meters: number) =>
+      new Map(
+        north.flatMap((northern) =>
+          south.map((southern) => [pairKey(northern, southern), meters]),
+        ),
+      );
+
+    it('finds both sides as one trail while no route says otherwise', () => {
+      const [trail, ...rest] = findTrails([...north, ...south], {
+        settings,
+        locallyFound: nothingFoundHere,
+      });
+      expect(rest).toEqual([]);
+      expect(trail.caches).toHaveLength(12);
+    });
+
+    it('splits the trail where the only way across is a long walk round', () => {
+      const barrierMeters =
+        BARRIER_FACTOR * settings.maxGapMeters * settings.detourFactor;
+      const trails = findTrails([...north, ...south], {
+        settings,
+        locallyFound: nothingFoundHere,
+        walkingDistances: acrossTheRoad(barrierMeters + 1),
+      });
+      expect(trails.map((trail) => trail.id).sort()).toEqual([
+        'GCN001-6',
+        'GCS001-6',
+      ]);
+      const together = findTrails([...north, ...south], {
+        settings,
+        locallyFound: nothingFoundHere,
+        walkingDistances: acrossTheRoad(barrierMeters),
+      });
+      expect(together.map((trail) => trail.caches.length)).toEqual([12]);
+    });
+
+    it('splits it too where no path crosses at all', () => {
+      const trails = findTrails([...north, ...south], {
+        settings,
+        locallyFound: nothingFoundHere,
+        walkingDistances: acrossTheRoad(Infinity),
+      });
+      expect(trails).toHaveLength(2);
+    });
+
+    it('measures the walk and its time along the routed legs', () => {
+      const legs = new Map(
+        south
+          .slice(1)
+          .map((cache, index) => [pairKey(south[index], cache), 400]),
+      );
+      legs.set(pairKey(south[5], south[0]), 1000);
+      const [trail] = findTrails(south, {
+        settings,
+        locallyFound: nothingFoundHere,
+        walkingDistances: legs,
+      });
+      expect(trail.walkMeters).toBeCloseTo(5 * 400 + 1000, 6);
+      expect(trail.durationMinutes).toBeCloseTo(
+        (3000 / 1000 / settings.walkingSpeedKmh) * 60 +
+          6 * settings.minutesPerCache,
+        6,
+      );
+    });
+
+    it('splits a walk that its routed legs make too long', () => {
+      // Straight, all six fit in 1950 m; at 900 m a leg, three and the 390 m way back are 2190 m, four 3285 m.
+      const legs = new Map(
+        south
+          .slice(1)
+          .map((cache, index) => [pairKey(south[index], cache), 900]),
+      );
+      const trails = findTrails(south, {
+        settings: { ...settings, minCaches: 2, maxWalkKilometers: 3 },
+        locallyFound: nothingFoundHere,
+        walkingDistances: legs,
+      });
+      expect(trails.map((trail) => trail.caches.length)).toEqual([3, 3]);
+    });
   });
 });

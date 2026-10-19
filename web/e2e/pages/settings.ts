@@ -24,9 +24,11 @@ interface Settings {
     open(): Promise<void>;
     unignore(code: string): Promise<void>;
     toggleCacheType(type: string): Promise<void>;
+    toggleWalkingRoutes(): Promise<void>;
     resetToDefaults(): Promise<void>;
   };
   locators: {
+    walkingRoutes: Locator;
     buttons: {
       apply: Locator;
       close: Locator;
@@ -52,6 +54,7 @@ export function initSettings(page: Page): Settings {
     cacheType: (type: string) => root.getByTestId(`cache-type-${type}`),
     ignoredCaches: root.getByTestId('ignored-cache'),
     field: (name: SettingField) => root.getByTestId(`setting-${name}`),
+    walkingRoutes: root.getByTestId('walking-routes'),
   };
   const interactions = {
     apply: async () => {
@@ -94,6 +97,11 @@ export function initSettings(page: Page): Settings {
     },
     toggleCacheType: async (type: string) => {
       await locators.cacheType(type).click();
+    },
+    toggleWalkingRoutes: async () => {
+      const checked = await locators.walkingRoutes.isChecked();
+      await locators.walkingRoutes.click();
+      await expect(locators.walkingRoutes).toBeChecked({ checked: !checked });
     },
     resetToDefaults: async () => {
       await locators.buttons.reset.click();

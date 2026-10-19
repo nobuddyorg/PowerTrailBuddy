@@ -2,6 +2,7 @@ import { createStore, del, delMany, get, set } from 'idb-keyval';
 
 import type { Geocache } from '../lib/geocache/types';
 import type { TrailSettings } from '../lib/trails/types';
+import type { WalkingDistances } from '../lib/trails/walkingDistances';
 import { TRAIL_SORTS, type TrailSort } from '../lib/ui-logic/trailSort';
 import type { WalkState } from '../lib/walk/walk';
 import { sanitizeSettings } from './sanitizeSettings';
@@ -19,17 +20,21 @@ const KEYS = {
   ignored: 'ignored',
   preferences: 'preferences',
   lastImport: 'last-import',
+  walkingDistances: 'walking-distances',
 } as const;
 
 export interface UiPreferences {
   sort: TrailSort;
   /** Imported caches that belong to no trail, drawn dimmed on the map. */
   showOtherCaches: boolean;
+  /** Opted in to sending trail caches' coordinates to the routing server for walking distances. */
+  walkingRoutes: boolean;
 }
 
 export const DEFAULT_PREFERENCES: UiPreferences = {
   sort: 'rate',
   showOtherCaches: true,
+  walkingRoutes: false,
 };
 
 export interface ImportInfo {
@@ -142,6 +147,10 @@ export async function loadPreferences(): Promise<UiPreferences> {
       typeof value.showOtherCaches === 'boolean'
         ? value.showOtherCaches
         : DEFAULT_PREFERENCES.showOtherCaches,
+    walkingRoutes:
+      typeof value.walkingRoutes === 'boolean'
+        ? value.walkingRoutes
+        : DEFAULT_PREFERENCES.walkingRoutes,
   };
 }
 
@@ -170,7 +179,28 @@ export function saveImportInfo(info: ImportInfo): Promise<void> {
   return set(KEYS.lastImport, info, store);
 }
 
-/** Everything this app stored: caches, settings, found and ignored marks, the walk, preferences, the import record. */
+const isWalkingMeters = (value: unknown): value is number =>
+  typeof value === 'number' && value >= 0;
+
+/** Routed walking distances kept from earlier answers; Infinity, which IndexedDB keeps, where no path joins a pair. */
+export async function loadWalkingDistances(): Promise<WalkingDistances> {
+  const stored: unknown = await get(KEYS.walkingDistances, store);
+  if (!(stored instanceof Map)) return new Map();
+  return new Map(
+    [...stored].filter(
+      (entry): entry is [string, number] =>
+        isString(entry[0]) && isWalkingMeters(entry[1]),
+    ),
+  );
+}
+
+export function saveWalkingDistances(
+  distances: WalkingDistances,
+): Promise<void> {
+  return set(KEYS.walkingDistances, new Map(distances), store);
+}
+
+/** Everything this app stored: caches, settings, found and ignored marks, the walk, preferences, the import record, the routed distances. */
 export function clearAllData(): Promise<void> {
   return delMany(Object.values(KEYS), store);
 }

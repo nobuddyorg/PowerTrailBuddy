@@ -33,6 +33,9 @@ interface TrailList {
     cacheCount: Locator;
     cards: Locator;
     count: Locator;
+    /** How far the walking-route check has got; absent while it is off. */
+    routeStatus: Locator;
+    routeAttribution: Locator;
     inputs: {
       search: Locator;
       sort: Locator;
@@ -66,6 +69,8 @@ export function initTrailList(page: Page): TrailList {
     cacheCount: panel.getByTestId('cache-count'),
     cards: root.getByTestId('trail-card'),
     count: root.getByTestId('trail-count'),
+    routeStatus: panel.getByTestId('route-status-text'),
+    routeAttribution: panel.getByTestId('route-status'),
     inputs: {
       search: panel.getByRole('searchbox'),
       sort: root.getByTestId('trail-sort'),

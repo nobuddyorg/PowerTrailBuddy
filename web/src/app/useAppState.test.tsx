@@ -247,9 +247,11 @@ describe('settings, preferences and clearing', () => {
     const { result } = await renderReady();
     act(() => result.current.setPreferences({ sort: 'shortest' }));
     act(() => result.current.setPreferences({ showOtherCaches: false }));
+    act(() => result.current.setPreferences({ walkingRoutes: true }));
     expect(result.current.preferences).toEqual({
       sort: 'shortest',
       showOtherCaches: false,
+      walkingRoutes: true,
     });
     expect(storedValue('preferences')).toEqual(result.current.preferences);
   });

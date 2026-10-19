@@ -1,32 +1,29 @@
 import type { Coordinates } from '../geocache/types';
-import { distanceMeters } from './geo';
 
-export interface WalkLimits {
+export interface WalkLimits<T> {
   maxWalkMeters: number;
-  detourFactor: number;
+  /** Walking meters from one point to the next. */
+  legMeters: (from: T, to: T) => number;
 }
 
-/** Greedy consecutive walks within maxWalkMeters, way back and detour included; a lone cache is always a walk. */
+/** Greedy consecutive walks within maxWalkMeters, way back included; a lone cache is always a walk. */
 export function splitWalks<T extends Coordinates>(
   ordered: readonly T[],
-  limits: WalkLimits,
+  { maxWalkMeters, legMeters }: WalkLimits<T>,
 ): T[][] {
   if (ordered.length === 0) return [];
   const walks: T[][] = [[ordered[0]]];
-  let walkPathMeters = 0;
+  let walkAlongMeters = 0;
   for (const point of ordered.slice(1)) {
     const walk = walks[walks.length - 1];
-    const extendedPathMeters =
-      walkPathMeters + distanceMeters(walk[walk.length - 1], point);
-    const extendedWalkMeters =
-      (extendedPathMeters + distanceMeters(point, walk[0])) *
-      limits.detourFactor;
-    if (extendedWalkMeters <= limits.maxWalkMeters) {
+    const extendedAlongMeters =
+      walkAlongMeters + legMeters(walk[walk.length - 1], point);
+    if (extendedAlongMeters + legMeters(point, walk[0]) <= maxWalkMeters) {
       walk.push(point);
-      walkPathMeters = extendedPathMeters;
+      walkAlongMeters = extendedAlongMeters;
     } else {
       walks.push([point]);
-      walkPathMeters = 0;
+      walkAlongMeters = 0;
     }
   }
   return walks;

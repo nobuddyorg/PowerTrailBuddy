@@ -89,6 +89,9 @@ interface SettingsDialogProps {
   onApply: (settings: TrailSettings) => void;
   onResetLocallyFound: () => void;
   onUnignore: (code: string) => void;
+  /** Opted in to the routing server; changes at once, unlike the draft above. */
+  walkingRoutes: boolean;
+  onWalkingRoutesChange: (walkingRoutes: boolean) => void;
   onClose: () => void;
 }
 
@@ -100,6 +103,8 @@ export function SettingsDialog({
   onApply,
   onResetLocallyFound,
   onUnignore,
+  walkingRoutes,
+  onWalkingRoutesChange,
   onClose,
 }: SettingsDialogProps) {
   const { t, tCount, locale } = useI18n();
@@ -107,6 +112,7 @@ export function SettingsDialog({
   const errors = draftErrors(draft);
   const valid = Object.keys(errors).length === 0;
   const typesErrorId = useId();
+  const routesHelpId = useId();
   const preset = draftPreset(draft);
 
   const toggleType = (type: CacheType, checked: boolean) =>
@@ -274,6 +280,27 @@ export function SettingsDialog({
           </button>
         </div>
         <div className="space-y-4 border-t border-border pt-4">
+          <section className="space-y-1">
+            <h3 className="text-sm font-semibold">
+              {t('settings.routes.title')}
+            </h3>
+            <label className="flex min-h-11 items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                data-testid="walking-routes"
+                checked={walkingRoutes}
+                aria-describedby={routesHelpId}
+                onChange={(event) =>
+                  onWalkingRoutesChange(event.currentTarget.checked)
+                }
+                className="h-5 w-5 accent-[var(--primary)]"
+              />
+              {t('settings.routes.toggle')}
+            </label>
+            <p id={routesHelpId} className="text-xs text-muted-foreground">
+              {t('settings.routes.help')}
+            </p>
+          </section>
           <section className="space-y-2">
             <h3 className="text-sm font-semibold">
               {t('settings.locallyFound')}

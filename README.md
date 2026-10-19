@@ -25,11 +25,15 @@ hour. Then it guides you through one, cache by cache, on a map.
 
 ## Features
 
-- **Import only, nothing leaves your device**: open a Pocket Query `.zip`
-  or `.gpx` file, or share it to the app from your phone's e-mail or files
-  app. No login, no server, no tracking; the only thing fetched from the
-  internet is the map. **Try with sample data** shows the app before you have
-  a Pocket Query.
+- **Import only, nothing leaves your device unasked**: open a Pocket Query
+  `.zip` or `.gpx` file, or share it to the app from your phone's e-mail or
+  files app. No login, no server, no tracking; the map is fetched from the
+  internet, and trail caches' coordinates go to a routing server only if you
+  turn on walking routes. **Try with sample data** shows the app before you
+  have a Pocket Query.
+- **Walking routes** (opt-in): distances on real footpaths from
+  OpenStreetMap's routing server, and trails split where a motorway or river
+  lies between two caches.
 - **Trail finder** with your own limits, or a preset: cache types,
   difficulty and terrain, the largest gap between caches, the smallest trail
   worth walking, the longest walk.

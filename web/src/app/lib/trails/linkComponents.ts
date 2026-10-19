@@ -77,6 +77,17 @@ export function linkComponents<T extends Coordinates>(
   points: readonly T[],
   maxGapMeters: number,
 ): T[][] {
+  return linkComponentsWhere(points, { maxGapMeters, isLinked: () => true });
+}
+
+/** As linkComponents, but a gap under maxGapMeters links only where isLinked agrees. */
+export function linkComponentsWhere<T extends Coordinates>(
+  points: readonly T[],
+  {
+    maxGapMeters,
+    isLinked,
+  }: { maxGapMeters: number; isLinked: (a: T, b: T) => boolean },
+): T[][] {
   const neighbourhood = gridNeighbourhood(points, maxGapMeters);
   const visited = new Uint8Array(points.length);
   const components: T[][] = [];
@@ -89,7 +100,8 @@ export function linkComponents<T extends Coordinates>(
       for (const candidate of neighbourhood(queue[head])) {
         if (
           visited[candidate] ||
-          distanceMeters(current, points[candidate]) >= maxGapMeters
+          distanceMeters(current, points[candidate]) >= maxGapMeters ||
+          !isLinked(current, points[candidate])
         )
           continue;
         visited[candidate] = 1;

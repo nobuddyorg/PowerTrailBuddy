@@ -41,7 +41,7 @@
       "text": "Wähle unten die .zip oder .gpx. Unter Android kannst du die Datei nach der Installation auch direkt an PowerTrailBuddy teilen."
     },
     "sample": "Mit Beispieldaten ausprobieren",
-    "privacy": "Deine Dateien bleiben auf diesem Gerät: Nichts wird hochgeladen, es gibt kein Konto. Nur die Kartenkacheln kommen von OpenStreetMap."
+    "privacy": "Deine Dateien bleiben auf diesem Gerät: Nichts wird hochgeladen, es gibt kein Konto. Nur die Kartenkacheln kommen von OpenStreetMap und, wenn du in den Einstellungen Laufwege einschaltest, Strecken von dessen Routing-Server."
   },
   "import": {
     "button": "Pocket Query importieren",
@@ -117,6 +117,15 @@
       "disabled": "{count} deaktiviert",
       "disabled_one": "{count} deaktiviert"
     }
+  },
+  "routes": {
+    "checking": "Laufwege werden geprüft … (noch {count} Anfragen)",
+    "checking_one": "Laufwege werden geprüft … (noch {count} Anfrage)",
+    "done": "Die Strecken folgen echten Fußwegen.",
+    "limited": "Laufwege sind nur für einen Teil der Trails geprüft, der Rest ist geschätzt. Lade neu, um mehr zu prüfen.",
+    "failed": "Laufwege ließen sich nicht prüfen, die Strecken sind geschätzt.",
+    "attribution": "Laufwege: FOSSGIS-Routing, Kartendaten © OpenStreetMap-Mitwirkende",
+    "fixMap": "Karte verbessern"
   },
   "detail": {
     "stat": {
@@ -221,7 +230,12 @@
     "ignored": "Ignorierte Caches ({count})",
     "ignored_one": "Ignorierter Cache ({count})",
     "noneIgnored": "Du ignorierst keinen Cache.",
-    "unignore": "{code} nicht mehr ignorieren"
+    "unignore": "{code} nicht mehr ignorieren",
+    "routes": {
+      "title": "Laufwege",
+      "toggle": "Trails auf echten Fußwegen prüfen",
+      "help": "Sendet die Koordinaten der Trail-Caches an den Routing-Server der FOSSGIS (routing.openstreetmap.de). Dann folgen die Strecken echten Fußwegen, und Trails werden getrennt, wo eine Autobahn, ein Fluss oder ein anderes Hindernis zwischen zwei Caches liegt. Ausgeschaltet bleibt alles auf diesem Gerät, und Strecken sind Luftlinie mal Umwegfaktor."
+    }
   },
   "cacheType": {
     "traditional": "Traditional",

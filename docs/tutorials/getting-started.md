@@ -32,7 +32,9 @@ Open PowerTrailBuddy and choose **Import Pocket Query**, then pick the
 shows the app with invented caches. On Android, after installing the app (step 6), you can also
 **share** the file to PowerTrailBuddy straight from your e-mail or files app.
 
-The app reads the caches into your browser. Nothing is uploaded.
+The app reads the caches into your browser. Nothing is uploaded (unless you
+later turn on walking routes in the settings, which sends trail caches'
+coordinates to a routing server).
 
 ## 4. Pick a trail
 

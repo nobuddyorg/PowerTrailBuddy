@@ -18,11 +18,14 @@ caches — in the user's own Geocaching.com **Pocket Query** files, and guides a
 - **Backend**: none. No server, no account, no login, no API of its own.
 - **Data**: only files the user imports — a Pocket Query `.zip` or `.gpx`
   files, through a file picker or the Android share sheet (Web Share Target,
-  handled by the service worker). Everything stays in the browser (IndexedDB,
-  Cache Storage, `localStorage`). The only network requests are OpenStreetMap
-  tiles.
-- **Distances**: walking only, straight-line haversine times a detour factor;
-  no routing service.
+  handled by the service worker). Everything is stored in the browser
+  (IndexedDB, Cache Storage, `localStorage`). The network requests are
+  OpenStreetMap tiles and, only once the user opts in, FOSSGIS's public OSRM
+  foot router (`routing.openstreetmap.de`).
+- **Distances**: walking only. Straight-line haversine times a detour factor
+  by default; with walking routes on, routed foot distances where known, and a
+  gap whose walk is far longer than its straight line (a motorway, a river)
+  splits a trail.
 - **Deploy**: `pages-deploy.yml` builds and publishes to GitHub Pages under
   `/PowerTrailBuddy`, once CI has passed on the merge commit on `main`, then
   runs the browser suite against the live site. No staging.
@@ -46,11 +49,17 @@ design-decisions.md, not here.
   credential handling, a login to Geocaching.com, or any other unofficial
   access to geocaching.com or its API — its terms of use forbid automated
   access, and the official API is for licensed partners only.
-- **Nothing leaves the device.** Never send cache data, settings, positions or
-  anything else the user has to any server: no analytics, no error reporting
-  service, no sync, no routing or geocoding API. The CSP's `connect-src 'self'`
-  and the browser suite's foreign-origin check enforce this; never relax
-  either. OpenStreetMap tiles are the one outside request.
+- **Nothing leaves the device unasked.** The one exception is the opt-in
+  walking-routes setting (off by default), which sends trail caches'
+  coordinates, and nothing else, to `routing.openstreetmap.de`. Never send
+  settings, positions, cache data beyond that, or anything else to any server:
+  no analytics, no error reporting service, no sync, no geocoding API, no
+  other router. Honour FOSSGIS's usage policy: at most one request a second,
+  a per-visit cap, attribution and a "fix the map" link. The CSP's
+  `connect-src 'self' https://routing.openstreetmap.de` and the browser
+  suite's foreign-origin check (strict unless a spec sets `allowRouter`)
+  enforce this; never relax either further. OpenStreetMap tiles are the other
+  outside request.
 - **Synthetic fixtures only.** Test data uses invented cache codes, names and
   coordinates. Never copy a real listing, a real Pocket Query, or a real
   person's data into the repository.

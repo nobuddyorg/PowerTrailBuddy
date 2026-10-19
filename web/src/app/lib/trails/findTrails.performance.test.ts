@@ -27,11 +27,10 @@ describe('findTrails at the largest realistic import', () => {
     const settings = { ...DEFAULT_TRAIL_SETTINGS, maxWalkKilometers: 1000 };
 
     const started = performance.now();
-    const found = findTrails(
-      [...scattered, ...trails, ...longTrail],
+    const found = findTrails([...scattered, ...trails, ...longTrail], {
       settings,
-      new Set(),
-    );
+      locallyFound: new Set(),
+    });
     const elapsed = performance.now() - started;
 
     expect(found.some((trail) => trail.caches.length >= 1500)).toBe(true);

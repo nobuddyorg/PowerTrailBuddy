@@ -16,6 +16,7 @@ import {
   loadPreferences,
   loadSettings,
   loadWalk,
+  loadWalkingDistances,
   saveCaches,
   saveIgnored,
   saveImportInfo,
@@ -23,6 +24,7 @@ import {
   savePreferences,
   saveSettings,
   saveWalk,
+  saveWalkingDistances,
 } from './store';
 
 // IndexedDB as idb-keyval presents it: databases of key/value stores, values structured-cloned in and out.
@@ -264,7 +266,12 @@ describe('clearAllData', () => {
     await saveLocallyFound(new Set(['GC0A']));
     await saveWalk(WALK);
     await saveIgnored(new Set(['GC0B']));
-    await savePreferences({ sort: 'nearest', showOtherCaches: false });
+    await savePreferences({
+      sort: 'nearest',
+      showOtherCaches: false,
+      walkingRoutes: true,
+    });
+    await saveWalkingDistances(new Map([['a|b', 120]]));
     await saveImportInfo({
       at: '2026-05-01T08:00:00Z',
       cacheCount: 1,
@@ -284,6 +291,7 @@ describe('clearAllData', () => {
     expect(await loadIgnored()).toEqual(new Set());
     expect(await loadPreferences()).toEqual(DEFAULT_PREFERENCES);
     expect(await loadImportInfo()).toBeUndefined();
+    expect(await loadWalkingDistances()).toEqual(new Map());
   });
 });
 
@@ -307,37 +315,82 @@ describe('preferences', () => {
     expect(await loadPreferences()).toEqual({
       sort: 'rate',
       showOtherCaches: true,
+      walkingRoutes: false,
     });
   });
 
   it('reads back what was saved', async () => {
-    await savePreferences({ sort: 'shortest', showOtherCaches: false });
+    const saved = {
+      sort: 'shortest',
+      showOtherCaches: false,
+      walkingRoutes: true,
+    } as const;
+    await savePreferences(saved);
 
-    expect(await loadPreferences()).toEqual({
-      sort: 'shortest',
-      showOtherCaches: false,
-    });
-    expect(stored('preferences')).toEqual({
-      sort: 'shortest',
-      showOtherCaches: false,
-    });
+    expect(await loadPreferences()).toEqual(saved);
+    expect(stored('preferences')).toEqual(saved);
   });
 
   it('defaults each value it cannot read on its own', async () => {
-    storeRaw('preferences', { sort: 'random', showOtherCaches: false });
+    storeRaw('preferences', {
+      sort: 'random',
+      showOtherCaches: false,
+      walkingRoutes: true,
+    });
     expect(await loadPreferences()).toEqual({
       sort: 'rate',
       showOtherCaches: false,
+      walkingRoutes: true,
     });
 
-    storeRaw('preferences', { sort: 'caches', showOtherCaches: 'no' });
+    storeRaw('preferences', {
+      sort: 'caches',
+      showOtherCaches: 'no',
+      walkingRoutes: 'yes',
+    });
     expect(await loadPreferences()).toEqual({
       sort: 'caches',
       showOtherCaches: true,
+      walkingRoutes: false,
     });
 
     storeRaw('preferences', ['caches']);
     expect(await loadPreferences()).toEqual(DEFAULT_PREFERENCES);
+  });
+});
+
+describe('walking distances', () => {
+  it('reads none before any were saved, and back what was saved, unroutable pairs included', async () => {
+    expect(await loadWalkingDistances()).toEqual(new Map());
+    const distances = new Map([
+      ['a|b', 120],
+      ['a|c', Infinity],
+    ]);
+    await saveWalkingDistances(distances);
+
+    expect(await loadWalkingDistances()).toEqual(distances);
+    expect(stored('walking-distances')).toEqual(distances);
+  });
+
+  it('keeps only readable entries from a value in an unexpected shape', async () => {
+    storeRaw(
+      'walking-distances',
+      new Map<unknown, unknown>([
+        ['a|b', 0],
+        ['a|c', -1],
+        ['a|d', '12'],
+        [7, 12],
+        ['a|e', Infinity],
+      ]),
+    );
+    expect(await loadWalkingDistances()).toEqual(
+      new Map([
+        ['a|b', 0],
+        ['a|e', Infinity],
+      ]),
+    );
+    storeRaw('walking-distances', [['a|b', 1]]);
+    expect(await loadWalkingDistances()).toEqual(new Map());
   });
 });
 
@@ -380,6 +433,7 @@ describe('when storage refuses a write', () => {
     ['saveWalk(undefined)', () => saveWalk(undefined)],
     ['saveIgnored', () => saveIgnored(new Set(['GC0A']))],
     ['savePreferences', () => savePreferences(DEFAULT_PREFERENCES)],
+    ['saveWalkingDistances', () => saveWalkingDistances(new Map())],
     [
       'saveImportInfo',
       () => saveImportInfo({ at: 'x', cacheCount: 0, fileNames: [] }),
