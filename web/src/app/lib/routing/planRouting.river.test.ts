@@ -101,5 +101,7 @@ describe('routingBatches across a river with no bridge nearby', () => {
         expect(new Set(group.map(northOfRiver)).size).toBe(1);
       expect(requests).toBeLessThanOrEqual(MAX_REQUESTS);
     },
+    // Dozens of planner rounds over 288 caches: under Stryker's instrumentation they pass the 5 s default.
+    30_000,
   );
 });
