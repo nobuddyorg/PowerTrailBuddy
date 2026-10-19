@@ -76,6 +76,7 @@ export interface Geocache extends Coordinates {
   placedBy: string;      // '' when absent
   hint: string;          // groundspeak:encoded_hints, '' when none
   recentLogs: RecentLog[];   // { type: 'found' | 'dnf' | 'note' | 'maintenance' | 'disabled' | 'other'; date: 'YYYY-MM-DD' }, newest first, at most 5
+  sources: string[];         // the queries that delivered it (sourceName of each GPX file), sorted; [] from parseGpx and for a cache stored before sources were kept
   parking?: Coordinates;     // the nearest 'Parking Area' additional waypoint of this cache in the same import
 }
 ```
@@ -100,12 +101,9 @@ before the XML declaration is tolerated.
   skipped and counted.
 - An additional waypoint whose `<sym>` or `<type>` is `Parking Area` (or
   `Waypoint|Parking Area`) is returned in `parkingAreas`.
-- Logs map to `RecentLog` types (`recentLogs.ts`): `Found it`, `Attended`,
-  `Webcam Photo Taken` → found; `Didn't find it` → dnf; `Write note` → note;
-  `Needs Maintenance`, `Needs Archived` → maintenance; `Temporarily Disable
-  Listing` → disabled; anything else, `Owner Maintenance` and `Enable Listing`
-  included (they clear a problem), → other. A log without a readable date is
-  dropped; logs of one day keep the file's order.
+- Logs map to `RecentLog` types (`recentLogs.ts`, compared
+  case-insensitively, `’` read as `'`) as in the table below. A log without a
+  readable date is dropped; logs of one day keep the file's order.
 - `groundspeak:type` maps to `CacheType`: `Traditional Cache` → traditional,
   `Multi-cache` → multi, `Unknown Cache` / `Mystery Cache` → mystery,
   `Letterbox Hybrid` → letterbox, `Wherigo Cache` → wherigo, `Earthcache` →
@@ -115,10 +113,21 @@ before the XML declaration is tolerated.
   case-insensitively; missing means available and not archived. `found` is
   `<sym>Geocache Found</sym>`, case-insensitive.
 
+| `groundspeak:type` of a log | `RecentLog` type | Effect on `cacheHealth` as the newest log |
+| --- | --- | --- |
+| `Found it`, `Attended`, `Webcam Photo Taken` | found | none |
+| `Didn't find it` | dnf | two in a row: `dnf-streak` |
+| `Write note` | note | none |
+| `Needs Maintenance`, `Needs Archived` | maintenance | `needs-maintenance` |
+| `Temporarily Disable Listing` | disabled | none (`available` decides `disabled`) |
+| `Owner Maintenance`, `Enable Listing`, `Update Coordinates`, `Post Reviewer Note` | other | none: the owner or a reviewer acted, which clears an earlier warning |
+| `Publish Listing`, `Retract Listing`, `Archive`, `Permanently Archived`, `Unarchive`, `Will Attend`, `Announcement`, anything else | other | none (`archived` keeps an archived cache out of every trail) |
+
 ### `lib/geocache/importFiles.ts`
 
 `importFiles(files: readonly File[]): Promise<ImportResult>`,
-`ImportResult = { caches: Geocache[]; files: ImportedFile[] }`,
+`ImportResult = { caches: Geocache[]; files: ImportedFile[]; sources:
+string[] }`,
 `ImportedFile = { name: string; cacheCount: number; error?: 'unsupported' |
 'unreadable' | 'too-large' }`.
 
@@ -141,7 +150,16 @@ Files are read one after another; the extension decides, case-insensitively.
 - A file without an extension is sniffed: `PK\x03\x04` is a zip, a leading
   `<` (after a BOM and whitespace, within the first 1 KB) a GPX. Any other
   extension (`.xml`, `.kml`, …) is `unsupported`.
-- Caches are deduplicated by code; a later file wins. Parking areas from every
+- Each GPX document read, a file or a zip entry, is a query named
+  `sourceName(fileName)`: the base name without folder, `.gpx` extension or the
+  number in brackets a browser adds to a repeated download, trimmed and
+  lower-cased (`26071826 (1).gpx` → `26071826`). A Pocket Query's zip holds
+  `<id>.gpx`, so the entry's name, not the zip's, names it. Its caches carry
+  that name in `sources`; `ImportResult.sources` lists every document that
+  parsed, sorted and once each, a `-wpts.gpx` or one without caches included.
+  A refused file or archive names none.
+- Caches are deduplicated by code; a later file wins, with the sources of
+  every file that had the cache. Parking areas from every
   file and entry of one import are matched to caches after that (`parking.ts`:
   a parking area named like the cache code with another two-letter prefix,
   `GC1ABCD` → `PK1ABCD`; the nearest wins), so a `*-wpts.gpx` gives parking to
@@ -151,13 +169,23 @@ Files are read one after another; the extension decides, case-insensitively.
 
 The importer relies on two JSZip details its typings leave out:
 `internalStream(type)` and each entry's declared size in
-`_data.uncompressedSize`. A JSZip upgrade that changes either fails the limit
+`_data.uncompressedSize`. A JSZip upgrade that changes either fails
+`importFiles.jszip.test.ts`, with a message pointing here, before the limit
 tests.
 
 ### `lib/geocache/mergeCaches.ts`
 
-`mergeCaches(existing, incoming): Geocache[]` — union by code, incoming wins.
-Merging the same import twice changes nothing.
+`mergeCaches(existing, { caches, sources }): { caches: Geocache[];
+removedCount: number }` — union by code, incoming wins, in place, new ones
+appended. A query in `sources` replaces its earlier caches: an existing cache
+loses each of its sources the import read, and is dropped once none is left
+and the import does not list it, so a cache another query still lists stays.
+A cache without sources (stored before they were kept) always stays.
+`removedCount` is the number dropped. Merging the same import twice changes
+nothing. `sourcesOf(...lists)` (also used by the importer) is every query
+named in the lists, once each, in code-unit order (`compareCodes`). The marks of a dropped cache (`locally-found`, `ignored`) stay: they
+are codes, harmless without their cache, and apply again if a query brings
+it back.
 
 ### `lib/trails/types.ts`
 
@@ -351,7 +379,7 @@ Everything the app keeps, all in the user's browser, all per origin.
 
 | Where | Key | Holds | Written by |
 | --- | --- | --- | --- |
-| IndexedDB database `powertrailbuddy`, object store `state` | `caches` | `Geocache[]`, the merged imports | `data/store.ts` |
+| IndexedDB database `powertrailbuddy`, object store `state` | `caches` | `Geocache[]`, the merged imports, each with the queries that delivered it (`sources`; read as `[]` when missing or not a list of strings, as from a build before them) | `data/store.ts` |
 | same | `settings` | `TrailSettings` | `data/store.ts` |
 | same | `locally-found` | `string[]` of codes marked found in the app (by hand or on a walk) | `data/store.ts` |
 | same | `ignored` | `string[]` of codes the user chose to ignore | `data/store.ts` |
@@ -361,6 +389,7 @@ Everything the app keeps, all in the user's browser, all per origin.
 | same | `walking-distances` | `Map<string, number>` of routed walking metres by cache pair (`Infinity` where no path) | `data/store.ts` |
 | Cache Storage | `powertrailbuddy-shell-<build id>` | The app shell and hashed assets of one build | `public/sw.js` |
 | Cache Storage | `powertrailbuddy-shared-files` | Files received by the share target until the page imports them | `public/sw.js`, emptied by `data/sharedFiles.ts` |
+| Cache Storage | `powertrailbuddy-tiles` | Up to 2,000 OpenStreetMap tiles the map showed, each with the time it was kept | `public/sw.js` |
 | `localStorage` | `lang` | `de` or `en` | `i18n/I18nProvider.tsx` |
 
 `clearAllData()` removes the eight IndexedDB keys; the language choice and
@@ -375,8 +404,10 @@ to this table in the same change.
 Registration happens only in a production build (`NODE_ENV === 'production'`),
 so `next dev` never pins its changing chunks.
 
-- **Precache**: `npm run build` runs `scripts/precache-manifest.mjs` after
-  `next build`, which writes `out/precache-manifest.json`: every file under
+- **Precache**: `scripts/precache-manifest.mjs` is a Next.js adapter
+  (`adapterPath` in `next.config.ts`) whose `onBuildComplete` runs once
+  `next build` has written the export, so every build writes
+  `out/precache-manifest.json`: every file under
   `_next/static/` (source maps left out), the lazily loaded map chunk and
   Leaflet's images included. On `install` the worker fetches that list and
   adds `<base>/`, the shell files below and every listed asset to its build's
@@ -387,12 +418,27 @@ so `next dev` never pins its changing chunks.
 - **Caching**: cache-first for hashed `/_next/static/**`, network-first for
   navigations and the files every page links by URL (the manifest,
   `logo.svg`, `favicon.ico`, `favicon-32x32.png`, `apple-touch-icon.png`),
-  one shell cache per build. Offline, a navigation is answered by the kept
-  page whatever its query, so the share target's `?shared=1` landing opens
-  too. On activation it deletes every `powertrailbuddy-shell-*` cache but
-  the current one. The prefix spares the shared-files cache and other sites'
-  caches on the shared `github.io` origin. Cross-origin requests (map tiles,
-  the routing server) are never intercepted.
+  one shell cache per build. Network-first waits `NETWORK_TIMEOUT_MS` (3 s)
+  for an answer; offline, or past that on a weak signal, the request is
+  answered by the kept page whatever its query, so the share target's
+  `?shared=1` landing opens too, and a late answer still updates the kept
+  copy. With nothing kept it waits for the network after all. On activation
+  it deletes every `powertrailbuddy-shell-*` cache but the current one. The
+  prefix spares the shared-files and tile caches and other sites' caches on
+  the shared `github.io` origin.
+- **Map tiles**: a GET of `https://tile.openstreetmap.org/{z}/{x}/{y}.png`
+  (the map loads them with CORS, `crossOrigin` in `components/Map/`, so the
+  response is readable) is answered cache-first from
+  `powertrailbuddy-tiles`. A tile kept for less than `MAX_TILE_AGE_MS`
+  (7 days, stamped in the kept copy's `x-powertrailbuddy-kept-at` header) is
+  served without a request; an older one is fetched again, and still served
+  when the network fails or refuses. A fetched tile is kept, and the cache
+  then trimmed to `MAX_TILES` (2,000) entries, oldest first (putting a tile
+  again moves it to the end). Offline with nothing kept, the answer is a
+  `504`, never a rejected fetch. Only tiles the map asked for are kept;
+  nothing is fetched in advance (the OpenStreetMap tile usage policy forbids
+  bulk downloads). Every other cross-origin request, the routing server
+  included, is never intercepted.
 - **Share target**: the manifest declares
 
   ```json
@@ -438,7 +484,7 @@ both.
 
 | To | What it learns | When |
 | --- | --- | --- |
-| `tile.openstreetmap.org` | The map area on screen | Whenever the map shows |
+| `tile.openstreetmap.org` | The map area on screen | Whenever the map shows an area whose tiles are not kept, or kept for more than a week |
 | `routing.openstreetmap.de` (FOSSGIS OSRM, foot) | Coordinates of caches in candidate trails, in batches of 50 | Only with walking routes on (Settings, off by default); at most one request a second and 60 a page load; never a pair already stored |
 
 Nothing else (settings, positions, logs, names, codes) leaves the device. The

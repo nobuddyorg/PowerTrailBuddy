@@ -58,11 +58,21 @@ it read from how many files, and why it refused a file:
   any file over 100 MB.
 
 Importing again adds to what is already there: a cache imported twice is
-kept once, the newer file's details winning. Importing never removes a cache:
-one a fresh run of the query leaves out, because it was archived, disabled or
-found online since, stays as it was until you ignore it or delete your data.
+kept once, the newer file's details winning. A newer run of the same Pocket
+Query replaces that query's caches: one it no longer lists, because it was
+archived, disabled or found online since, is removed, and the summary says
+how many went. The app knows a query by the name of its `.gpx` file (a
+Pocket Query's is its number, as in `26071826.gpx`, inside the zip too), so
+renaming the zip or downloading it twice changes nothing. Caches of other
+queries stay, so several queries for a bigger area work side by side; a cache
+two queries list stays while either still does. Caches imported before this
+version know no query and stay until you delete your data or ignore them.
 Parking areas in the `*-wpts.gpx` of a Pocket Query are attached to their
 caches.
+
+Name other GPX files you import (from GSAK, c:geo, …) after what they hold:
+importing a different area under the same file name replaces the first
+area's caches.
 
 ## Share a file to the app (Android)
 
@@ -77,6 +87,8 @@ app then says that no file arrived.
 iOS does not let web apps receive shared files; use **Import** there.
 
 ## Pick a trail
+
+<img src="../images/phone-trails.png" alt="The trail list on a phone: three numbered trails on the map above, ranked cards with caches per hour below" width="280">
 
 Trails are numbered best first: most caches per hour, then most caches. Each
 card shows its number of caches, walking distance and time, caches per hour,
@@ -100,6 +112,8 @@ Long chains are split into several walks no longer than the
 [maximum walk length](#change-the-trail-settings).
 
 ## Look at a trail
+
+<img src="../images/phone-trail.png" alt="A trail on a phone: its numbers, the nearest parking, Start walk and the caches in walking order" width="280">
 
 A trail shows its numbers, the nearest parking with a link that opens your
 navigation app, and its caches in walking order. **Reverse** walks it the
@@ -125,6 +139,8 @@ bring one back, and forgets every cache marked found at once.
 
 ## Walk a trail
 
+<img src="../images/phone-walk.png" alt="A walk on a phone: the next cache with its distance, direction and compass, and the Found, Not found and Skip buttons" width="280">
+
 **Start walk** begins at the first cache of the order shown; once the app
 knows where you are, **Start at the nearest end** begins at whichever end is
 closer. The walk shows the next cache, its distance and direction with a
@@ -148,6 +164,8 @@ visit at once. **Share** sends a short summary through your phone's share
 sheet. **Back to trails** ends the walk.
 
 ## Change the trail settings
+
+<img src="../images/phone-settings.png" alt="The settings on a phone: language, install, presets and the trail limits" width="280">
 
 Under **Settings** (full screen on a phone): a preset (**Standard**, **Classic power trail**,
 **Relaxed**) or your own largest gap between two caches and fewest caches per
@@ -195,7 +213,9 @@ caches are stored, and when and from which files you last imported.
 marked found or ignored, any walk in progress and the stored walking routes
 from this browser, after asking. Nothing else holds a copy; the routing server
 keeps only its own request log of the coordinates it was asked about, if you
-turned walking routes on.
+turned walking routes on. The kept map tiles stay: they are OpenStreetMap's
+pictures of the areas you viewed, and your browser's site settings remove
+them.
 
 ## Install the app
 
@@ -205,8 +225,14 @@ turned walking routes on.
 
 Installed, the app opens full screen and works offline once it has been
 loaded, with your trails and any walk in progress; an **Offline** badge shows
-while there is no connection. The map needs a connection for areas you have
-not viewed.
+while there is no connection. On a weak signal it opens its kept copy after
+about three seconds instead of waiting for the network.
+
+The map keeps the tiles you viewed while online (the latest 2,000 or so, about
+30–50 MB), so a trail you looked at at home still has its map in the woods.
+An area you have not viewed stays blank offline: OpenStreetMap's rules forbid
+downloading areas in advance. A kept tile is fetched again after a week, when
+there is a connection.
 
 ## Language
 

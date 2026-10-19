@@ -23,6 +23,17 @@ that are close to each other, puts them in a sensible walking order, splits
 long chains into walks of a length you choose, and ranks them by caches per
 hour. Then it guides you through one, cache by cache, on a map.
 
+![A trail on the desktop: its caches on the map, its numbers and the caches in walking order beside it](docs/images/desktop-trail.png)
+
+<p>
+  <img src="docs/images/phone-trails.png" alt="The ranked trails on a phone" width="200">
+  <img src="docs/images/phone-trail.png" alt="A trail on a phone" width="200">
+  <img src="docs/images/phone-walk.png" alt="A walk on a phone, guiding to the next cache" width="200">
+</p>
+
+The screenshots use the bundled sample data; the map background is left
+plain, as they are taken without the tile server.
+
 ## Features
 
 - **Import only, nothing leaves your device unasked**: open a Pocket Query
@@ -30,7 +41,8 @@ hour. Then it guides you through one, cache by cache, on a map.
   files app. No login, no server, no tracking; the map is fetched from the
   internet, and trail caches' coordinates go to a routing server only if you
   turn on walking routes. **Try with sample data** shows the app before you
-  have a Pocket Query.
+  have a Pocket Query. A newer run of the same query replaces its caches, so
+  what was archived or found since leaves your trails.
 - **Walking routes** (opt-in): distances on real footpaths from
   OpenStreetMap's routing server, and trails split where a motorway or river
   lies between two caches.
@@ -52,7 +64,8 @@ hour. Then it guides you through one, cache by cache, on a map.
   app.
 - **Mark found or ignore** caches in the app, so they leave every trail.
 - **Installable** on Android and iOS as an app that works offline once
-  loaded.
+  loaded, with the map tiles you viewed online, and opens without waiting on
+  a weak signal.
 - **Bilingual**: German and English.
 
 ## Using PowerTrailBuddy
