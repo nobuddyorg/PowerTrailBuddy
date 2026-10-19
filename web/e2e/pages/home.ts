@@ -1,21 +1,16 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
-type Language = 'de' | 'en';
-
 interface Home {
   (): Locator;
   do: {
     open(path?: string): Promise<void>;
     reload(): Promise<void>;
     dismissImportSummary(): Promise<void>;
-    switchLanguage(language: Language): Promise<void>;
   };
   locators: {
     buttons: {
       data: Locator;
-      install: Locator;
       settings: Locator;
-      language(language: Language): Locator;
     };
     errorNotice: Locator;
     importSummary: Locator;
@@ -36,10 +31,7 @@ export function initHome(page: Page): Home {
   const locators = {
     buttons: {
       data: root.getByTestId('open-data'),
-      install: root.getByTestId('install-app'),
       settings: root.getByTestId('open-settings'),
-      language: (language: Language) =>
-        root.getByTestId(`language-${language}`),
     },
     errorNotice: root.getByTestId('error-notice'),
     importSummary: root.getByTestId('import-summary'),
@@ -62,10 +54,6 @@ export function initHome(page: Page): Home {
     dismissImportSummary: async () => {
       await root.getByTestId('import-summary-dismiss').click();
       await expect(locators.importSummary).toBeHidden();
-    },
-    switchLanguage: async (language: Language) => {
-      await locators.buttons.language(language).click();
-      await expect(page.locator('html')).toHaveAttribute('lang', language);
     },
   };
   return Object.assign(() => root, { locators, do: interactions });

@@ -16,6 +16,7 @@ import {
 import { cacheTypeLabel, type Translate } from '../labels';
 import { Modal } from '../Modal';
 import { buttonClasses, CHIP_CLASSES } from '../ui/classes';
+import { AppSettings } from './AppSettings';
 import {
   CACHE_TYPES,
   draftErrors,
@@ -92,6 +93,9 @@ interface SettingsDialogProps {
   /** Opted in to the routing server; changes at once, unlike the draft above. */
   walkingRoutes: boolean;
   onWalkingRoutesChange: (walkingRoutes: boolean) => void;
+  /** The browser's install offer, kept by the app since it comes only once. */
+  canInstall: boolean;
+  onInstall: () => void;
   onClose: () => void;
 }
 
@@ -105,6 +109,8 @@ export function SettingsDialog({
   onUnignore,
   walkingRoutes,
   onWalkingRoutesChange,
+  canInstall,
+  onInstall,
   onClose,
 }: SettingsDialogProps) {
   const { t, tCount, locale } = useI18n();
@@ -161,6 +167,7 @@ export function SettingsDialog({
     <Modal
       title={t('settings.title')}
       onClose={onClose}
+      phoneLayout="fullScreen"
       testId="settings-dialog"
     >
       <form
@@ -280,6 +287,7 @@ export function SettingsDialog({
           </button>
         </div>
         <div className="space-y-4 border-t border-border pt-4">
+          <AppSettings canInstall={canInstall} onInstall={onInstall} />
           <section className="space-y-1">
             <h3 className="text-sm font-semibold">
               {t('settings.routes.title')}

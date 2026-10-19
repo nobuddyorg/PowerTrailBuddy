@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -259,6 +260,24 @@ describe('App', () => {
     fireEvent.click(await screen.findByTestId('trail-card'));
     fireEvent.click(button('Start walk'));
     expect(await screen.findByTestId('walk-view')).toBeInTheDocument();
+  });
+
+  // The browser makes its offer once, early: the app keeps it until the settings show it.
+  it('keeps the install offer for the settings, and spends it there', async () => {
+    renderApp();
+    await screen.findByTestId('empty-state');
+    const prompt = vi.fn().mockResolvedValue(undefined);
+    act(() => {
+      window.dispatchEvent(
+        Object.assign(new Event('beforeinstallprompt'), { prompt }),
+      );
+    });
+    fireEvent.click(button('Settings'));
+    fireEvent.click(button('Install app'));
+    expect(prompt).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole('button', { name: 'Install app' }),
+    ).not.toBeInTheDocument();
   });
 
   it('says when the stored data cannot be read', async () => {

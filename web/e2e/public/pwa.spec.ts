@@ -106,15 +106,18 @@ test.describe('the installable app', () => {
   }) => {
     const app = on(page);
     await app.home.do.open();
-    await expect(app.home.locators.buttons.install).toBeHidden();
+    await app.settings.do.open();
+    await expect(app.settings.locators.buttons.install).toBeHidden();
 
     await offerInstall(page);
-    await app.home.locators.buttons.install.click();
+    await app.settings.do.install();
 
     await expect(page.locator('html')).toHaveAttribute(
       'data-install-prompted',
       'yes',
     );
-    await expect(app.home.locators.buttons.install).toBeHidden();
+    await app.settings.do.close();
+    await app.settings.do.open();
+    await expect(app.settings.locators.buttons.install).toBeHidden();
   });
 });

@@ -59,7 +59,7 @@ test.describe('the language the app speaks', () => {
       await expect(on(page).emptyState.locators.title).toHaveText(GERMAN_TITLE);
     });
 
-    test('switches language from the header and keeps it', async ({
+    test('switches language in the settings and keeps it', async ({
       on,
       page,
     }) => {
@@ -68,12 +68,13 @@ test.describe('the language the app speaks', () => {
       await app.emptyState.do.importFiles([await pocketQueryZip()]);
       await expect(app.trails.locators.count).toHaveText('2 trails');
 
-      await app.home.do.switchLanguage('de');
+      await app.settings.do.open();
+      await app.settings.do.switchLanguage('de');
+      await expect(
+        app.settings.locators.buttons.language('de'),
+      ).toHaveAttribute('aria-pressed', 'true');
+      await app.settings.do.close();
       await expect(app.trails.locators.count).toHaveText('2 Trails');
-      await expect(app.home.locators.buttons.language('de')).toHaveAttribute(
-        'aria-pressed',
-        'true',
-      );
 
       await app.home.do.reload();
       await expect(page.locator('html')).toHaveAttribute('lang', 'de');

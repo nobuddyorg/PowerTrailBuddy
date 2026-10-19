@@ -149,7 +149,7 @@ sheet. **Back to trails** ends the walk.
 
 ## Change the trail settings
 
-Under **Settings**: a preset (**Standard**, **Classic power trail**,
+Under **Settings** (full screen on a phone): a preset (**Standard**, **Classic power trail**,
 **Relaxed**) or your own largest gap between two caches and fewest caches per
 trail; the longest single walk, the highest difficulty and terrain, which
 cache types count, and the walking speed, minutes per cache and detour factor
@@ -196,7 +196,8 @@ turned walking routes on.
 
 ## Install the app
 
-- **Android / Chrome**: menu → **Install app**.
+- **Android / Chrome**: **Settings** → **Install app**, shown while the
+  browser offers it; otherwise menu → **Install app**.
 - **iOS / Safari**: Share → **Add to Home Screen**.
 
 Installed, the app opens full screen and works offline once it has been
@@ -206,5 +207,5 @@ not viewed.
 
 ## Language
 
-German by default, English if your browser prefers it; switch with **DE /
-EN** in the header, and the app keeps your choice.
+German by default, English if your browser prefers it; switch under
+**Settings** → **Language**, and the app keeps your choice.

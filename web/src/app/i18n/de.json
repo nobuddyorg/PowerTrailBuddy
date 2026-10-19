@@ -18,11 +18,7 @@
   "header": {
     "data": "Deine Daten",
     "settings": "Einstellungen",
-    "install": "App installieren",
-    "offline": "Offline",
-    "language": "Sprache",
-    "german": "DE",
-    "english": "EN"
+    "offline": "Offline"
   },
   "empty": {
     "title": "Finde die besten Powertrails in deiner Nähe",
@@ -235,6 +231,16 @@
       "title": "Laufwege",
       "toggle": "Trails auf echten Fußwegen prüfen",
       "help": "Sendet die Koordinaten der Trail-Caches an den Routing-Server der FOSSGIS (routing.openstreetmap.de). Dann folgen die Strecken echten Fußwegen, und Trails werden getrennt, wo eine Autobahn, ein Fluss oder ein anderes Hindernis zwischen zwei Caches liegt. Ausgeschaltet bleibt alles auf diesem Gerät, und Strecken sind Luftlinie mal Umwegfaktor."
+    },
+    "language": {
+      "title": "Sprache",
+      "german": "Deutsch",
+      "english": "English"
+    },
+    "install": {
+      "title": "App",
+      "button": "App installieren",
+      "help": "Legt PowerTrailBuddy auf deinen Startbildschirm; dort öffnet es im Vollbild und funktioniert offline."
     }
   },
   "cacheType": {
