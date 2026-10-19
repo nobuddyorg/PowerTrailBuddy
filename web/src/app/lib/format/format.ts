@@ -3,8 +3,6 @@
 // A no-break space, so a value never wraps away from its unit.
 const UNIT_SPACE = ' ';
 const METERS_PER_KILOMETER = 1000;
-// Below this a walker counts every metre; above it, tens are precision enough.
-const WHOLE_METERS_BELOW = 100;
 const MINUTES_PER_HOUR = 60;
 
 function decimal(value: number, locale: string, fractionDigits: number) {
@@ -16,10 +14,9 @@ function decimal(value: number, locale: string, fractionDigits: number) {
 
 /** "850 m" up to a kilometre, then "1,2 km" (German) or "1.2 km" (English). */
 export function formatDistance(meters: number, locale: string): string {
-  const rounded =
-    meters < WHOLE_METERS_BELOW
-      ? Math.round(meters)
-      : Math.round(meters / 10) * 10;
+  // Two significant digits, never finer than a metre: below 100 a walker counts every metre, above it tens will do.
+  const step = 10 ** Math.max(0, Math.floor(Math.log10(meters)) - 1);
+  const rounded = Math.round(meters / step) * step;
   if (rounded < METERS_PER_KILOMETER) {
     return `${decimal(rounded, locale, 0)}${UNIT_SPACE}m`;
   }
