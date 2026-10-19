@@ -43,10 +43,12 @@ hour. Then it guides you through one, cache by cache, on a map.
   requests or a disabled listing; sort, filter and search.
 - **Trail and cache details**: the nearest parking, the caches in walking
   order either way round, the latest logs and the hint, and links to the cache
-  page, your navigation app and Google Maps walking directions.
-- **Guided walk**: the next cache with distance, a compass arrow and a
-  "you're close" alert; found, not found, skip and undo; reverse or finish
-  early; progress kept if you close the app.
+  page, your navigation app and Google Maps walking directions; a cache on no
+  trail says why.
+- **Guided walk**, from either end or any cache you pick: the next cache
+  with distance, a compass arrow and a "you're close" alert; found, not
+  found, skip and undo; reverse or finish early; progress kept if you close
+  the app.
 - **Exports**: field notes to log a whole walk at once through
   geocaching.com's Drafts upload, and a trail as GPX for another navigation
   app.

@@ -221,6 +221,23 @@ test.describe('a cache', () => {
   });
 });
 
+test.describe('a cache in no trail', () => {
+  test('says which setting leaves it out, and opens the settings', async ({
+    on,
+    page,
+  }) => {
+    const app = on(page);
+    await app.trails.do.search('GCE2D01');
+    await app.trails.do.openSearchResult();
+
+    await expect(app.cache.locators.leftOutReasons).toHaveText([
+      'Difficulty 4 is above your limit of 2.',
+    ]);
+    await expect(app.cache.locators.buttons.startWalkHere).toBeHidden();
+    await app.cache.do.openSettingsFromReasons();
+  });
+});
+
 test.describe('changing your mind about a cache', () => {
   test('a find marked by mistake is undone from its toast', async ({
     on,

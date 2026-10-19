@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { filterCandidates } from './filterCaches';
+import { exclusionReasons, filterCandidates } from './filterCaches';
 import { makeCache } from './trails.test-support';
 import { DEFAULT_TRAIL_SETTINGS, type TrailSettings } from './types';
 
@@ -96,5 +96,58 @@ describe('filterCandidates', () => {
     expect(
       filterCandidates([], { settings, locallyFound: nothingFoundHere }),
     ).toEqual([]);
+  });
+});
+
+describe('exclusionReasons', () => {
+  const criteria = { settings, locallyFound: nothingFoundHere };
+
+  it('finds none for a candidate, even at the limits', () => {
+    expect(
+      exclusionReasons(makeCache({ difficulty: 2, terrain: 2 }), criteria),
+    ).toEqual([]);
+  });
+
+  it.each([
+    ['type', { type: 'mystery' as const }],
+    ['difficulty', { difficulty: 2.5 }],
+    ['terrain', { terrain: 2.5 }],
+    ['disabled', { available: false }],
+    ['archived', { archived: true }],
+    ['found', { found: true }],
+  ])('names %s', (reason, overrides) => {
+    expect(exclusionReasons(makeCache(overrides), criteria)).toEqual([reason]);
+  });
+
+  it('names a mark made in the app', () => {
+    expect(
+      exclusionReasons(makeCache({ code: 'GCA' }), {
+        settings,
+        locallyFound: new Set(['GCA']),
+      }),
+    ).toEqual(['marked']);
+  });
+
+  it('names every reason that applies, in a fixed order', () => {
+    const cache = makeCache({
+      code: 'GCA',
+      type: 'event',
+      difficulty: 5,
+      terrain: 5,
+      available: false,
+      archived: true,
+      found: true,
+    });
+    expect(
+      exclusionReasons(cache, { settings, locallyFound: new Set(['GCA']) }),
+    ).toEqual([
+      'type',
+      'difficulty',
+      'terrain',
+      'disabled',
+      'archived',
+      'found',
+      'marked',
+    ]);
   });
 });

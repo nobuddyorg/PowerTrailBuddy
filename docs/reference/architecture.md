@@ -197,7 +197,9 @@ routing planner.
    and terrain at most their maxima, `available && !archived && !found`, and
    not in `locallyFound` (the app passes the caches marked found and the
    ignored ones). The survivors are sorted by code, so input order cannot
-   matter.
+   matter. `exclusionReasons(cache, criteria)` names what leaves one cache
+   out (`type`, `difficulty`, `terrain`, `disabled`, `archived`, `found`,
+   `marked`), empty for a candidate; the cache view shows them.
 2. **Link** (`linkComponents.ts`): caches strictly closer than `maxGapMeters`
    are linked; the connected components are the candidate groups, in order of
    their first cache. Neighbours come from a grid spatial index, never all

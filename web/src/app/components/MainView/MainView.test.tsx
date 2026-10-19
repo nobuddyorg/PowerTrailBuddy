@@ -3,7 +3,7 @@ import { fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DEFAULT_PREFERENCES } from '../../data/store';
-import type { Trail } from '../../lib/trails/types';
+import { DEFAULT_TRAIL_SETTINGS, type Trail } from '../../lib/trails/types';
 import type { GeolocationState } from '../../useGeolocation';
 import type { RouteCheck } from '../../useWalkingDistances';
 import {
@@ -170,6 +170,43 @@ describe('MainView', () => {
     expect(tones()).toContainEqual(['GCONE2', 'target']);
     tap('All trails');
     expect(screen.getAllByTestId('trail-card')).toHaveLength(2);
+  });
+
+  it('starts the walk of a trail at the cache tapped on the map', () => {
+    const { props } = renderMain();
+    tap('map cache GCONE2');
+    tap('Start the walk here');
+    expect(props.app.startWalk).toHaveBeenCalledWith(FIRST, {
+      fromCode: 'GCONE2',
+    });
+  });
+
+  it('says why a cache is on no trail, and opens the settings that decide it', () => {
+    const { props } = renderMain({
+      app: makeApp({
+        caches: CACHES,
+        settings: { ...DEFAULT_TRAIL_SETTINGS, maxTerrain: 1 },
+      }),
+    });
+    tap('map cache GCLONE');
+    expect(screen.getByTestId('left-out-reason')).toHaveTextContent(
+      'Terrain 2 is above your limit of 1.',
+    );
+    tap('Open settings');
+    expect(props.onOpenSettings).toHaveBeenCalledTimes(1);
+  });
+
+  it('counts an ignored cache as marked, with no way to the settings', () => {
+    renderMain({
+      app: makeApp({ caches: CACHES, ignored: new Set(['GCLONE']) }),
+    });
+    tap('map cache GCLONE');
+    expect(screen.getByTestId('left-out-reason')).toHaveTextContent(
+      'You marked it as found or ignore it.',
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Open settings' }),
+    ).not.toBeInTheDocument();
   });
 
   it('goes back from a cache to the trail it was opened from', () => {

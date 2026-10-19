@@ -162,7 +162,19 @@
     "markFound": "Als gefunden markieren",
     "unmarkFound": "Doch nicht gefunden",
     "ignore": "Ignorieren",
-    "unignore": "Nicht mehr ignorieren"
+    "unignore": "Nicht mehr ignorieren",
+    "startWalkHere": "Tour hier starten",
+    "leftOut": {
+      "title": "In keinem Trail",
+      "type": "{type} gehört nicht zu deinen Cache-Typen für Trails.",
+      "difficulty": "Schwierigkeit {rating} liegt über deiner Grenze von {limit}.",
+      "terrain": "Gelände {rating} liegt über deiner Grenze von {limit}.",
+      "disabled": "Er ist deaktiviert.",
+      "archived": "Er ist archiviert.",
+      "found": "Laut Pocket Query hast du ihn schon gefunden.",
+      "marked": "Du hast ihn als gefunden markiert oder ignorierst ihn.",
+      "noTrail": "Er erfüllt deine Vorgaben, aber um ihn herum ergibt sich keine Tour mit mindestens {count} Caches."
+    }
   },
   "health": {
     "disabled": "Deaktiviert",

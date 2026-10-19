@@ -113,6 +113,18 @@ test.describe('walking a trail', () => {
     await expect(app.walk.locators.progress).toHaveText('1/11');
   });
 
+  test('can start at any cache of the trail', async ({ on, page }) => {
+    const app = on(page);
+    await app.trail.do.back();
+    await app.trails.do.search(codes[4]);
+    await app.trails.do.openSearchResult();
+
+    await app.cache.do.startWalkHere();
+
+    await expect(app.walk.locators.targetCode).toHaveText(codes[4]);
+    await expect(app.walk.locators.progress).toHaveText('0/11');
+  });
+
   test('can start from the other end of the trail', async ({ on, page }) => {
     const app = on(page);
     const first = await app.trail.row(0).locators.facts.textContent();
