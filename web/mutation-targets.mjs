@@ -49,3 +49,6 @@ export const MUTATE_TARGETS = [
   'src/app/env.ts',
   'src/app/i18n/translate.ts',
 ];
+
+// Mutated, but outside the coverage floor: the tests evaluate the worker's source text with `new Function`, which V8 coverage cannot attribute to the file.
+export const MUTATE_ONLY_TARGETS = ['public/sw.js'];

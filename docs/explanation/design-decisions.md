@@ -175,15 +175,40 @@ is a short Next.js adapter whose `onBuildComplete` runs at the end of every
 `next build`, so no way of building can leave the list out (a separate step
 after the build could be skipped, and the worker would then fail to install
 without a word). Its decision functions are kept as small named functions so
-`sw.test.ts` and `sw.strategies.test.ts` can extract and test them from the
-source text; shell caches are prefixed `powertrailbuddy-shell-` so the
+`sw.test.ts`, `sw.strategies.test.ts` and `sw.lifecycle.test.ts` can extract
+and test them from the source text; shell caches are prefixed `powertrailbuddy-shell-` so the
 cleanup can never delete the `powertrailbuddy-shared-files` cache a share is
 waiting in, or the `powertrailbuddy-tiles` cache.
 
 The shell is network-first so a deploy reaches users at once, but with a
 three-second limit: on one bar of signal a request neither answers nor
 fails for tens of seconds, and the walk the app exists for starts exactly
-there. Tiles are the opposite trade: cache-first for a week, because a map a
+there. The network's answer is never stored: after a deploy it is the next
+build's page, whose chunks the old build's cache lacks, and an offline start
+from it would never hydrate. A build's own install is the only writer of its
+shell cache, and that install already holds the page.
+
+A new worker still takes over at once (`skipWaiting`), since Pages serves only
+the new build and waiting for every window to close can take days on an
+installed app. What an open page of the previous build still needs, the
+lazily loaded map chunk and fonts, stays reachable because the install keeps
+the cache of the worker it replaces (read from the registration's `active`
+worker, so no record of the build order is kept) and deletes only older
+ones; cache-first looks in every shell cache of this app. Dropping
+`skipWaiting` instead would need a reload prompt and would leave the old
+build running until every window closed.
+
+Cache-first never searches the whole origin's caches: on GitHub Pages every
+project site of an account shares one `github.io` origin, so a sibling app's
+cache holding one of this app's URLs would otherwise be served as this app's
+script. The restriction is by name, so it stops accidents and blunt
+injection, not a sibling that writes into `powertrailbuddy-shell-*` itself;
+such an app can already read this app's IndexedDB and its `lang` key, and its
+scripts count as `'self'` under this app's CSP. That residue is inherent to
+the shared origin, and deploying under a custom domain (`PAGES_BASE_URL`)
+removes it ([risk model](../reference/risk-model.md)).
+
+Tiles are the opposite trade: cache-first for a week, because a map a
 few days old is as good for a walk and every tile not fetched is load off
 OpenStreetMap's volunteer-run servers. Only tiles already viewed are kept,
 since the tile usage policy forbids downloading an area in advance.
@@ -218,7 +243,9 @@ finder, the walk state — and a wrong answer there looks exactly like a right
 one. Mutation testing proves the tests would notice. It runs on the files in
 `web/mutation-targets.mjs`, the same list that gets a 100% per-file coverage
 floor, and never on rendering code, where mutants are near-equivalent by the
-thousand ([TEST_STRATEGY.md](../../TEST_STRATEGY.md) §11).
+thousand ([TEST_STRATEGY.md](../../TEST_STRATEGY.md) §11). The service worker
+is mutated too, from a list of its own: its tests evaluate the script's text,
+so V8 coverage cannot see it and mutation is its only gate.
 
 ## npm audit: what's accepted
 

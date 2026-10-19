@@ -25,7 +25,7 @@ passed.
 | Reading or writing browser storage | `web/src/app/data/` | Unit with a fake store |
 | UI | `web/src/app/components/<Name>/` | Component tests; one E2E case per journey |
 | Anything touching Leaflet | `web/src/app/components/Map/` only | E2E (the wrapper is excluded from unit coverage) |
-| Service worker behavior | `web/public/sw.js`, as small named functions | `web/src/app/sw.test.ts`, evaluating them from source |
+| Service worker behavior | `web/public/sw.js`, as small named functions | `web/src/app/sw*.test.ts`, evaluating them from source; mutation (no coverage floor) |
 | User-facing text | `t('area.key')` + both `de.json` and `en.json` | `parity.test.ts` |
 
 The boundaries are checked by `npm run depcruise`
@@ -76,9 +76,10 @@ cd web
 npm run test:mutation
 ```
 
-Stryker mutates exactly the files in [`mutation-targets.mjs`](../../web/mutation-targets.mjs),
-which `vitest.config.mts` also reads for its per-file 100% coverage floors, so
-the two cannot drift. It runs the suite through `vitest.mutation.config.mts`,
+Stryker mutates exactly the files in [`mutation-targets.mjs`](../../web/mutation-targets.mjs):
+`MUTATE_TARGETS`, which `vitest.config.mts` also reads for its per-file 100%
+coverage floors, so the two cannot drift, and `MUTATE_ONLY_TARGETS`
+(`public/sw.js`, which V8 coverage cannot measure). It runs the suite through `vitest.mutation.config.mts`,
 which leaves out the `*.performance.test.ts` timing tests. There is no `Stryker disable` or `/* v8 ignore */` in
 `src/`; a survivor is a missing assertion or dead code to delete.
 
@@ -203,7 +204,7 @@ grep -rn 'getByTestId\|getByRole\|locator(' web/e2e --include=*.spec.ts
   (`SW_ONLY_IN_CHROMIUM` in `e2e/helpers.ts`): Playwright drives service
   workers there alone, and its Firefox offline mode fails a navigation
   before the worker sees it. The worker's offline logic is unit-tested from
-  source in `sw.test.ts` for every engine.
+  source in `sw*.test.ts` for every engine.
 - `offerInstall(page)` fires the `beforeinstallprompt` event Chromium sends
   once the install criteria hold, which no headless run does by itself.
 - `bottom-sheet.spec.ts` sets a phone-sized viewport for every project, as the

@@ -27,19 +27,47 @@ function hangingFetch() {
 describe('cacheFirst', () => {
   const asset = `${ORIGIN}/PowerTrailBuddy/_next/static/chunks/1.js`;
 
-  it('answers from any cache without touching the network', async () => {
+  it.each([SHELL_CACHE, 'powertrailbuddy-shell-b0'])(
+    'answers from a shell cache of this app (%s) without touching the network',
+    async (cacheName) => {
+      const fake = installCaches();
+      await fake.storage.open('powertrailbuddy-shell-empty');
+      await (
+        await fake.storage.open(cacheName)
+      ).put(asset, new Response('cached'));
+      const fetch = vi.fn();
+      vi.stubGlobal('fetch', fetch);
+      const { worker } = loadWorker();
+
+      const response = await worker.cacheFirst(new Request(asset));
+
+      expect(await response.text()).toBe('cached');
+      expect(fetch).not.toHaveBeenCalled();
+    },
+  );
+
+  // Every project page of an account shares one github.io origin, and so one Cache Storage.
+  it("never answers from another app's cache, or from this app's other caches", async () => {
     const fake = installCaches();
-    await (
-      await fake.storage.open(SHELL_CACHE)
-    ).put(asset, new Response('cached'));
-    const fetch = vi.fn();
-    vi.stubGlobal('fetch', fetch);
+    await fake.storage.open(SHELL_CACHE);
+    for (const cacheName of [
+      'collectionbuddy-shell-1',
+      'powertrailbuddy-tiles',
+      'powertrailbuddy-shared-files',
+    ]) {
+      await (
+        await fake.storage.open(cacheName)
+      ).put(asset, new Response('planted'));
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('fresh')),
+    );
     const { worker } = loadWorker();
 
     const response = await worker.cacheFirst(new Request(asset));
 
-    expect(await response.text()).toBe('cached');
-    expect(fetch).not.toHaveBeenCalled();
+    expect(await response.text()).toBe('fresh');
   });
 
   it("fetches a miss and keeps it in this build's cache", async () => {
@@ -74,7 +102,8 @@ describe('cacheFirst', () => {
 describe('networkFirst', () => {
   const page = `${ORIGIN}/PowerTrailBuddy/`;
 
-  it("answers from the network and keeps the shell in this build's cache", async () => {
+  // The build's install is the only writer of its cache: a page from the network may be the next build's.
+  it('answers from the network and keeps nothing', async () => {
     const fake = installCaches();
     vi.stubGlobal(
       'fetch',
@@ -85,11 +114,12 @@ describe('networkFirst', () => {
     const response = await worker.networkFirst(new Request(page));
 
     expect(await response.text()).toBe('online');
-    await vi.waitFor(() => expect(fake.urls(SHELL_CACHE)).toEqual([page]));
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(fake.urls(SHELL_CACHE)).toEqual([]);
   });
 
-  it('never keeps a failed response', async () => {
-    const fake = installCaches();
+  it('passes a failed response on', async () => {
+    installCaches();
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => new Response('error', { status: 500 })),
@@ -97,7 +127,6 @@ describe('networkFirst', () => {
     const { worker } = loadWorker();
 
     expect((await worker.networkFirst(new Request(page))).status).toBe(500);
-    expect(fake.urls(SHELL_CACHE)).toEqual([]);
   });
 
   it('opens the last shell it kept when offline', async () => {
@@ -131,21 +160,39 @@ describe('networkFirst', () => {
     expect(worker.NETWORK_TIMEOUT_MS).toBe(3000);
   });
 
-  it('opens the kept shell when the network does not answer in time, and keeps the late answer', async () => {
+  it('opens the kept shell when the network does not answer in time', async () => {
     const fake = installCaches();
     await (
       await fake.storage.open(SHELL_CACHE)
     ).put(page, new Response('kept'));
-    const network = hangingFetch();
+    hangingFetch();
     const { worker } = loadWorker();
 
     const response = await worker.networkFirst(new Request(page), 5);
 
     expect(await response.text()).toBe('kept');
-    network.answer(new Response('late'));
-    await vi.waitFor(async () =>
-      expect(await (await caches.match(page))?.text()).toBe('late'),
+  });
+
+  // After a deploy, on a weak signal: the next build's page arrives late, and its chunks are in no cache.
+  it("still opens this build's page offline after the next build's page arrived late", async () => {
+    const fake = installCaches();
+    await (
+      await fake.storage.open(SHELL_CACHE)
+    ).put(page, new Response('build b1'));
+    const network = hangingFetch();
+    const { worker } = loadWorker();
+
+    expect(await (await worker.networkFirst(new Request(page), 5)).text()).toBe(
+      'build b1',
     );
+    network.answer(new Response('build b2'));
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('offline')));
+
+    const offline = await worker.networkFirst(new Request(page));
+
+    expect(await offline.text()).toBe('build b1');
+    expect(fake.urls(SHELL_CACHE)).toEqual([page]);
   });
 
   it('answers from the network when it is quicker than the timeout', async () => {
@@ -162,6 +209,28 @@ describe('networkFirst', () => {
     const response = await worker.networkFirst(new Request(page), 60_000);
 
     expect(await response.text()).toBe('online');
+  });
+
+  it('gives up on an answer after the timeout, saying so', async () => {
+    const { worker } = loadWorker();
+
+    await expect(
+      worker.settlesWithin(new Promise(() => {}), 5),
+    ).rejects.toThrow(new Error('No answer within 5 ms'));
+  });
+
+  it('leaves no timer behind once the network has answered', async () => {
+    vi.useFakeTimers();
+    try {
+      const { worker } = loadWorker();
+
+      expect(await worker.settlesWithin(Promise.resolve('online'), 3000)).toBe(
+        'online',
+      );
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('keeps waiting for a slow network when nothing is kept', async () => {
@@ -296,6 +365,27 @@ describe('tileFirst', () => {
     expect(fake.urls(worker.TILE_CACHE)).toEqual([TILE]);
   });
 
+  it.each([
+    ['the type the tile server sent', 'image/webp', 'image/webp'],
+    ['a PNG type when the server sent none', '', 'image/png'],
+  ])('keeps a tile with %s', async (_, sent, kept) => {
+    installCaches();
+    const body = new Blob(['tile'], { type: sent });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(body)),
+    );
+    const { worker } = loadWorker();
+
+    await worker.tileFirst(new Request(TILE), NOW);
+
+    await vi.waitFor(async () =>
+      expect((await caches.match(TILE))?.headers.get('content-type')).toBe(
+        kept,
+      ),
+    );
+  });
+
   it('passes a refusal on, keeping nothing, when no tile is kept', async () => {
     const fake = installCaches();
     vi.stubGlobal(
@@ -318,6 +408,8 @@ describe('tileFirst', () => {
     const response = await worker.tileFirst(new Request(TILE), NOW);
 
     expect(response.status).toBe(504);
+    expect(response.statusText).toBe('Offline');
+    expect(await response.text()).toBe('');
   });
 
   it('keeps at most 2,000 tiles, dropping the oldest first', async () => {

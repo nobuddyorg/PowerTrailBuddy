@@ -92,7 +92,7 @@ test.describe('the service worker', () => {
         ),
     );
     expect(unexpected, 'cached beyond the bundle and the shell').toEqual([]);
-    // The activate handler drops every shell cache but the current one; the tiles viewed have a cache of their own.
+    // A first install drops every other shell cache; the tiles viewed have a cache of their own.
     expect(
       (await cacheNames(page)).filter(
         (name) => name !== 'powertrailbuddy-tiles',
@@ -100,7 +100,8 @@ test.describe('the service worker', () => {
     ).toEqual([await currentCacheName(page)]);
   });
 
-  test("a new build's worker deletes the old builds' caches, and only those", async ({
+  // An open page of the replaced build may still load lazy chunks, so its cache outlives the update by one build.
+  test("a new build's worker keeps the replaced build's cache and deletes older builds' caches, and only those", async ({
     page,
     baseURL,
   }) => {
@@ -119,8 +120,11 @@ test.describe('the service worker', () => {
       );
     }, baseURL!);
 
-    await expect.poll(() => cacheNames(page)).not.toContain(previous);
+    await expect
+      .poll(() => currentCacheName(page))
+      .toBe('powertrailbuddy-shell-e2e-next');
     const remaining = await cacheNames(page);
+    expect(remaining).toContain(previous);
     expect(remaining).not.toContain('powertrailbuddy-shell-v1');
     // A share the page has not taken yet survives an update.
     expect(remaining).toContain('powertrailbuddy-shared-files');
