@@ -83,6 +83,7 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
   numberFormatRef.current = numberFormat;
 
   useLayoutEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the stored and browser language exist only after hydration of the 'de' prerender
     setLanguage(detectLanguage());
   }, []);
 
