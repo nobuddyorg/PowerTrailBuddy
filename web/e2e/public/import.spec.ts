@@ -5,6 +5,7 @@ import {
   gpxFile,
   notAPocketQuery,
   pocketQueryZip,
+  QUICK_TRAIL,
 } from '../pocketQuery';
 
 test.use({ locale: 'en-GB' });
@@ -70,6 +71,32 @@ test.describe('importing a Pocket Query', () => {
       String(ALL_CACHES.length),
     );
     await expect(app.data.locators.counts.trails).toHaveText('2');
+  });
+
+  // A newer run of the query leaves out what was archived or found since: the walk must not lead there.
+  test('a newer run of the same query removes the caches it no longer lists', async ({
+    on,
+    page,
+  }) => {
+    const app = on(page);
+    await app.home.do.open();
+    await app.emptyState.do.importFiles([await pocketQueryZip()]);
+    await app.home.do.dismissImportSummary();
+    const gone = QUICK_TRAIL.at(-1)!;
+    const newerRun = ALL_CACHES.filter((cache) => cache.code !== gone.code);
+
+    await app.data.do.open();
+    await app.data.do.importFiles([gpxFile('9876543 (1).gpx', newerRun)]);
+
+    await expect(app.home.locators.removedCaches).toHaveText(
+      'Removed 1 cache the query no longer lists.',
+    );
+    await expect(app.trails.locators.cacheCount).toHaveText(
+      `${ALL_CACHES.length - 1} caches imported`,
+    );
+    await expect(app.trails.card(0).locators.summary).toContainText(
+      '10 caches',
+    );
   });
 
   test('keeps what it imported across a reload', async ({ on, page }) => {

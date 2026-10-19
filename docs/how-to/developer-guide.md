@@ -157,7 +157,15 @@ grep -rn 'getByTestId\|getByRole\|locator(' web/e2e --include=*.spec.ts
 ### Faked tiles, import fixtures, device APIs
 
 - The `tiles` fixture (automatic) answers every `tile.openstreetmap.org`
-  request with a blank PNG. The `foreignRequests` fixture (automatic) fails
+  request with a blank PNG, on the browser context, which in Chromium also
+  routes the requests the service worker makes to keep tiles. Playwright
+  routes none of a Firefox worker's own requests, so the Firefox project
+  blocks the service worker (`serviceWorkers: 'block'` in
+  `playwright.config.ts`) and only `service-worker.spec.ts` and
+  `share-target.spec.ts`, which test the worker, allow it. There the
+  project also resolves `tile.openstreetmap.org` to the machine itself
+  (`network.dns.localDomains`): the worker's tile fetches fail and the map
+  gets the worker's `504`, but no test can reach the real tile server. The `foreignRequests` fixture (automatic) fails
   every test whose pages or service worker contacted any other origin, so
   each journey (import, map, walk, share, export) checks that nothing leaves
   the device. Only a spec that sets `test.use({ allowRouter: true })`
@@ -168,7 +176,10 @@ grep -rn 'getByTestId\|getByRole\|locator(' web/e2e --include=*.spec.ts
   console error or CSP violation in the page, so a rejected background
   promise cannot hide behind a passing assertion. CSP violations are read
   from the `securitypolicyviolation` event, because Chromium reports a
-  blocked `eval` only there while Firefox logs it to the console. `failMapTiles` in `e2e/helpers.ts` takes the
+  blocked `eval` only there while Firefox logs it to the console. A tile the
+  server failed to send is its outage, not the app's error: messages at a
+  tile's URL, or naming one (Firefox's CORS error for a failed tile), are
+  left out. `failMapTiles` in `e2e/helpers.ts` takes the
   tile server down for the one spec that checks the app without it.
 - Import fixtures are generated, not committed: `e2e/pocketQuery.ts` writes a
   synthetic Pocket Query (two trails, three caches the default settings leave
@@ -208,6 +219,38 @@ this, and fails below the floor in `e2e/coverage.ts`
 To find what no journey reaches, read the function coverage per file in
 `web/coverage-e2e/index.html`, not the line coverage.
 
+## Why every build writes the precache manifest
+
+The service worker installs only with the whole app: it fetches
+`out/precache-manifest.json` and every asset it lists, and an install that
+misses one fails, leaving the old worker (or none) in place. That failure is
+silent: the page works online, only offline support is gone. So the manifest
+is written by a Next.js adapter (`scripts/precache-manifest.mjs`, set as
+`adapterPath` in `next.config.ts`) at the end of `next build` itself, and a
+plain `npx next build` writes it as surely as `npm run build`. The build
+prints `precache-manifest.json: <n> assets`.
+
+`scripts/serve-export.mjs`, which serves the export for `npm run e2e` locally
+and in CI, refuses to start when the manifest is missing or leaves out a file
+under `out/_next/static`, and says why. An export built some other way never
+reaches a browser test that would pass online and hide the gap.
+
+## Update the screenshots
+
+`docs/images/` holds the screenshots in the README and the user guide, taken
+from the built export with the bundled sample data, in English, on a desktop
+and a Pixel 7 viewport. After a visible UI change:
+
+```bash
+cd web
+npm run build
+npm run screenshots   # scripts/docs-screenshots.mjs; PLAYWRIGHT_CHROMIUM_EXECUTABLE as for the e2e suite
+```
+
+The script serves the export itself, blocks the service worker and answers
+every tile request with a plain tile, so it contacts no other server and the
+map background stays empty. Commit the changed images.
+
 ## Deploy to GitHub Pages
 
 `pages-deploy.yml` deploys `main`'s tip once CI has passed on it: `gate` →
@@ -228,6 +271,29 @@ Revert the offending commit on `main` through a PR. CI runs, and the deploy
 publishes the reverted bundle. Users' data is in their browsers and unaffected
 by a deploy; a change to what `data/store.ts` writes must still read what the
 previous build wrote.
+
+## Review a dependency bump
+
+Dependabot opens the bumps; CI runs every check on them. A few dependencies
+carry an assumption the suite cannot re-check by itself, so a bump of one of
+them gets a look:
+
+- **`jszip`**: `lib/geocache/importFiles.ts` enforces the size limits through
+  `internalStream()` and `_data.uncompressedSize`, which JSZip's typings leave
+  out. `importFiles.jszip.test.ts` fails with a message naming issue #12 when
+  either is gone. A major version is the moment to read the sizes from the
+  zip's central directory instead.
+- **`@playwright/test`**: the offline cases run in Chromium only
+  (`SW_ONLY_IN_CHROMIUM` in `e2e/helpers.ts`), because Playwright drives
+  service workers only there, its Firefox offline mode fails a navigation
+  before the worker sees it, and Firefox routes none of a worker's own
+  requests (so the Firefox project also resolves the tile host to the machine
+  itself). Read the release notes for Firefox service-worker support; once it
+  lands, drop the condition and run the three cases in Firefox.
+- **`next`**: read `node_modules/next/dist/docs/` for the changed version
+  (`web/AGENTS.md`), and check that the precache adapter (`adapterPath` in
+  `next.config.ts`) still runs: the build prints `precache-manifest.json: <n>
+  assets`, and `scripts/serve-export.mjs` refuses an export without it.
 
 ## Bump a pinned CI tool
 

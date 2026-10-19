@@ -167,6 +167,8 @@ export default function MapView({
         .addTo(map);
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
+        // A CORS tile is a readable response public/sw.js can keep for offline; an opaque one is not.
+        crossOrigin: true,
         attribution: `&copy; <a href="https://www.openstreetmap.org/copyright">${attribution}</a>`,
       }).addTo(map);
       map.on('dragstart', () => callbacks.current.onUserPan?.());

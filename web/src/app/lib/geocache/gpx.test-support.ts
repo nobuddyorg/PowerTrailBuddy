@@ -179,6 +179,7 @@ export function syntheticCache(
     placedBy: 'Synthetic Owner',
     hint: '',
     recentLogs: [],
+    sources: [],
     latitude: 10 + index * 0.001,
     longitude: 20,
     ...overrides,

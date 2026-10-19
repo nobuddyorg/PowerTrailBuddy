@@ -125,6 +125,8 @@ function cacheOf(waypoint: Element, cache: Element): Geocache | undefined {
     placedBy: childText(cache, 'placed_by'),
     hint: childText(cache, 'encoded_hints'),
     recentLogs: recentLogsOf(logEntriesOf(cache)),
+    // The document knows no file name; importFiles names the query.
+    sources: [],
     latitude,
     longitude,
   };

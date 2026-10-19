@@ -56,6 +56,11 @@ export function ImportSummary({ summary, onDismiss }: ImportSummaryProps) {
             files: tCount('import.fileCount', { count: summary.files.length }),
           })}
         </p>
+        {summary.removedCount > 0 && (
+          <p data-testid="import-removed">
+            {tCount('import.removed', { count: summary.removedCount })}
+          </p>
+        )}
         {!clean && (
           <ul className="mt-1 space-y-0.5">
             {failed.map((file, index) => (

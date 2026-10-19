@@ -55,7 +55,10 @@ updates:
           - "*"
         update-types:
           - "minor"
-    # @stryker-mutator/core@10 bundles @babel/generator@8, which crashes on TS function-type annotations (`Printer._parameters`). Re-enable once fixed upstream.
     ignore:
+      # @stryker-mutator/core@10 bundles @babel/generator@8, which crashes on TS function-type annotations (`Printer._parameters`). Re-enable once fixed upstream.
       - dependency-name: "@stryker-mutator/*"
+        update-types: ["version-update:semver-major"]
+      # TypeScript 7 waits until typescript-eslint and Next support it; decided together with CollectionBuddy (issue #14).
+      - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]

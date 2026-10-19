@@ -22,6 +22,8 @@ export async function collectPageProblems(page: Page): Promise<PageProblems> {
     if (message.type() !== 'error') return;
     // A tile or route the server failed to send is its outage, not the app's error; the fakes fail only when asked.
     if (TILE_HOST.test(message.location().url)) return;
+    // Firefox reports a CORS tile that failed as a CORS error naming the tile, not at the tile's location.
+    if (TILE_IN_TEXT.test(message.text())) return;
     if (ROUTER_HOST.test(message.location().url)) return;
     problems.console.push(message.text());
   });
@@ -55,17 +57,26 @@ const BLANK_TILE = Buffer.from(
 );
 
 const TILE_HOST = /^https:\/\/([a-z]\.)?tile\.openstreetmap\.org\//;
+const TILE_IN_TEXT = /https:\/\/([a-z]\.)?tile\.openstreetmap\.org\//;
 
-/** Answers every OpenStreetMap tile request with a blank tile, so no test reaches a third party. */
+/** Answers every OpenStreetMap tile request with a blank tile, so no test reaches a third party; on the context, which in Chromium also routes the worker's requests. */
 export async function fakeMapTiles(page: Page) {
-  await page.route(TILE_HOST, (route) =>
-    route.fulfill({ status: 200, contentType: 'image/png', body: BLANK_TILE }),
+  await page.context().route(TILE_HOST, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'image/png',
+      // The map loads tiles with CORS, as the real tile server allows.
+      headers: { 'access-control-allow-origin': '*' },
+      body: BLANK_TILE,
+    }),
   );
 }
 
 /** The tile server down: every tile request fails, as with no connection to it. */
 export async function failMapTiles(page: Page) {
-  await page.route(TILE_HOST, (route) => route.abort('connectionfailed'));
+  await page
+    .context()
+    .route(TILE_HOST, (route) => route.abort('connectionfailed'));
 }
 
 /** Every request the context's pages and workers made that left the origin under test, tiles excepted, and the router where a spec allows it. */
@@ -149,10 +160,10 @@ export async function documentWidths(page: Page) {
   }));
 }
 
-/** Answers from the local fake, never from a server: a fulfilled route has no server address. */
+/** Answers from the local fake, never from a server: a fulfilled route has no server address. The context's, so the worker's own tile requests count. */
 export function collectTileResponses(page: Page): { fromNetwork: boolean }[] {
   const tiles: { fromNetwork: boolean }[] = [];
-  page.on('response', (response) => {
+  page.context().on('response', (response) => {
     if (!TILE_HOST.test(response.url())) return;
     void response.serverAddr().then((address) => {
       tiles.push({ fromNetwork: address !== null });

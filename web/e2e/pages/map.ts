@@ -13,6 +13,7 @@ interface MapView {
     locate: Locator;
     position: Locator;
     tiles: Locator;
+    loadedTiles: Locator;
   };
 }
 
@@ -25,6 +26,7 @@ export function initMap(page: Page): MapView {
     locate: page.getByTestId('locate'),
     position: root.locator('.ptb-position'),
     tiles: root.locator('img.leaflet-tile'),
+    loadedTiles: root.locator('img.leaflet-tile-loaded'),
   };
   const interactions = {
     locate: async () => {

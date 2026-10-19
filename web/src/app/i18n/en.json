@@ -48,6 +48,8 @@
     "fileCount": "{count} files",
     "fileCount_one": "{count} file",
     "fileFailed": "{name}: {reason}",
+    "removed": "Removed {count} caches the queries no longer list.",
+    "removed_one": "Removed {count} cache the query no longer lists.",
     "error": {
       "unsupported": "not a geocache .zip or .gpx file",
       "unreadable": "the file is damaged and could not be read",
@@ -279,7 +281,7 @@
     "locallyFound": "Marked found here",
     "ignored": "Ignored",
     "lastImport": "Last import",
-    "importHelp": "Import another Pocket Query: it is merged with what is here, newer data wins.",
+    "importHelp": "Import another Pocket Query, or a newer run of one: it is merged with what is here and newer data wins; a cache a newer run no longer lists is removed.",
     "import": "Import more",
     "privacy": "Everything is stored in this browser only.",
     "clear": "Clear all data"

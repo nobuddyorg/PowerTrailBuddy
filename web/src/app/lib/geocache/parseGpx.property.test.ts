@@ -55,6 +55,8 @@ const cacheArbitrary: fc.Arbitrary<Geocache> = fc.record(
     placedBy: xmlText.map((text) => text.trim()),
     hint: xmlText.map((text) => text.trim()),
     recentLogs: recentLogsArbitrary,
+    // parseGpx knows no file name; importFiles fills these in.
+    sources: fc.constant([]),
     parking: fc.record({
       latitude: latitudeArbitrary,
       longitude: longitudeArbitrary,
@@ -76,6 +78,7 @@ const cacheArbitrary: fc.Arbitrary<Geocache> = fc.record(
       'placedBy',
       'hint',
       'recentLogs',
+      'sources',
       'latitude',
       'longitude',
     ],

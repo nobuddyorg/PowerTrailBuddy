@@ -46,6 +46,8 @@ export interface Geocache extends Coordinates {
   hint: string;
   /** Newest first, at most 5. */
   recentLogs: RecentLog[];
+  /** The queries that delivered it, each its GPX file's name (`sourceName`); empty for a cache stored before they were kept. */
+  sources: string[];
   /** The nearest 'Parking Area' additional waypoint of this cache from the same import. */
   parking?: Coordinates;
 }

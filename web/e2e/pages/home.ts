@@ -14,6 +14,7 @@ interface Home {
     };
     errorNotice: Locator;
     importSummary: Locator;
+    removedCaches: Locator;
     refusedFiles: Locator;
     offline: Locator;
     title: Locator;
@@ -36,6 +37,7 @@ export function initHome(page: Page): Home {
     },
     errorNotice: root.getByTestId('error-notice'),
     importSummary: root.getByTestId('import-summary'),
+    removedCaches: root.getByTestId('import-removed'),
     refusedFiles: root.getByTestId('import-file'),
     offline: root.getByTestId('offline'),
     title: root.getByTestId('home-title'),

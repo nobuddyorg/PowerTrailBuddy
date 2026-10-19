@@ -2,12 +2,13 @@ import type { Page } from '@playwright/test';
 
 import { expect, test } from '../fixture';
 
-import { SW_ONLY_IN_CHROMIUM } from '../helpers';
+import { failMapTiles, SW_ONLY_IN_CHROMIUM } from '../helpers';
 import { createPageTree } from '../pages';
 import { pocketQueryZip } from '../pocketQuery';
 
 // What sw.test.ts cannot reach from source: registration, scope, cache, offline.
-test.use({ locale: 'en-GB' });
+// The worker is what these specs test, so they allow it in every project, Firefox included (playwright.config.ts).
+test.use({ locale: 'en-GB', serviceWorkers: 'allow' });
 
 /** Controlling, not merely registered: an uncontrolled page's requests never reach the fetch handler. */
 async function waitForController(page: Page) {
@@ -32,6 +33,13 @@ async function cachedUrls(page: Page) {
 
 function cacheNames(page: Page) {
   return page.evaluate(() => caches.keys());
+}
+
+function keptTileUrls(page: Page) {
+  return page.evaluate(async () => {
+    const cache = await caches.open('powertrailbuddy-tiles');
+    return (await cache.keys()).map((request) => request.url);
+  });
 }
 
 // The worker installs with the whole shell, so a page it controls has everything cached already.
@@ -84,8 +92,12 @@ test.describe('the service worker', () => {
         ),
     );
     expect(unexpected, 'cached beyond the bundle and the shell').toEqual([]);
-    // The activate handler drops every shell cache but the current one.
-    expect(await cacheNames(page)).toEqual([await currentCacheName(page)]);
+    // The activate handler drops every shell cache but the current one; the tiles viewed have a cache of their own.
+    expect(
+      (await cacheNames(page)).filter(
+        (name) => name !== 'powertrailbuddy-tiles',
+      ),
+    ).toEqual([await currentCacheName(page)]);
   });
 
   test("a new build's worker deletes the old builds' caches, and only those", async ({
@@ -160,5 +172,61 @@ test.describe('the service worker', () => {
     } finally {
       await context.setOffline(false);
     }
+  });
+
+  // The map is the one part that needs the network; what was viewed online is kept for the walk.
+  test('shows the map tiles viewed online once the network is gone', async ({
+    on,
+    page,
+    context,
+    browserName,
+  }) => {
+    test.skip(browserName !== 'chromium', SW_ONLY_IN_CHROMIUM);
+    const app = on(page);
+    await app.home.do.open();
+    await waitForController(page);
+    await app.emptyState.do.importFiles([await pocketQueryZip()]);
+    await app.trails.do.openTrail(0);
+    await expect(app.map.locators.loadedTiles.first()).toBeVisible();
+    const viewed = await app.map.locators.loadedTiles.evaluateAll((tiles) =>
+      tiles.map((tile) => (tile as HTMLImageElement).src),
+    );
+    await expect
+      .poll(async () => {
+        const kept = await keptTileUrls(page);
+        return viewed.filter((url) => !kept.includes(url));
+      })
+      .toEqual([]);
+
+    await failMapTiles(page);
+    await context.setOffline(true);
+    try {
+      await app.home.do.reload();
+      await app.trails.do.openTrail(0);
+      await expect(app.map.locators.loadedTiles.first()).toBeVisible();
+    } finally {
+      await context.setOffline(false);
+    }
+  });
+
+  // One bar in the woods: the request neither answers nor fails, and the kept shell must not wait for it.
+  test('opens from the kept shell when the network hangs', async ({
+    on,
+    page,
+    context,
+    baseURL,
+    browserName,
+  }) => {
+    test.skip(browserName !== 'chromium', SW_ONLY_IN_CHROMIUM);
+    const app = on(page);
+    await app.home.do.open();
+    await waitForController(page);
+    await app.emptyState.do.importFiles([await pocketQueryZip()]);
+
+    // Never answered: the route is dropped when the context closes.
+    await context.route(baseURL!, () => {});
+    await app.home.do.reload();
+
+    await expect(app.trails.locators.count).toHaveText('2 trails');
   });
 });

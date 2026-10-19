@@ -103,6 +103,7 @@ describe('importing', () => {
     expect(result.current.lastImport).toEqual({
       cacheCount: 3,
       files: [{ name: 'pq.gpx', cacheCount: 3 }],
+      removedCount: 0,
     });
     expect(result.current.importInfo).toMatchObject({
       cacheCount: 3,
@@ -122,6 +123,24 @@ describe('importing', () => {
     );
     expect(result.current.caches).toHaveLength(5);
     expect(result.current.lastImport?.cacheCount).toBe(2);
+  });
+
+  it('replaces the caches of a Pocket Query imported again, and says how many went', async () => {
+    const { result } = await renderReady();
+    await act(() =>
+      result.current.importFiles([
+        pqFile(CACHES),
+        pqFile(makeCaches(2, 'GCOTHER'), 'other.gpx'),
+      ]),
+    );
+    await act(() => result.current.importFiles([pqFile(CACHES.slice(1))]));
+
+    expect(result.current.caches.map((cache) => cache.code)).toEqual([
+      ...CACHES.slice(1).map((cache) => cache.code),
+      ...makeCaches(2, 'GCOTHER').map((cache) => cache.code),
+    ]);
+    expect(result.current.lastImport?.removedCount).toBe(1);
+    expect(storedValue('caches')).toHaveLength(4);
   });
 
   it('does nothing for an empty selection', async () => {

@@ -13,11 +13,17 @@ const NBSP = ' ';
 describe('formatDistance', () => {
   it.each([
     [0, '0 m'],
+    [0.4, '0 m'],
     [7.4, '7 m'],
+    [9.5, '10 m'],
+    [95, '95 m'],
     [99.4, '99 m'],
+    [99.5, '100 m'],
     [99.6, '100 m'],
     [104, '100 m'],
+    [100, '100 m'],
     [105, '110 m'],
+    [114.9, '110 m'],
     [850, '850 m'],
     [994, '990 m'],
   ])('writes %s m in metres as "%s"', (meters, expected) => {
@@ -40,6 +46,16 @@ describe('formatDistance', () => {
     fc.assert(
       fc.property(fc.double({ min: 0, max: 1e7, noNaN: true }), (meters) => {
         expect(formatDistance(meters, 'de')).toMatch(/^[\d.,]+ (m|km)$/);
+      }),
+    );
+  });
+
+  it('rounds to the metre below 100 m and to ten metres from there', () => {
+    fc.assert(
+      fc.property(fc.double({ min: 0, max: 994, noNaN: true }), (meters) => {
+        const expected =
+          meters < 100 ? Math.round(meters) : Math.round(meters / 10) * 10;
+        expect(formatDistance(meters, 'en')).toBe(`${expected}${NBSP}m`);
       }),
     );
   });

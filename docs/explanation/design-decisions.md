@@ -89,6 +89,20 @@ sends the trail caches' coordinates to a third party:
   the same distances give the same trails; only the hook that fetches them is
   asynchronous.
 
+## Why a newer run of a query replaces its caches
+
+A Pocket Query run leaves out what was archived, disabled or found online
+since the last one. A plain union would keep those caches forever, and a walk
+would lead to a cache that is gone. Replacing everything on each import
+would break the other half of the import story: several queries side by side
+for an area larger than 1,000 caches. So each cache remembers the queries that
+delivered it, named after the GPX file, which for a Pocket Query is its
+stable number, and a query imported again replaces only its own caches. The
+name comes from the GPX file rather than the zip, because a browser renames
+a repeated download (`26071826 (1).zip`) but never what is inside it. Caches
+stored before sources were kept cannot be attributed to a query, so they stay
+rather than vanish on a guess.
+
 ## Why connected components on a grid instead of DBSCAN
 
 A power trail is "caches each within a short walk of the next". That is
@@ -152,16 +166,27 @@ time is needed.
 
 ## Why the service worker is hand-written
 
-The worker has three small jobs — cache the shell per build, delete old
-builds' caches, receive shared files — and each is a few lines of the Cache
-API. A generated worker (Workbox and friends) would add a build plugin and a
-configuration layer larger than the worker itself; the one thing it needs
-from the build, the list of hashed assets to precache, is a short script that
-`npm run build` runs after `next build`. Its decision functions are
-kept as small named functions so `sw.test.ts` can extract and test them from
-the source text; shell caches are prefixed `powertrailbuddy-shell-` so the
+The worker has four small jobs — cache the shell per build, delete old
+builds' caches, keep the map tiles viewed, receive shared files — and each is
+a few lines of the Cache API. A generated worker (Workbox and friends) would
+add a build plugin and a configuration layer larger than the worker itself;
+the one thing it needs from the build, the list of hashed assets to precache,
+is a short Next.js adapter whose `onBuildComplete` runs at the end of every
+`next build`, so no way of building can leave the list out (a separate step
+after the build could be skipped, and the worker would then fail to install
+without a word). Its decision functions are kept as small named functions so
+`sw.test.ts` and `sw.strategies.test.ts` can extract and test them from the
+source text; shell caches are prefixed `powertrailbuddy-shell-` so the
 cleanup can never delete the `powertrailbuddy-shared-files` cache a share is
-waiting in.
+waiting in, or the `powertrailbuddy-tiles` cache.
+
+The shell is network-first so a deploy reaches users at once, but with a
+three-second limit: on one bar of signal a request neither answers nor
+fails for tens of seconds, and the walk the app exists for starts exactly
+there. Tiles are the opposite trade: cache-first for a week, because a map a
+few days old is as good for a walk and every tile not fetched is load off
+OpenStreetMap's volunteer-run servers. Only tiles already viewed are kept,
+since the tile usage policy forbids downloading an area in advance.
 
 ## Why there is only a light theme
 
