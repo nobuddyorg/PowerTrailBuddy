@@ -11,6 +11,7 @@ import {
   type TrailCard as Card,
 } from '../../lib/ui-logic/trailCards';
 import { Icon } from '../Icon';
+import { viewKey } from '../MainView/usePanel';
 import { trailColor } from '../Map/content';
 
 /** The doubtful caches of a trail in a few words; nothing for a trail without any. */
@@ -54,6 +55,7 @@ export function TrailCard({
     <button
       type="button"
       data-testid="trail-card"
+      data-focus-key={viewKey({ kind: 'trail', trailId: trail.id })}
       onClick={onSelect}
       className="flex w-full gap-3 rounded-2xl bg-card p-3 text-left shadow-soft ring-1 ring-border/60 hover:ring-primary/50 motion-safe:transition-shadow"
     >

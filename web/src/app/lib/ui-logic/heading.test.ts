@@ -6,6 +6,7 @@ import {
   headingChanged,
   MOVING_METERS_PER_SECOND,
   pickHeading,
+  unwrapRotation,
 } from './heading';
 
 const reading = (overrides: Partial<Parameters<typeof compassHeading>[0]>) => ({
@@ -106,5 +107,39 @@ describe('headingChanged', () => {
     expect(headingChanged(1, 358, 2)).toBe(true);
     expect(headingChanged(102, 100, 2)).toBe(true);
     expect(headingChanged(1, 359.5, 2)).toBe(false);
+  });
+});
+
+describe('unwrapRotation', () => {
+  it('crosses north by the small angle, either way', () => {
+    expect(unwrapRotation(359, 2)).toBe(362);
+    expect(unwrapRotation(2, 359)).toBe(-1);
+    expect(unwrapRotation(-1, 3)).toBe(3);
+  });
+
+  it('keeps counting from an already unwrapped rotation', () => {
+    expect(unwrapRotation(720, 10)).toBe(730);
+    expect(unwrapRotation(725, 5)).toBe(725);
+  });
+
+  it('turns clockwise at exactly half a turn, and the other way just past it', () => {
+    expect(unwrapRotation(0, 180)).toBe(180);
+    expect(unwrapRotation(0, 181)).toBe(-179);
+    expect(unwrapRotation(0, 179)).toBe(179);
+  });
+
+  it('never turns more than half a turn, and always ends facing the new angle', () => {
+    fc.assert(
+      fc.property(
+        fc.double({ min: -10_000, max: 10_000, noNaN: true }),
+        fc.double({ min: 0, max: 360, noNaN: true, maxExcluded: true }),
+        (previous, next) => {
+          const rendered = unwrapRotation(previous, next);
+          expect(Math.abs(rendered - previous)).toBeLessThanOrEqual(180);
+          const offBy = (((rendered - next) % 360) + 360) % 360;
+          expect(Math.min(offBy, 360 - offBy)).toBeLessThan(1e-6);
+        },
+      ),
+    );
   });
 });

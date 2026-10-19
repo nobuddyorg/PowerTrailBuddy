@@ -154,6 +154,7 @@ export function MainView({
     <PanelContent
       app={app}
       view={view}
+      returnFocus={panel.returnFocus}
       backToList={panel.backToList}
       onBack={panel.back}
       trails={trails}

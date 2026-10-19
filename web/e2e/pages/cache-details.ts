@@ -29,6 +29,7 @@ interface CacheDetails {
     distance: Locator;
     health: Locator;
     hint: Locator;
+    name: Locator;
     /** Why the cache is in no trail, one line per reason. */
     leftOutReasons: Locator;
     recentLogs: Locator;
@@ -55,6 +56,7 @@ export function initCacheDetails(page: Page): CacheDetails {
     distance: root.getByTestId('cache-distance'),
     health: root.getByTestId('health-badge'),
     hint: root.getByTestId('hint'),
+    name: root.getByRole('heading', { level: 2 }),
     leftOutReasons: root.getByTestId('left-out-reason'),
     recentLogs: root.getByTestId('recent-log'),
     links: initCacheLinks(root),

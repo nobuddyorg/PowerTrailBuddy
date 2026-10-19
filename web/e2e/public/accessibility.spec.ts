@@ -1,4 +1,4 @@
-import { test } from '../fixture';
+import { expect, test } from '../fixture';
 
 import { expectNoSeriousA11yViolations } from '../axe';
 import { placeDevice } from '../helpers';
@@ -37,6 +37,23 @@ test.describe('accessibility', () => {
       await expectNoSeriousA11yViolations(page, testInfo);
     });
 
+    test('focus moves to each new view, and Back returns it', async ({
+      on,
+      page,
+    }) => {
+      const app = on(page);
+      await app.trails.do.openTrail(1);
+      await expect(app.trail.locators.title).toBeFocused();
+      await app.trail.row(0).do.expand();
+      await app.trail.row(0).do.showOnMap();
+      await expect(app.cache.locators.name).toBeFocused();
+
+      await app.cache.do.back();
+      await expect(app.trail.row(0).locators.toggle).toBeFocused();
+      await app.trail.do.back();
+      await expect(app.trails.card(1)()).toBeFocused();
+    });
+
     test('the settings dialog', async ({ on, page }, testInfo) => {
       await on(page).settings.do.open();
       await expectNoSeriousA11yViolations(page, testInfo);
@@ -60,6 +77,7 @@ test.describe('accessibility', () => {
     });
 
     test('the walk, close to a cache', async ({ on, page }, testInfo) => {
+      await expect(on(page).walk.locators.heading).toBeFocused();
       await on(page).walk.locators.close.waitFor();
       await expectNoSeriousA11yViolations(page, testInfo);
     });
@@ -67,6 +85,7 @@ test.describe('accessibility', () => {
     test('the summary', async ({ on, page }, testInfo) => {
       await on(page).walk.do.found();
       await on(page).walk.do.finish();
+      await expect(on(page).walk.summary.locators.title).toBeFocused();
       await expectNoSeriousA11yViolations(page, testInfo);
     });
   });

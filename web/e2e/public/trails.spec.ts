@@ -1,3 +1,5 @@
+import { devices } from '@playwright/test';
+
 import { expect, test } from '../fixture';
 
 import {
@@ -143,6 +145,35 @@ test.describe('a trail', () => {
   });
 });
 
+test.describe('on an Apple device', () => {
+  test.use({ userAgent: devices['iPhone 15'].userAgent });
+
+  test('navigates with Apple Maps, as an iPhone opens no geo: link', async ({
+    on,
+    page,
+  }) => {
+    const app = on(page);
+    await app.trails.do.openTrail(0);
+    const parking = QUICK_TRAIL_PARKING;
+    await expect(app.trail.locators.parking).toHaveAttribute(
+      'href',
+      `https://maps.apple.com/?ll=${parking.latitude.toFixed(6)},${parking.longitude.toFixed(6)}&q=Parking%2C%20trail%20%231`,
+    );
+
+    await app.trail.do.back();
+    await app.trails.do.search('GCE2B01');
+    await app.trails.do.openSearchResult();
+
+    const cache = QUICK_TRAIL[0];
+    await expect(
+      app.cache.locators.links.locators.links.navigate,
+    ).toHaveAttribute(
+      'href',
+      `https://maps.apple.com/?ll=${cache.latitude.toFixed(6)},${cache.longitude.toFixed(6)}&q=${encodeURIComponent(`${cache.code} ${cache.name}`)}`,
+    );
+  });
+});
+
 test.describe('a cache', () => {
   test('links to its listing, a navigation app and walking directions', async ({
     on,
@@ -270,7 +301,8 @@ test.describe('changing your mind about a cache', () => {
     await app.settings.do.open();
     await expect(app.settings.locators.ignoredCaches).toHaveText([/GCE2B06/]);
     await app.settings.do.unignore('GCE2B06');
-    await app.settings.do.close();
+    // The focused row is gone, and focus with it; Escape still reaches the dialog.
+    await app.settings.do.dismissWithEscape();
 
     await expect(app.trails.card(0).locators.summary).toContainText(
       '11 caches',

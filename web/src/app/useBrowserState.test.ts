@@ -4,7 +4,12 @@ import { createElement } from 'react';
 import { renderToString } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { useMediaQuery, useNow, useOnline } from './useBrowserState';
+import {
+  useApplePlatform,
+  useMediaQuery,
+  useNow,
+  useOnline,
+} from './useBrowserState';
 
 afterEach(() => {
   vi.useRealTimers();
@@ -53,6 +58,30 @@ describe('useMediaQuery', () => {
   });
 });
 
+describe('useApplePlatform', () => {
+  const USER_AGENTS = {
+    iPhone:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+    iPadOS:
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15',
+    Android:
+      'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36',
+    Windows:
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
+  };
+  const appleOn = (userAgent: string) => {
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(userAgent);
+    return renderHook(() => useApplePlatform()).result.current;
+  };
+
+  it("tells Apple's devices, an iPad posing as a Mac among them, from the rest", () => {
+    expect(appleOn(USER_AGENTS.iPhone)).toBe(true);
+    expect(appleOn(USER_AGENTS.iPadOS)).toBe(true);
+    expect(appleOn(USER_AGENTS.Android)).toBe(false);
+    expect(appleOn(USER_AGENTS.Windows)).toBe(false);
+  });
+});
+
 describe('useNow', () => {
   it('ticks while active and stands still otherwise', () => {
     vi.useFakeTimers({ now: 1_000_000 });
@@ -76,10 +105,10 @@ describe('useNow', () => {
 });
 
 describe('the static prerender', () => {
-  it('assumes online and a query that does not match', () => {
+  it('assumes online, a query that does not match, and no Apple device', () => {
     function Probe() {
-      return `${useOnline()} ${useMediaQuery('(min-width: 1px)')}`;
+      return `${useOnline()} ${useMediaQuery('(min-width: 1px)')} ${useApplePlatform()}`;
     }
-    expect(renderToString(createElement(Probe))).toBe('true false');
+    expect(renderToString(createElement(Probe))).toBe('true false false');
   });
 });

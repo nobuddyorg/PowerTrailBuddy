@@ -37,6 +37,20 @@ export function useMediaQuery(query: string): boolean {
   );
 }
 
+const subscribeNever = () => () => {};
+
+// iPadOS reports itself as a Mac; a Mac opens Apple's Maps links too, so the two need no telling apart.
+const APPLE_DEVICE = /iPhone|iPad|iPod|Macintosh/;
+
+/** Whether this is an Apple device, which opens maps.apple.com links but nothing for `geo:`; the prerender assumes not. */
+export function useApplePlatform(): boolean {
+  return useSyncExternalStore(
+    subscribeNever,
+    () => APPLE_DEVICE.test(navigator.userAgent),
+    () => false,
+  );
+}
+
 /** The current time in milliseconds, refreshed every `intervalMs` while active. */
 export function useNow(intervalMs: number, active: boolean): number {
   const [now, setNow] = useState(() => Date.now());
