@@ -56,7 +56,9 @@ export default defineConfig({
       testDir: './e2e/public',
       use: {
         ...devices['Desktop Firefox'],
-        // Playwright routes no request a Firefox service worker makes itself, so the worker's tile fetches must never find the real server.
+        // Playwright routes no request a Firefox worker makes itself, so the fake tiles never reach a worker there: only the worker's own specs allow it.
+        serviceWorkers: 'block',
+        // And in those, the worker's tile fetches must never find the real server.
         launchOptions: {
           firefoxUserPrefs: {
             'network.dns.localDomains': 'tile.openstreetmap.org',

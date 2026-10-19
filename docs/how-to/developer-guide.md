@@ -160,10 +160,12 @@ grep -rn 'getByTestId\|getByRole\|locator(' web/e2e --include=*.spec.ts
   request with a blank PNG, on the browser context, which in Chromium also
   routes the requests the service worker makes to keep tiles. Playwright
   routes none of a Firefox worker's own requests, so the Firefox project
-  resolves `tile.openstreetmap.org` to the machine itself
-  (`network.dns.localDomains` in `playwright.config.ts`): the worker's
-  fetches fail there, and the map gets the worker's `504`, but no test can
-  reach the real tile server. The `foreignRequests` fixture (automatic) fails
+  blocks the service worker (`serviceWorkers: 'block'` in
+  `playwright.config.ts`) and only `service-worker.spec.ts` and
+  `share-target.spec.ts`, which test the worker, allow it. There the
+  project also resolves `tile.openstreetmap.org` to the machine itself
+  (`network.dns.localDomains`): the worker's tile fetches fail and the map
+  gets the worker's `504`, but no test can reach the real tile server. The `foreignRequests` fixture (automatic) fails
   every test whose pages or service worker contacted any other origin, so
   each journey (import, map, walk, share, export) checks that nothing leaves
   the device. Only a spec that sets `test.use({ allowRouter: true })`

@@ -5,7 +5,8 @@ import { expect, test } from '../fixture';
 import { SW_ONLY_IN_CHROMIUM } from '../helpers';
 import { ALL_CACHES, pocketQueryGpx } from '../pocketQuery';
 
-test.use({ locale: 'en-GB' });
+// The worker is what these specs test, so they allow it in every project, Firefox included (playwright.config.ts).
+test.use({ locale: 'en-GB', serviceWorkers: 'allow' });
 
 async function waitForController(page: Page) {
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null);

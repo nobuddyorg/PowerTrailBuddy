@@ -7,7 +7,8 @@ import { createPageTree } from '../pages';
 import { pocketQueryZip } from '../pocketQuery';
 
 // What sw.test.ts cannot reach from source: registration, scope, cache, offline.
-test.use({ locale: 'en-GB' });
+// The worker is what these specs test, so they allow it in every project, Firefox included (playwright.config.ts).
+test.use({ locale: 'en-GB', serviceWorkers: 'allow' });
 
 /** Controlling, not merely registered: an uncontrolled page's requests never reach the fetch handler. */
 async function waitForController(page: Page) {
