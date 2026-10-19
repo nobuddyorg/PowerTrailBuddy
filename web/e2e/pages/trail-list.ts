@@ -9,6 +9,7 @@ interface TrailCard {
   (): Locator;
   locators: {
     distance: Locator;
+    health: Locator;
     name: Locator;
     summary: Locator;
   };
@@ -45,6 +46,7 @@ interface TrailList {
 function initCard(root: Locator): TrailCard {
   const locators = {
     distance: root.getByTestId('trail-distance'),
+    health: root.getByTestId('trail-health'),
     name: root.getByTestId('trail-card-name'),
     summary: root.getByTestId('trail-card-summary'),
   };

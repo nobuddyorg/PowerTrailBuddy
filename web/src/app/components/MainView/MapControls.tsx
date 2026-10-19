@@ -25,6 +25,7 @@ export function MapControls({
     <div className="absolute right-2.5 top-24 z-[900] flex flex-col gap-2">
       <button
         type="button"
+        data-testid="locate"
         aria-pressed={following}
         aria-label={t('map.locate')}
         onClick={onLocate}

@@ -19,6 +19,7 @@ interface Settings {
     change(values: Partial<Record<SettingField, string>>): Promise<void>;
     choosePreset(preset: Preset): Promise<void>;
     close(): Promise<void>;
+    dismissWithEscape(): Promise<void>;
     forgetLocallyFound(): Promise<void>;
     open(): Promise<void>;
     unignore(code: string): Promise<void>;
@@ -68,6 +69,10 @@ export function initSettings(page: Page): Settings {
         'aria-pressed',
         'true',
       );
+    },
+    dismissWithEscape: async () => {
+      await page.keyboard.press('Escape');
+      await expect(root).toBeHidden();
     },
     close: async () => {
       await locators.buttons.close.click();

@@ -104,10 +104,11 @@ export function collectTileResponses(page: Page): { fromNetwork: boolean }[] {
 
 type Position = { latitude: number; longitude: number };
 
-/** Grants the location permission and puts the device at `position`, a few metres accurate. */
+/** Puts the device at `position`, a few metres accurate, then grants the location permission. */
 export async function placeDevice(context: BrowserContext, position: Position) {
-  await context.grantPermissions(['geolocation']);
+  // Fix first, as on a real phone: Firefox's emulation never delivers a later fix to a watch whose first try failed.
   await moveDevice(context, position);
+  await context.grantPermissions(['geolocation']);
 }
 
 /** Both engines' protocol grants the listed permissions and denies every other, so an empty list is a refusal. */
@@ -126,3 +127,24 @@ export async function downloadedBytes(download: Download): Promise<Buffer> {
   for await (const chunk of stream) chunks.push(Buffer.from(chunk));
   return Buffer.concat(chunks);
 }
+
+/** Chromium's install offer, which no headless run fires by itself; its prompt() marks `<html data-install-prompted>`. */
+export async function offerInstall(page: Page) {
+  await page.evaluate(() => {
+    const offer = Object.assign(
+      new Event('beforeinstallprompt', { cancelable: true }),
+      {
+        prompt: () => {
+          document.documentElement.dataset.installPrompted = 'yes';
+          return Promise.resolve();
+        },
+        userChoice: Promise.resolve({ outcome: 'accepted' }),
+      },
+    );
+    window.dispatchEvent(offer);
+  });
+}
+
+/** Why an offline test is Chromium-only: Playwright drives service workers there alone (its docs), and its Firefox offline mode fails a navigation before the worker sees it. */
+export const SW_ONLY_IN_CHROMIUM =
+  'offline through the service worker is only emulated in Chromium';

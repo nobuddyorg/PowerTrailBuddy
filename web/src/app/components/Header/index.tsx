@@ -84,6 +84,7 @@ export function Header({ walking, onOpenData, onOpenSettings }: HeaderProps) {
         {canInstall && (
           <button
             type="button"
+            data-testid="install-app"
             onClick={install}
             aria-label={t('header.install')}
             className={ICON_BUTTON_CLASSES}

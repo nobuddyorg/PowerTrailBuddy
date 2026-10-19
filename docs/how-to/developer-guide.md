@@ -173,15 +173,25 @@ grep -rn 'getByTestId\|getByRole\|locator(' web/e2e --include=*.spec.ts
   Generated rather than checked in as TEST_STRATEGY §8 suggests, so the specs
   know every code and coordinate they assert on (`QUICK_TRAIL`, `LONG_TRAIL`,
   `offset()`). The page objects set the files on the import input.
-- Geolocation: `placeDevice(context, position)` grants the permission and sets
-  the position, `moveDevice` walks it somewhere else, `denyLocation` refuses
+- Geolocation: `placeDevice(context, position)` sets the position, then
+  grants the permission (in that order: Firefox's emulation never hands a
+  later fix to a watch whose first try failed), `moveDevice` walks it somewhere else, `denyLocation` refuses
   the permission for the fallback (both engines deny every permission an empty
   grant leaves out).
 - Downloads (`Export GPX`, `Export field notes`) are read with
   `downloadedBytes(download)`; the specs assert the file name and content.
-- The share sheet cannot be driven; `share-target.spec.ts` POSTs
-  `multipart/form-data` to `share-target/` from inside the page once the
-  service worker controls it, then opens where the redirect led.
+- The share sheet cannot be driven; `share-target.spec.ts` submits a
+  `multipart/form-data` form to `share-target/` from inside the page once the
+  service worker controls it, the navigation Android's share sheet makes (a
+  `fetch()` POST is not one, and Firefox refuses the worker's redirect for
+  it), and lands where the redirect leads.
+- Offline through the service worker runs in Chromium only
+  (`SW_ONLY_IN_CHROMIUM` in `e2e/helpers.ts`): Playwright drives service
+  workers there alone, and its Firefox offline mode fails a navigation
+  before the worker sees it. The worker's offline logic is unit-tested from
+  source in `sw.test.ts` for every engine.
+- `offerInstall(page)` fires the `beforeinstallprompt` event Chromium sends
+  once the install criteria hold, which no headless run does by itself.
 - `bottom-sheet.spec.ts` sets a phone-sized viewport for every project, as the
   sheet exists only below the wide layout.
 

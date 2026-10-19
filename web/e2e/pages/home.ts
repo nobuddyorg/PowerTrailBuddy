@@ -13,6 +13,7 @@ interface Home {
   locators: {
     buttons: {
       data: Locator;
+      install: Locator;
       settings: Locator;
       language(language: Language): Locator;
     };
@@ -35,6 +36,7 @@ export function initHome(page: Page): Home {
   const locators = {
     buttons: {
       data: root.getByTestId('open-data'),
+      install: root.getByTestId('install-app'),
       settings: root.getByTestId('open-settings'),
       language: (language: Language) =>
         root.getByTestId(`language-${language}`),

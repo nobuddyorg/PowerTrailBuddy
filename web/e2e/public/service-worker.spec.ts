@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 
 import { expect, test } from '../fixture';
 
+import { SW_ONLY_IN_CHROMIUM } from '../helpers';
 import { createPageTree } from '../pages';
 import { pocketQueryZip } from '../pocketQuery';
 
@@ -119,7 +120,9 @@ test.describe('the service worker', () => {
     on,
     page,
     context,
+    browserName,
   }) => {
+    test.skip(browserName !== 'chromium', SW_ONLY_IN_CHROMIUM);
     const app = on(page);
     await app.home.do.open();
     await waitForController(page);
@@ -140,7 +143,9 @@ test.describe('the service worker', () => {
     on,
     page,
     context,
+    browserName,
   }) => {
+    test.skip(browserName !== 'chromium', SW_ONLY_IN_CHROMIUM);
     const app = on(page);
     await app.home.do.open();
     await waitForController(page);

@@ -23,7 +23,9 @@ interface CacheDetails {
     };
     code: Locator;
     distance: Locator;
+    health: Locator;
     hint: Locator;
+    recentLogs: Locator;
     links: CacheLinks;
   };
 }
@@ -43,7 +45,9 @@ export function initCacheDetails(page: Page): CacheDetails {
     },
     code: root.getByTestId('cache-code'),
     distance: root.getByTestId('cache-distance'),
+    health: root.getByTestId('health-badge'),
     hint: root.getByTestId('hint'),
+    recentLogs: root.getByTestId('recent-log'),
     links: initCacheLinks(root),
   };
   const interactions = {

@@ -11,6 +11,8 @@ export interface E2eCache {
   difficulty?: number;
   found?: boolean;
   hint?: string;
+  /** Newest first, as geocaching.com writes them; one find when not given. */
+  logs?: readonly { type: string; date: string }[];
 }
 
 const METERS_PER_DEGREE_LATITUDE = 111_195;
@@ -28,6 +30,19 @@ export function offset(east: number, north = 0) {
     longitude: ORIGIN.longitude + east / metersPerDegreeLongitude(latitude),
   };
 }
+
+const DNF_STREAK_LOGS = [
+  { type: "Didn't find it", date: '2026-09-20T00:00:00Z' },
+  { type: "Didn't find it", date: '2026-09-12T00:00:00Z' },
+  { type: 'Found it', date: '2026-08-01T00:00:00Z' },
+];
+
+const MAINTENANCE_LOGS = [
+  { type: 'Needs Maintenance', date: '2026-09-18T00:00:00Z' },
+  { type: 'Found it', date: '2026-09-02T00:00:00Z' },
+];
+
+const ONE_FIND = [{ type: 'Found it', date: '2026-09-01T00:00:00Z' }];
 
 function chain({
   prefix,
@@ -56,9 +71,16 @@ export const QUICK_TRAIL = chain({
   count: 11,
   spacingMeters: 60,
   north: 0,
-}).map((cache, index) =>
-  index === 0 ? { ...cache, hint: 'Under the synthetic stone' } : cache,
-);
+}).map((cache, index) => {
+  if (index === 0) return { ...cache, hint: 'Under the synthetic stone' };
+  if (index === 4) return { ...cache, logs: DNF_STREAK_LOGS };
+  if (index === 7) return { ...cache, logs: MAINTENANCE_LOGS };
+  return cache;
+});
+
+/** The quick trail's doubtful caches: two DNFs in a row, and a maintenance request. */
+export const DNF_STREAK_CACHE = QUICK_TRAIL[4];
+export const MAINTENANCE_CACHE = QUICK_TRAIL[7];
 
 /** The long trail: 14 caches 160 m apart, 2 km north; slower, longer than 5 km and 2 h. */
 export const LONG_TRAIL = chain({
@@ -92,6 +114,15 @@ function escapeXml(text: string) {
     .replaceAll('>', '&gt;');
 }
 
+function logEntry(log: { type: string; date: string }, index: number) {
+  return `        <groundspeak:log id="${index + 1}">
+          <groundspeak:date>${log.date}</groundspeak:date>
+          <groundspeak:type>${escapeXml(log.type)}</groundspeak:type>
+          <groundspeak:finder id="1">E2E Finder</groundspeak:finder>
+          <groundspeak:text encoded="False">Invented log.</groundspeak:text>
+        </groundspeak:log>`;
+}
+
 function cacheWaypoint(cache: E2eCache) {
   const type = cache.type ?? 'Traditional Cache';
   return `  <wpt lat="${cache.latitude.toFixed(6)}" lon="${cache.longitude.toFixed(6)}">
@@ -108,12 +139,7 @@ function cacheWaypoint(cache: E2eCache) {
       <groundspeak:terrain>1.5</groundspeak:terrain>
       <groundspeak:encoded_hints>${escapeXml(cache.hint ?? '')}</groundspeak:encoded_hints>
       <groundspeak:logs>
-        <groundspeak:log id="1">
-          <groundspeak:date>2026-09-01T00:00:00Z</groundspeak:date>
-          <groundspeak:type>Found it</groundspeak:type>
-          <groundspeak:finder id="1">E2E Finder</groundspeak:finder>
-          <groundspeak:text encoded="False">Invented log.</groundspeak:text>
-        </groundspeak:log>
+${(cache.logs ?? ONE_FIND).map(logEntry).join('\n')}
       </groundspeak:logs>
     </groundspeak:cache>
   </wpt>`;

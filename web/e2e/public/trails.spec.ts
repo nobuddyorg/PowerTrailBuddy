@@ -2,11 +2,14 @@ import { expect, test } from '../fixture';
 
 import {
   collectTileResponses,
+  denyLocation,
   downloadedBytes,
   failMapTiles,
   placeDevice,
 } from '../helpers';
 import {
+  DNF_STREAK_CACHE,
+  MAINTENANCE_CACHE,
   offset,
   pocketQueryZip,
   QUICK_TRAIL,
@@ -312,5 +315,82 @@ test.describe('the map', () => {
     await expect(app.cache.locators.hint).toHaveText(
       'Under the synthetic stone',
     );
+  });
+});
+
+test.describe('the locate button', () => {
+  test('shows the position and follows it', async ({ on, page, context }) => {
+    await placeDevice(context, offset(100, -50));
+    const app = on(page);
+
+    await app.map.do.locate();
+
+    await expect(app.map.locators.locate).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await expect(app.map.locators.position).toBeVisible();
+  });
+
+  test('says why when location is blocked', async ({ on, page, context }) => {
+    await denyLocation(context);
+    const app = on(page);
+
+    // The first press asks; once the refusal is in, a press explains it instead.
+    await expect(async () => {
+      await app.map.do.locate();
+      await expect(app.toast()).toContainText('Location access is blocked', {
+        timeout: 1_000,
+      });
+    }).toPass();
+  });
+});
+
+test.describe('doubtful caches', () => {
+  test('a trail counts the ones with recent DNFs or asking for maintenance', async ({
+    on,
+    page,
+  }) => {
+    const app = on(page);
+
+    await expect(app.trails.card(0).locators.health).toHaveText(
+      '1 with recent DNFs · 1 needs maintenance',
+    );
+    await expect(app.trails.card(1).locators.health).toBeHidden();
+  });
+
+  test('a cache with two DNFs in a row says so, with its latest logs', async ({
+    on,
+    page,
+  }) => {
+    const app = on(page);
+    await app.trails.do.search(DNF_STREAK_CACHE.code);
+    await app.trails.do.openSearchResult();
+
+    await expect(app.cache.locators.health).toHaveText('Recent DNFs');
+    await expect(app.cache.locators.recentLogs).toHaveCount(3);
+    await expect(app.cache.locators.recentLogs.first()).toContainText(
+      "Didn't find it",
+    );
+  });
+
+  test('a cache asking for maintenance says so', async ({ on, page }) => {
+    const app = on(page);
+    await app.trails.do.search(MAINTENANCE_CACHE.code);
+    await app.trails.do.openSearchResult();
+
+    await expect(app.cache.locators.health).toHaveText('Needs maintenance');
+    await expect(app.cache.locators.recentLogs.first()).toContainText(
+      'Needs maintenance',
+    );
+  });
+
+  test('a healthy cache shows no warning', async ({ on, page }) => {
+    const app = on(page);
+    await app.trails.do.search(QUICK_TRAIL[0].code);
+    await app.trails.do.openSearchResult();
+
+    await expect(app.cache.locators.recentLogs).toHaveCount(1);
+    await expect(app.cache.locators.health).toBeHidden();
   });
 });

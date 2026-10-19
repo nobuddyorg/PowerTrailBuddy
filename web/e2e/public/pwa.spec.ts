@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 
 import { expect, test } from '../fixture';
+import { offerInstall } from '../helpers';
 
 async function loadManifest(page: Page) {
   await page.goto('');
@@ -96,5 +97,24 @@ test.describe('the installable app', () => {
     expect(body.share_target.method).toBe('POST');
     expect(body.share_target.enctype).toBe('multipart/form-data');
     expect(body.share_target.params.files[0].name).toBe('files');
+  });
+
+  // Chromium offers the install once its criteria hold; the button keeps that offer and spends it.
+  test('offers to install when the browser does, and only once', async ({
+    on,
+    page,
+  }) => {
+    const app = on(page);
+    await app.home.do.open();
+    await expect(app.home.locators.buttons.install).toBeHidden();
+
+    await offerInstall(page);
+    await app.home.locators.buttons.install.click();
+
+    await expect(page.locator('html')).toHaveAttribute(
+      'data-install-prompted',
+      'yes',
+    );
+    await expect(app.home.locators.buttons.install).toBeHidden();
   });
 });

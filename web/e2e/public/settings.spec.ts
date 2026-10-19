@@ -71,4 +71,17 @@ test.describe('the trail settings', () => {
 
     await expect(app.trails.locators.count).toHaveText('2 trails');
   });
+
+  test('Escape cancels too, and hands focus back to the settings button', async ({
+    on,
+    page,
+  }) => {
+    const app = on(page);
+    await app.settings.do.open();
+    await app.settings.do.change({ minCaches: '12' });
+    await app.settings.do.dismissWithEscape();
+
+    await expect(app.trails.locators.count).toHaveText('2 trails');
+    await expect(app.home.locators.buttons.settings).toBeFocused();
+  });
 });

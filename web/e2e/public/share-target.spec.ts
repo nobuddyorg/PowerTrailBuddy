@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 
 import { expect, test } from '../fixture';
 
+import { SW_ONLY_IN_CHROMIUM } from '../helpers';
 import { ALL_CACHES, pocketQueryGpx } from '../pocketQuery';
 
 test.use({ locale: 'en-GB' });
@@ -10,47 +11,38 @@ async function waitForController(page: Page) {
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
 }
 
-// Android's share sheet: a multipart POST of the files to the share target, sent from the page so the worker sees it.
+// Android's share sheet: a form navigation POSTing the files (and a title) to the share target, which the worker answers with a redirect to the app.
 function share(page: Page, files: { name: string; text: string }[]) {
-  return page.evaluate(async (shared) => {
-    const form = new FormData();
-    for (const file of shared) {
-      form.append(
-        'files',
-        new File([file.text], file.name, { type: 'application/gpx+xml' }),
-      );
-    }
-    form.append('title', 'not a file');
-    const response = await fetch('share-target/', {
-      method: 'POST',
-      body: form,
-      redirect: 'follow',
-    });
-    return { redirected: response.redirected, url: response.url };
-  }, files);
-}
-
-// The share sheet's real request: a form navigation, which the worker answers with a redirect to the app.
-function shareByForm(page: Page, file: { name: string; text: string }) {
   return page.evaluate((shared) => {
-    const input = Object.assign(document.createElement('input'), {
-      type: 'file',
-      name: 'files',
-    });
-    const transfer = new DataTransfer();
-    transfer.items.add(
-      new File([shared.text], shared.name, { type: 'application/gpx+xml' }),
-    );
-    input.files = transfer.files;
     const form = Object.assign(document.createElement('form'), {
       method: 'POST',
       enctype: 'multipart/form-data',
       action: 'share-target/',
     });
-    form.append(input);
+    const title = Object.assign(document.createElement('input'), {
+      type: 'hidden',
+      name: 'title',
+      value: 'not a file',
+    });
+    form.append(title);
+    if (shared.length > 0) {
+      const input = Object.assign(document.createElement('input'), {
+        type: 'file',
+        name: 'files',
+        multiple: true,
+      });
+      const transfer = new DataTransfer();
+      for (const file of shared) {
+        transfer.items.add(
+          new File([file.text], file.name, { type: 'application/gpx+xml' }),
+        );
+      }
+      input.files = transfer.files;
+      form.append(input);
+    }
     document.body.append(form);
     form.submit();
-  }, file);
+  }, files);
 }
 
 function sharedFileCount(page: Page) {
@@ -69,16 +61,10 @@ test.describe('sharing a Pocket Query to the app', () => {
   test('imports the shared file once confirmed, and forgets it once taken', async ({
     on,
     page,
-    baseURL,
   }) => {
-    const landing = await share(page, [
-      { name: 'shared query.gpx', text: pocketQueryGpx() },
-    ]);
-    expect(landing).toEqual({ redirected: true, url: `${baseURL}?shared=1` });
-    expect(await sharedFileCount(page)).toBe(1);
+    await share(page, [{ name: 'shared query.gpx', text: pocketQueryGpx() }]);
 
     const app = on(page);
-    await app.home.do.open(landing.url);
     await expect(app.sharedImport.locators.files).toHaveText([
       'shared query.gpx',
     ]);
@@ -101,12 +87,9 @@ test.describe('sharing a Pocket Query to the app', () => {
     on,
     page,
   }) => {
-    const landing = await share(page, [
-      { name: 'unexpected.gpx', text: pocketQueryGpx() },
-    ]);
+    await share(page, [{ name: 'unexpected.gpx', text: pocketQueryGpx() }]);
 
     const app = on(page);
-    await app.home.do.open(landing.url);
     await app.sharedImport.do.cancel();
 
     await expect(app.emptyState()).toBeVisible();
@@ -123,16 +106,15 @@ test.describe('sharing a Pocket Query to the app', () => {
     page,
     context,
     baseURL,
+    browserName,
   }) => {
+    test.skip(browserName !== 'chromium', SW_ONLY_IN_CHROMIUM);
     const app = on(page);
     // setOffline misses the navigation a worker's redirect starts; refused requests reach the worker's fetches too.
     await context.route(`${new URL(baseURL!).origin}/**`, (route) =>
       route.abort('internetdisconnected'),
     );
-    await shareByForm(page, {
-      name: 'offline query.gpx',
-      text: pocketQueryGpx(),
-    });
+    await share(page, [{ name: 'offline query.gpx', text: pocketQueryGpx() }]);
     await expect(app.sharedImport.locators.files).toHaveText([
       'offline query.gpx',
     ]);
@@ -144,11 +126,9 @@ test.describe('sharing a Pocket Query to the app', () => {
     on,
     page,
   }) => {
-    const landing = await share(page, []);
+    await share(page, []);
 
     const app = on(page);
-    await app.home.do.open(landing.url);
-
     await expect(app.home.locators.errorNotice).toHaveText(
       /No file arrived from the share/,
     );
