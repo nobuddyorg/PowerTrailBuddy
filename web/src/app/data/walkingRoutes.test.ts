@@ -43,7 +43,7 @@ describe('fetchWalkingDistances', () => {
     );
     await expect(
       fetchWalkingDistances([a, b], new AbortController().signal),
-    ).rejects.toThrow('Routing server: 400');
+    ).rejects.toThrow(new Error('Routing server: 400'));
   });
 
   it('fails on an answer that is no distance table', async () => {
@@ -53,6 +53,6 @@ describe('fetchWalkingDistances', () => {
     );
     await expect(
       fetchWalkingDistances([a, b], new AbortController().signal),
-    ).rejects.toThrow('Routing failed: NoTable');
+    ).rejects.toThrow(new Error('Routing failed: NoTable'));
   });
 });

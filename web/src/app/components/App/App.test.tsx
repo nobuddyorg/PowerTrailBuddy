@@ -15,7 +15,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '../../i18n/I18nProvider';
 import { fileOf, gpxOf } from '../../lib/geocache/gpx.test-support';
 import { startWalk } from '../../lib/walk/walk';
-import { memoryIdb, storeValue } from '../../memoryIdb.test-support';
+import {
+  memoryIdb,
+  storedValue,
+  storeValue,
+} from '../../memoryIdb.test-support';
 import { makeCaches, makeTrail } from '../fixtures.test-support';
 import { App } from '.';
 
@@ -203,6 +207,39 @@ describe('App', () => {
     );
     fireEvent.click(button('Close'));
     expect(screen.queryByTestId('route-status')).not.toBeInTheDocument();
+  });
+
+  it('forgets the walking routes on Clear all data, even an answer still on its way', async () => {
+    let answer = () => {};
+    const router = vi.fn(
+      (url: string) =>
+        new Promise<Response>((resolve) => {
+          const size = url.split('/').at(-1)!.split(';').length;
+          const distances = Array.from({ length: size }, () =>
+            Array.from({ length: size }, () => 200),
+          );
+          answer = () => resolve(Response.json({ code: 'Ok', distances }));
+        }),
+    );
+    vi.stubGlobal('fetch', router);
+    storeValue('caches', CACHES);
+    storeValue('preferences', { walkingRoutes: true });
+    storeValue('walking-distances', new Map([['GCOLD1|GCOLD2', 150]]));
+    renderApp();
+    await waitFor(() => expect(router).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(button('Your data'));
+    fireEvent.click(button('Clear all data'));
+    // The answer is read while the store empties, before the cleared caches reach the screen.
+    answer();
+    fireEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', {
+        name: 'Clear data',
+      }),
+    );
+    expect(await screen.findByTestId('empty-state')).toBeInTheDocument();
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+    expect(storedValue('walking-distances')).toBeUndefined();
   });
 
   it('merges a further import from the data panel, and clears everything after asking', async () => {

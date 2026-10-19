@@ -21,6 +21,7 @@ export const MUTATE_TARGETS = [
   'src/app/lib/trails/walkingDistances.ts',
   'src/app/lib/routing/planRouting.ts',
   'src/app/lib/routing/osrmTable.ts',
+  'src/app/lib/routing/requestPolicy.ts',
   'src/app/lib/walk/walk.ts',
   'src/app/lib/export/fieldNotes.ts',
   'src/app/lib/export/trailGpx.ts',
@@ -46,6 +47,7 @@ export const MUTATE_TARGETS = [
   'src/app/data/sanitizeSettings.ts',
   'src/app/data/sharedFiles.ts',
   'src/app/data/store.ts',
+  'src/app/data/walkingRoutes.ts',
   'src/app/env.ts',
   'src/app/i18n/translate.ts',
 ];

@@ -77,7 +77,22 @@ sends the trail caches' coordinates to a third party:
   services (GraphHopper, openrouteservice) would need a backend.
 - **Within its policy.** At most one request a second, batches of 50 caches,
   at most 60 requests a visit, distances kept in IndexedDB so a pair is never
-  asked twice, attribution and a "fix the map" link beside the trails.
+  asked twice, attribution and a "fix the map" link beside the trails. The
+  limits and the request decisions live in pure functions
+  (`lib/routing/requestPolicy.ts`) under mutation testing, not in the hook.
+- **What gets asked, in which order.** Windows of 50 consecutive caches in
+  walking order first: one request answers 1,225 pairs, most of them the
+  legs. A link between caches far apart in that order, such as across a river
+  two parallel rows of caches run along, no window holds; leaving it on its
+  estimate would keep both banks one trail. So every remaining link of a
+  group big enough for a trail, found through the spatial grid rather than
+  all pairs, is asked next, packed so a cache two links share is sent once.
+  Trail legs come last, because the links may still split the trails.
+- **Off the urgent render.** Planning runs the link, order and split stages
+  again, as long as finding the trails itself; it runs in a deferred render
+  like `useTrails`, and a request is named by its URL, so a found mark that
+  leaves the first batch as it was neither waits for the planner nor aborts
+  and re-sends that batch.
 - **What a route changes.** Trail finding still links caches closer than
   `maxGapMeters` in a straight line; a routed gap longer than
   `2 × maxGapMeters × detourFactor` (or unroutable) is a barrier and does not

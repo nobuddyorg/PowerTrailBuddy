@@ -1,29 +1,33 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import { loadWalkingDistances, saveWalkingDistances } from './data/store';
 import { fetchWalkingDistances } from './data/walkingRoutes';
 import type { Geocache } from './lib/geocache/types';
 import { routingBatches } from './lib/routing/planRouting';
-import type { TrailSettings } from './lib/trails/types';
+import {
+  belowRequestCap,
+  checkOf,
+  nextRequest,
+  nextRequestDelay,
+  NO_REQUEST,
+  type RouteCheck,
+} from './lib/routing/requestPolicy';
+import { DEFAULT_TRAIL_SETTINGS, type TrailSettings } from './lib/trails/types';
 import {
   NO_WALKING_DISTANCES,
   type WalkingDistances,
 } from './lib/trails/walkingDistances';
 
-/** FOSSGIS's policy: one request a second at most. */
-const REQUEST_INTERVAL_MS = 1000;
-
-/** Requests per page load: the trails of a few Pocket Queries, never heavy use of a volunteer-run server. */
-export const MAX_REQUESTS = 60;
-
-export type RouteCheck =
-  | { status: 'off' }
-  | { status: 'checking'; remaining: number }
-  | { status: 'done' }
-  | { status: 'failed' }
-  | { status: 'limited' };
+export type { RouteCheck } from './lib/routing/requestPolicy';
 
 interface RouteInput {
   caches: readonly Geocache[];
@@ -33,38 +37,49 @@ interface RouteInput {
   enabled: boolean;
 }
 
-function checkOf({
-  enabled,
-  failed,
-  remaining,
-  requestCount,
-}: {
-  enabled: boolean;
-  failed: boolean;
-  remaining: number;
-  requestCount: number;
-}): RouteCheck {
-  if (!enabled) return { status: 'off' };
-  if (failed) return { status: 'failed' };
-  if (remaining === 0) return { status: 'done' };
-  if (requestCount >= MAX_REQUESTS) return { status: 'limited' };
-  return { status: 'checking', remaining };
+interface PlanInput extends RouteInput {
+  distances: WalkingDistances;
 }
 
-/** Routed walking distances for the trails' caches, fetched one batch a second while enabled and kept in IndexedDB. */
+function nothingToCancel() {}
+
+// Nothing to plan, so the first paint never waits for the first plan.
+const NO_PLAN_INPUT: PlanInput = {
+  caches: [],
+  settings: DEFAULT_TRAIL_SETTINGS,
+  locallyFound: new Set(),
+  enabled: false,
+  distances: NO_WALKING_DISTANCES,
+};
+
+/** Routed walking distances for the trails' caches, planned in a deferred render, fetched one batch a second while enabled and kept in IndexedDB; `clear` forgets them all. */
 export function useWalkingDistances({
   caches,
   settings,
   locallyFound,
   enabled,
-}: RouteInput): { walkingDistances: WalkingDistances; check: RouteCheck } {
+}: RouteInput): {
+  walkingDistances: WalkingDistances;
+  check: RouteCheck;
+  clear: () => void;
+} {
   const [distances, setDistances] =
     useState<WalkingDistances>(NO_WALKING_DISTANCES);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
   const [requestCount, setRequestCount] = useState(0);
   const [wasEnabled, setWasEnabled] = useState(enabled);
+  const [request, setRequest] = useState(NO_REQUEST);
   const lastRequestAt = useRef(-Infinity);
+  // An answer merges into the latest distances, which the deferred plan may lag behind.
+  const latest = useRef(NO_WALKING_DISTANCES);
+  const cancelLoad = useRef(nothingToCancel);
+  const cancelRequest = useRef(nothingToCancel);
+
+  const keep = useCallback((next: WalkingDistances) => {
+    latest.current = next;
+    setDistances(next);
+  }, []);
 
   // Turning it on again is a fresh try after a failure.
   if (wasEnabled !== enabled) {
@@ -74,72 +89,98 @@ export function useWalkingDistances({
 
   useEffect(() => {
     let cancelled = false;
+    const cancel = () => {
+      cancelled = true;
+    };
+    cancelLoad.current = cancel;
     loadWalkingDistances().then(
       (stored) => {
         if (cancelled) return;
-        setDistances(stored);
+        keep(stored);
         setLoaded(true);
       },
       () => {
         if (!cancelled) setFailed(true);
       },
     );
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    return cancel;
+  }, [keep]);
 
+  const input = useMemo(
+    () => ({ caches, settings, locallyFound, enabled, distances }),
+    [caches, settings, locallyFound, enabled, distances],
+  );
+  const deferred = useDeferredValue(input, NO_PLAN_INPUT);
   const batches = useMemo(
     () =>
-      enabled
-        ? routingBatches(caches, {
-            settings,
-            locallyFound,
-            walkingDistances: distances,
+      deferred.enabled
+        ? routingBatches(deferred.caches, {
+            settings: deferred.settings,
+            locallyFound: deferred.locallyFound,
+            walkingDistances: deferred.distances,
           })
         : [],
-    [enabled, caches, settings, locallyFound, distances],
+    [deferred],
   );
 
-  // Until the stored distances are in, the batches are an estimate to show, not requests to send.
-  const canRequest = loaded && !failed && requestCount < MAX_REQUESTS;
-  const next = canRequest ? batches[0] : undefined;
+  const next = nextRequest({
+    // Until the stored distances are in, the batches are an estimate to show, not requests to send.
+    mayRequest: enabled && loaded && !failed && belowRequestCap(requestCount),
+    planned: deferred === input,
+    batches,
+    current: request,
+  });
+  if (next.url !== request.url) setRequest(next);
 
   useEffect(() => {
-    if (next === undefined) return;
+    if (request.caches.length === 0) return;
     const controller = new AbortController();
-    const wait = Math.max(
-      0,
-      lastRequestAt.current + REQUEST_INTERVAL_MS - performance.now(),
+    const timer = setTimeout(
+      () => {
+        lastRequestAt.current = performance.now();
+        setRequestCount((count) => count + 1);
+        fetchWalkingDistances(request.caches, controller.signal).then(
+          (entries) => {
+            if (controller.signal.aborted) return;
+            const merged = new Map([...latest.current, ...entries]);
+            keep(merged);
+            saveWalkingDistances(merged).catch(() => setFailed(true));
+          },
+          () => {
+            // An abort is giving way to newer input or a clear, not a failure.
+            if (!controller.signal.aborted) setFailed(true);
+          },
+        );
+      },
+      nextRequestDelay({
+        lastRequestAt: lastRequestAt.current,
+        now: performance.now(),
+      }),
     );
-    const timer = setTimeout(() => {
-      lastRequestAt.current = performance.now();
-      setRequestCount((count) => count + 1);
-      fetchWalkingDistances(next, controller.signal).then(
-        (entries) => {
-          const merged = new Map([...distances, ...entries]);
-          setDistances(merged);
-          saveWalkingDistances(merged).catch(() => setFailed(true));
-        },
-        () => {
-          // An abort is this effect giving way to newer input, not a failure.
-          if (!controller.signal.aborted) setFailed(true);
-        },
-      );
-    }, wait);
-    return () => {
+    const cancel = () => {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [next, distances]);
+    cancelRequest.current = cancel;
+    return cancel;
+  }, [request, keep]);
+
+  const clear = useCallback(() => {
+    cancelLoad.current();
+    cancelRequest.current();
+    keep(NO_WALKING_DISTANCES);
+    setLoaded(true);
+  }, [keep]);
 
   return {
     walkingDistances: enabled ? distances : NO_WALKING_DISTANCES,
+    // Off until a plan with routes on exists, so turning them on never flashes "done".
     check: checkOf({
-      enabled,
+      enabled: enabled && deferred.enabled,
       failed,
       remaining: batches.length,
       requestCount,
     }),
+    clear,
   };
 }
