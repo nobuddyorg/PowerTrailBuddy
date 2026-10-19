@@ -45,12 +45,15 @@ export function fakeCacheStorage({
   }
 
   function asCache(entries: Map<string, Response>): Cache {
+    // As in a browser, putting a URL again removes its old entry and appends the new one.
     const put = async (input: RequestInfo | URL, response: Response) => {
       if (refusePut) throw new DOMException('full', 'QuotaExceededError');
+      entries.delete(resolve(input));
       entries.set(resolve(input), response);
     };
-    const cache: Pick<Cache, 'put' | 'addAll' | 'match' | 'keys'> = {
+    const cache: Pick<Cache, 'put' | 'addAll' | 'match' | 'keys' | 'delete'> = {
       put,
+      delete: async (input) => entries.delete(resolve(input)),
       // As in a browser: every response fetched first, then all stored, or none on a failure.
       addAll: async (inputs: RequestInfo[]) => {
         const responses = await Promise.all(

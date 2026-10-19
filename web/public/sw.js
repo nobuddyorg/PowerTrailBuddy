@@ -1,4 +1,4 @@
-// Precached on install, then cache-first for hashed `_next/static/**`, network-first for the app shell (pages, manifest, logo, favicons), one cache per build, plus the share target (docs/reference/architecture.md).
+// Precached on install, then cache-first for hashed `_next/static/**`, network-first for the app shell (pages, manifest, logo, favicons), one cache per build, the map tiles viewed, plus the share target (docs/reference/architecture.md).
 
 // Shell caches only: the share target's cache must survive a new build.
 const CACHE_PREFIX = 'powertrailbuddy-shell-';
@@ -9,6 +9,19 @@ const SHARED_FILES_CACHE = 'powertrailbuddy-shared-files';
 // site.webmanifest's share_target: `action` (relative to the manifest) and the files param's `name`.
 const SHARE_TARGET_PATH = '/share-target/';
 const SHARE_FILES_FIELD = 'files';
+
+// Kept across builds like the shared files: the tiles viewed online, so the same area still has a map offline.
+const TILE_CACHE = 'powertrailbuddy-tiles';
+const TILE_ORIGIN = 'https://tile.openstreetmap.org';
+// About 30-50 MB of OpenStreetMap tiles; the oldest go first.
+const MAX_TILES = 2000;
+// Older than this, a tile is fetched again when the network answers; offline it is still shown.
+const MAX_TILE_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+// A tile's own headers say nothing about when it was kept, so the kept copy carries that itself.
+const KEPT_AT_HEADER = 'x-powertrailbuddy-kept-at';
+
+// A weak signal neither answers nor fails for tens of seconds; past this the kept shell opens instead.
+const NETWORK_TIMEOUT_MS = 3000;
 
 // A Pocket Query share is one zip of a few MB; anything far past these is not one.
 const MAX_SHARED_FILES = 20;
@@ -78,10 +91,19 @@ function isShareTargetRequest(pathname, method, basePath) {
   return method === 'POST' && pathname === `${basePath}${SHARE_TARGET_PATH}`;
 }
 
-// Cross-origin (the map tiles) always passes through untouched: never intercepted, never cached.
+// A tile URL as components/Map/ builds it: `{z}/{x}/{y}.png`.
+function isMapTile(url) {
+  return (
+    url.origin === TILE_ORIGIN && /^\/\d+\/\d+\/\d+\.png$/.test(url.pathname)
+  );
+}
+
+// Cross-origin passes through untouched (the routing server above all), map tiles alone excepted.
 function strategyFor(request, worker) {
   const url = new URL(request.url);
-  if (url.origin !== worker.origin) return 'pass-through';
+  if (url.origin !== worker.origin) {
+    return request.method === 'GET' && isMapTile(url) ? 'tile' : 'pass-through';
+  }
   if (isShareTargetRequest(url.pathname, request.method, worker.basePath)) {
     return 'share';
   }
@@ -153,17 +175,72 @@ async function cacheFirst(request) {
   return response;
 }
 
-async function networkFirst(request) {
+function settlesWithin(promise, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error(`No answer within ${timeoutMs} ms`)),
+      timeoutMs,
+    );
+    promise.then(resolve, reject).finally(() => clearTimeout(timer));
+  });
+}
+
+async function networkFirst(request, timeoutMs = NETWORK_TIMEOUT_MS) {
   const cache = await caches.open(CACHE_NAME);
-  try {
-    const response = await fetch(request);
+  // A late answer still updates the kept shell, for the next start.
+  const network = fetch(request).then((response) => {
     if (response.ok) void cache.put(request, response.clone());
     return response;
-  } catch (error) {
-    // Offline: the last shell this build served; the page under any query, as after a share's `?shared=1`.
+  });
+  try {
+    return await settlesWithin(network, timeoutMs);
+  } catch {
+    // Offline or too slow: the last shell this build served; the page under any query, as after a share's `?shared=1`.
     const cached = await cache.match(request, { ignoreSearch: true });
-    if (cached) return cached;
-    throw error;
+    // Nothing kept: wait for the network after all, and fail as it does.
+    return cached ?? network;
+  }
+}
+
+function isFreshTile(response, now) {
+  const keptAt = Number(response.headers.get(KEPT_AT_HEADER));
+  return now - keptAt < MAX_TILE_AGE_MS;
+}
+
+// The cache lists its entries oldest first, and putting a tile again moves it to the end.
+async function evictOldTiles(cache, maxTiles) {
+  const keys = await cache.keys();
+  const excess = keys.slice(0, Math.max(0, keys.length - maxTiles));
+  await Promise.all(excess.map((key) => cache.delete(key)));
+}
+
+async function keepTile(cache, request, response, now) {
+  const headers = {
+    'content-type': response.headers.get('content-type') ?? 'image/png',
+    [KEPT_AT_HEADER]: String(now),
+  };
+  await cache.put(request, new Response(await response.blob(), { headers }));
+  await evictOldTiles(cache, MAX_TILES);
+}
+
+// What an image gets when there is neither a network nor a kept tile: an error status, never a rejected fetch.
+function missingTile() {
+  return new Response('', { status: 504, statusText: 'Offline' });
+}
+
+// Only tiles viewed before are kept, never an area fetched in advance: the OpenStreetMap tile policy forbids that.
+async function tileFirst(request, now = Date.now()) {
+  const cache = await caches.open(TILE_CACHE);
+  const kept = await cache.match(request);
+  if (kept && isFreshTile(kept, now)) return kept;
+  try {
+    const response = await fetch(request);
+    if (!response.ok) return kept ?? response;
+    void keepTile(cache, request, response.clone(), now);
+    return response;
+  } catch {
+    // Offline: a tile past its age still beats a blank map.
+    return kept ?? missingTile();
   }
 }
 
@@ -180,6 +257,7 @@ const STRATEGIES = {
   share: receiveShare,
   'cache-first': cacheFirst,
   'network-first': networkFirst,
+  tile: tileFirst,
 };
 
 self.addEventListener('install', (event) => {

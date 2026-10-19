@@ -54,7 +54,15 @@ export default defineConfig({
     {
       name: 'firefox',
       testDir: './e2e/public',
-      use: { ...devices['Desktop Firefox'] },
+      use: {
+        ...devices['Desktop Firefox'],
+        // Playwright routes no request a Firefox service worker makes itself, so the worker's tile fetches must never find the real server.
+        launchOptions: {
+          firefoxUserPrefs: {
+            'network.dns.localDomains': 'tile.openstreetmap.org',
+          },
+        },
+      },
     },
   ],
   webServer: isRemote

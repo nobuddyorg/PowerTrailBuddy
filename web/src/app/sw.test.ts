@@ -1,21 +1,12 @@
 import fc from 'fast-check';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  fakeCacheStorage,
-  type FakeCacheStorage,
-} from './data/cacheStorage.test-support';
+import { type FakeCacheStorage } from './data/cacheStorage.test-support';
 import { SHARED_FILES_CACHE, takeSharedFiles } from './data/sharedFiles';
-import { loadWorker, ORIGIN, SCRIPT_URL } from './sw.test-support';
+import { installCaches, loadWorker, ORIGIN } from './sw.test-support';
 
 const SHELL_CACHE = 'powertrailbuddy-shell-b1';
 const MB = 1024 * 1024;
-
-function installCaches(options: { refusePut?: boolean } = {}) {
-  const fake = fakeCacheStorage({ baseUrl: SCRIPT_URL, ...options });
-  vi.stubGlobal('caches', fake.storage);
-  return fake;
-}
 
 function sharePost(files: File[], field = 'files') {
   const form = new FormData();
@@ -113,15 +104,29 @@ describe('strategyFor', () => {
   const strategy = (url: string, method = 'GET', mode = 'cors') =>
     worker.strategyFor({ url, method, mode }, worker.WORKER);
 
-  it('passes map tiles through, never caching them', () => {
+  it('keeps map tiles, and only the tile URLs the map asks for', () => {
     expect(strategy('https://tile.openstreetmap.org/12/2200/1343.png')).toBe(
-      'pass-through',
+      'tile',
     );
     expect(
       strategy('https://tile.openstreetmap.org/_next/static/x.png', 'GET'),
     ).toBe('pass-through');
     expect(
       strategy('https://tile.openstreetmap.org/a', 'GET', 'navigate'),
+    ).toBe('pass-through');
+    expect(strategy('https://tile.openstreetmap.org/1/0/0.png', 'POST')).toBe(
+      'pass-through',
+    );
+    expect(strategy('https://a.tile.openstreetmap.org/1/0/0.png')).toBe(
+      'pass-through',
+    );
+  });
+
+  it('passes the routing server through, never caching it', () => {
+    expect(
+      strategy(
+        'https://routing.openstreetmap.de/routed-foot/table/v1/foot/1,2;3,4',
+      ),
     ).toBe('pass-through');
   });
 
@@ -346,118 +351,6 @@ describe('receiveShare', () => {
   });
 });
 
-describe('cacheFirst', () => {
-  const asset = `${ORIGIN}/PowerTrailBuddy/_next/static/chunks/1.js`;
-
-  it('answers from any cache without touching the network', async () => {
-    const fake = installCaches();
-    await (
-      await fake.storage.open(SHELL_CACHE)
-    ).put(asset, new Response('cached'));
-    const fetch = vi.fn();
-    vi.stubGlobal('fetch', fetch);
-    const { worker } = loadWorker();
-
-    const response = await worker.cacheFirst(new Request(asset));
-
-    expect(await response.text()).toBe('cached');
-    expect(fetch).not.toHaveBeenCalled();
-  });
-
-  it("fetches a miss and keeps it in this build's cache", async () => {
-    const fake = installCaches();
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response('fresh')),
-    );
-    const { worker } = loadWorker();
-
-    const response = await worker.cacheFirst(new Request(asset));
-
-    expect(await response.text()).toBe('fresh');
-    await vi.waitFor(() => expect(fake.urls(SHELL_CACHE)).toEqual([asset]));
-  });
-
-  it('never keeps a failed response', async () => {
-    const fake = installCaches();
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response('missing', { status: 404 })),
-    );
-    const { worker } = loadWorker();
-
-    const response = await worker.cacheFirst(new Request(asset));
-
-    expect(response.status).toBe(404);
-    expect(fake.urls(SHELL_CACHE)).toEqual([]);
-  });
-});
-
-describe('networkFirst', () => {
-  const page = `${ORIGIN}/PowerTrailBuddy/`;
-
-  it("answers from the network and keeps the shell in this build's cache", async () => {
-    const fake = installCaches();
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response('online')),
-    );
-    const { worker } = loadWorker();
-
-    const response = await worker.networkFirst(new Request(page));
-
-    expect(await response.text()).toBe('online');
-    await vi.waitFor(() => expect(fake.urls(SHELL_CACHE)).toEqual([page]));
-  });
-
-  it('never keeps a failed response', async () => {
-    const fake = installCaches();
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response('error', { status: 500 })),
-    );
-    const { worker } = loadWorker();
-
-    expect((await worker.networkFirst(new Request(page))).status).toBe(500);
-    expect(fake.urls(SHELL_CACHE)).toEqual([]);
-  });
-
-  it('opens the last shell it kept when offline', async () => {
-    const fake = installCaches();
-    await (
-      await fake.storage.open(SHELL_CACHE)
-    ).put(page, new Response('kept'));
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('offline')));
-    const { worker } = loadWorker();
-
-    const response = await worker.networkFirst(new Request(page));
-
-    expect(await response.text()).toBe('kept');
-  });
-
-  it('opens the kept page for a navigation that adds a query, as after a share', async () => {
-    const fake = installCaches();
-    await (
-      await fake.storage.open(SHELL_CACHE)
-    ).put(page, new Response('kept'));
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('offline')));
-    const { worker } = loadWorker();
-
-    const response = await worker.networkFirst(new Request(`${page}?shared=1`));
-
-    expect(await response.text()).toBe('kept');
-  });
-
-  it('fails as the network did when offline with nothing kept', async () => {
-    installCaches();
-    const offline = new TypeError('offline');
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(offline));
-    const { worker } = loadWorker();
-
-    await expect(worker.networkFirst(new Request(page))).rejects.toBe(offline);
-  });
-});
-
 describe('lifecycle events', () => {
   const base = `${ORIGIN}/PowerTrailBuddy`;
   const SHELL = [
@@ -569,17 +462,39 @@ describe('lifecycle events', () => {
     expect(self.clients.claim).toHaveBeenCalledOnce();
   });
 
-  it('lets a map tile go to the network untouched', () => {
+  it('lets a request to the routing server go to the network untouched', () => {
     const { listeners } = loadWorker();
     const respondWith = vi.fn();
 
     listeners.get('fetch')?.({
-      request: new Request('https://tile.openstreetmap.org/1/0/0.png'),
+      request: new Request(
+        'https://routing.openstreetmap.de/routed-foot/table/v1/foot/1,2;3,4',
+      ),
       respondWith,
       waitUntil: vi.fn(),
     });
 
     expect(respondWith).not.toHaveBeenCalled();
+  });
+
+  it('answers a map tile itself', async () => {
+    installCaches();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('tile')),
+    );
+    const { listeners } = loadWorker();
+    let answer: Promise<Response> | undefined;
+
+    listeners.get('fetch')?.({
+      request: new Request('https://tile.openstreetmap.org/1/0/0.png'),
+      respondWith: (response) => {
+        answer = response;
+      },
+      waitUntil: vi.fn(),
+    });
+
+    expect(await (await answer)?.text()).toBe('tile');
   });
 
   it('answers a share target POST with the stored share', async () => {
