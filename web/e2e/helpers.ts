@@ -218,3 +218,7 @@ export async function offerInstall(page: Page) {
 /** Why an offline test is Chromium-only: Playwright drives service workers there alone (its docs), and its Firefox offline mode fails a navigation before the worker sees it. */
 export const SW_ONLY_IN_CHROMIUM =
   'offline through the service worker is only emulated in Chromium';
+
+/** Why a walk under the worker is Chromium-only: Playwright routes no request a Firefox worker makes itself, so the walk's moving map logs the worker's failed tile loads. */
+export const WORKER_MAP_ONLY_IN_CHROMIUM =
+  'a moving map under the service worker is only routed in Chromium';

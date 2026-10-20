@@ -53,7 +53,7 @@
     "error": {
       "unsupported": "not a geocache .zip or .gpx file",
       "unreadable": "the file is damaged and could not be read",
-      "tooLarge": "too large (more than 50 files or 100 MB unpacked)"
+      "tooLarge": "too large (more than 50 files or 100 MB unpacked, or more than 20,000 caches in one import)"
     }
   },
   "error": {

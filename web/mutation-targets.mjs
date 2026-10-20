@@ -6,12 +6,14 @@ export const MUTATE_TARGETS = [
   'src/app/lib/geocache/recentLogs.ts',
   'src/app/lib/geocache/parking.ts',
   'src/app/lib/geocache/health.ts',
+  'src/app/lib/geocache/xmlCharacters.ts',
   'src/app/lib/trails/geo.ts',
   'src/app/lib/trails/findTrails.ts',
   'src/app/lib/trails/compareCodes.ts',
   'src/app/lib/trails/filterCaches.ts',
   'src/app/lib/trails/linkComponents.ts',
   'src/app/lib/trails/orderPath.ts',
+  'src/app/lib/trails/nearestNeighbour.ts',
   'src/app/lib/trails/projection.ts',
   'src/app/lib/trails/scoreTrail.ts',
   'src/app/lib/trails/roundTrips.ts',
@@ -21,6 +23,7 @@ export const MUTATE_TARGETS = [
   'src/app/lib/trails/walkingDistances.ts',
   'src/app/lib/routing/planRouting.ts',
   'src/app/lib/routing/osrmTable.ts',
+  'src/app/lib/routing/requestPolicy.ts',
   'src/app/lib/walk/walk.ts',
   'src/app/lib/export/fieldNotes.ts',
   'src/app/lib/export/trailGpx.ts',
@@ -46,6 +49,10 @@ export const MUTATE_TARGETS = [
   'src/app/data/sanitizeSettings.ts',
   'src/app/data/sharedFiles.ts',
   'src/app/data/store.ts',
+  'src/app/data/walkingRoutes.ts',
   'src/app/env.ts',
   'src/app/i18n/translate.ts',
 ];
+
+// Mutated, but outside the coverage floor: the tests evaluate the worker's source text with `new Function`, which V8 coverage cannot attribute to the file.
+export const MUTATE_ONLY_TARGETS = ['public/sw.js'];

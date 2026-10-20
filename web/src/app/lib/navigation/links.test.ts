@@ -1,7 +1,12 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 
-import { cachePageUrl, geoUri, walkingDirectionsUrl } from './links';
+import {
+  appleMapsUrl,
+  cachePageUrl,
+  geoUri,
+  walkingDirectionsUrl,
+} from './links';
 
 const SPOT = { latitude: 48.1234567, longitude: -11.5 };
 
@@ -33,6 +38,33 @@ describe('geoUri', () => {
           expect(encoded).not.toMatch(/[()]/);
           expect(decodeURIComponent(encoded)).toBe(label);
           const [lat, lon] = position.split(',').map(Number);
+          expect(Math.abs(lat - latitude)).toBeLessThanOrEqual(5e-7);
+          expect(Math.abs(lon - longitude)).toBeLessThanOrEqual(5e-7);
+        },
+      ),
+    );
+  });
+});
+
+describe('appleMapsUrl', () => {
+  it('drops a labelled pin on the coordinates in Apple Maps', () => {
+    expect(appleMapsUrl(SPOT, 'GCTEST1 Bench')).toBe(
+      'https://maps.apple.com/?ll=48.123457,-11.500000&q=GCTEST1%20Bench',
+    );
+  });
+
+  it('keeps any label inside its own parameter', () => {
+    fc.assert(
+      fc.property(
+        fc.double({ min: -90, max: 90, noNaN: true }),
+        fc.double({ min: -180, max: 180, noNaN: true }),
+        fc.string(),
+        (latitude, longitude, label) => {
+          const url = new URL(appleMapsUrl({ latitude, longitude }, label));
+          expect(url.origin).toBe('https://maps.apple.com');
+          expect([...url.searchParams.keys()]).toEqual(['ll', 'q']);
+          expect(url.searchParams.get('q')).toBe(label);
+          const [lat, lon] = url.searchParams.get('ll')!.split(',').map(Number);
           expect(Math.abs(lat - latitude)).toBeLessThanOrEqual(5e-7);
           expect(Math.abs(lon - longitude)).toBeLessThanOrEqual(5e-7);
         },

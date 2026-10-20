@@ -28,17 +28,17 @@ All paths relative to `web/src/app/`.
 
 | Directory | Holds | May import |
 | --- | --- | --- |
-| `lib/geocache/` | Cache types, the GPX parser, recent logs (`recentLogs.ts`), parking areas (`parking.ts`), cache health (`health.ts`), the file importer (zip and gpx), the merge | `jszip`, other `lib/` |
-| `lib/trails/` | Trail settings and their defaults, geometry, the trail finder and its stages (`filterCaches`, `linkComponents`, `orderPath`, `splitWalks`, `scoreTrail`, `trailShape`, `projection`, `compareCodes`), routed walking distances and barriers (`walkingDistances.ts`), distances from the user (`nearby.ts`) | other `lib/` |
-| `lib/routing/` | Which caches still need walking distances (`planRouting.ts`), the OSRM table request and its answer (`osrmTable.ts`) | other `lib/` |
-| `lib/walk/` | Walk state: start, orient, reverse, record, undo, next cache, progress, pace | other `lib/` |
+| `lib/geocache/` | Cache types, the GPX parser, the characters XML 1.0 forbids (`xmlCharacters.ts`), recent logs (`recentLogs.ts`), parking areas (`parking.ts`), cache health (`health.ts`), the file importer (zip and gpx), the merge | `jszip`, other `lib/` |
+| `lib/trails/` | Trail settings and their defaults, geometry, the trail finder and its stages (`filterCaches`, `linkComponents`, `orderPath` with `nearestNeighbour`, `splitWalks`, `scoreTrail`, `trailShape`, `projection`, `compareCodes`), routed walking distances and barriers (`walkingDistances.ts`), distances from the user (`nearby.ts`) | other `lib/` |
+| `lib/routing/` | Which caches still need walking distances (`planRouting.ts`), the OSRM table request and its answer (`osrmTable.ts`), FOSSGIS's rate limits, the next request and the route status (`requestPolicy.ts`) | other `lib/` |
+| `lib/walk/` | Walk state: start, orient, reverse, record, undo, next cache, progress, pace, leaving out caches a re-import dropped | other `lib/` |
 | `lib/export/` | The two downloads: a trail as GPX (`trailGpx.ts`), a walk as Geocaching.com field notes (`fieldNotes.ts`) | other `lib/` |
 | `lib/format/` | Display formatting: distances, durations, rates, ratings, coordinates, dates, compass points, decimal input | other `lib/` |
-| `lib/navigation/` | Outbound links (`coord.info`, `geo:`, Google Maps walking directions) and the share-target landing (`sharedLaunch.ts`) | other `lib/` |
+| `lib/navigation/` | Outbound links (`coord.info`, `geo:`, Apple Maps for Apple devices, Google Maps walking directions) and the share-target landing (`sharedLaunch.ts`) | other `lib/` |
 | `lib/ui-logic/` | Pure decisions behind the UI: trail cards (sort, filter, health), search, presets, heading, parking, bottom-sheet snapping, walk statistics | other `lib/` |
 | `data/` | Browser storage: IndexedDB through idb-keyval (`store.ts`), settings validation (`sanitizeSettings.ts`), shared files from Cache Storage (`sharedFiles.ts`), the `localStorage` shim (`browserStorage.ts`); the routing server's `fetch` (`walkingRoutes.ts`) | `lib/`, `idb-keyval` |
 | `components/` | React UI | `lib/`, `data/`, `i18n/` |
-| `components/Map/` | The only Leaflet wrapper; owns the tile URL. `content.ts` (pure) turns trails and a walk into markers, lines and badges | `leaflet`, `lib/` |
+| `components/Map/` | The only Leaflet wrapper; owns the tile URL. `content.ts` (pure) turns trails and a walk into markers, lines and badges; `userMoves.ts` tells a pan or zoom by hand, which ends following, from the app's own fits | `leaflet`, `lib/` |
 | `i18n/` | `I18nProvider`, `useI18n`, the pure helpers in `translate.ts`, `de.json`, `en.json` | `data/browserStorage.ts` only |
 | top level | `layout.tsx`, `page.tsx`, `env.ts` (base path), `useAppState.ts` with `useMarkActions.ts` and `useWalkActions.ts` (the state and its actions; shared types in `dataCore.ts`), the device hooks (`useGeolocation`, `useCompass`, `useWakeLock`, `useFollow`, `useInstallPrompt`, `useBrowserState`), `useTrails.ts`, `useWalkingDistances.ts` (fetches and keeps routed distances while walking routes are on), `useServiceWorker.ts`, `ServiceWorkerRegistration.tsx`, `globals.css` | anything above |
 
@@ -46,11 +46,16 @@ All paths relative to `web/src/app/`.
 `web/public/site.webmanifest` the manifest.
 
 The boundaries are enforced by `web/.dependency-cruiser.mjs`
-(`lib-is-pure`, `storage-behind-data-layer`, `leaflet-behind-map`,
-`data-layer-no-components`, `i18n-no-app-deps`, `e2e-is-black-box`,
-`scripts-are-standalone`, `app-bundle-no-node-tooling`, `no-circular`,
-`no-orphans`, `not-to-unresolvable`) and, for static imports in the editor,
-by ESLint's `no-restricted-imports`.
+(`lib-is-pure`, `lib-no-node-core`, `app-bundle-no-node-core`,
+`storage-behind-data-layer`, `leaflet-behind-map`, `data-layer-only-lib`,
+`i18n-no-app-deps`, `e2e-is-black-box`, `scripts-are-standalone`,
+`app-bundle-no-node-tooling`, `no-circular`, `no-orphans`,
+`not-to-unresolvable`) and, for static imports in the editor, by ESLint's
+`no-restricted-imports`. A rule sees direct imports only, so `lib/`, `data/`
+and `i18n/` forbid every app module outside what the table allows, not just
+the layers above them: a top-level hook or `dataCore.ts` would reach React or
+IndexedDB in turn. No Node built-in is imported outside tests (none at all in
+`lib/`).
 
 ## Contracts
 
@@ -87,7 +92,11 @@ export interface Geocache extends Coordinates {
 skippedWaypoints: number; parkingAreas: ParkingArea[] }`. Throws
 `GpxParseError` (`code: 'not-xml' | 'not-gpx'`) for unusable input: any XML
 parser error is `not-xml`, a root other than `gpx` is `not-gpx`. Whitespace
-before the XML declaration is tolerated.
+before the XML declaration is tolerated, and so are characters XML 1.0
+forbids (C0 controls but tab, LF and CR; lone surrogates; U+FFFE, U+FFFF),
+raw or as numeric character references (`&#1;`, `&#x1F;`, past U+10FFFF):
+`withoutNotXmlContent` (`xmlCharacters.ts`) removes them before parsing, so
+one in one log's free text no longer makes the whole query `not-xml`.
 
 - Accepts the Groundspeak cache extension in namespaces `…/cache/1/0` and
   `…/cache/1/0/1`, matched by local name and namespace prefix, directly under
@@ -125,7 +134,7 @@ before the XML declaration is tolerated.
 
 ### `lib/geocache/importFiles.ts`
 
-`importFiles(files: readonly File[]): Promise<ImportResult>`,
+`importFiles(files: readonly File[], { maxCaches = MAX_IMPORT_CACHES } = {}): Promise<ImportResult>`,
 `ImportResult = { caches: Geocache[]; files: ImportedFile[]; sources:
 string[] }`,
 `ImportedFile = { name: string; cacheCount: number; error?: 'unsupported' |
@@ -158,6 +167,10 @@ Files are read one after another; the extension decides, case-insensitively.
   that name in `sources`; `ImportResult.sources` lists every document that
   parsed, sorted and once each, a `-wpts.gpx` or one without caches included.
   A refused file or archive names none.
+- An import holds at most **20,000** caches, each code counted once
+  (`MAX_IMPORT_CACHES`): a file that would take it past that is `too-large`
+  whole, after the files before it, and names no query, so the merge keeps
+  what that query had brought before. Later files that fit are still read.
 - Caches are deduplicated by code; a later file wins, with the sources of
   every file that had the cache. Parking areas from every
   file and entry of one import are matched to caches after that (`parking.ts`:
@@ -218,7 +231,7 @@ walkingDistances?: WalkingDistances }): Trail[]`, fully deterministic for the
 same input. A leg's walking metres (`legMetersFor`) are the routed distance
 where `walkingDistances` has one, else the straight line times
 `detourFactor`; without routed distances the result is exactly the
-straight-line one. `orderedGroups(caches, input)` exposes stages 1–3 for the
+straight-line one, ordering included. `orderedGroups(caches, input)` exposes stages 1–3 for the
 routing planner.
 
 1. **Filter** (`filterCaches.ts`): type in `settings.cacheTypes`, difficulty
@@ -245,13 +258,27 @@ routing planner.
    endpoints. A move must save more than a relative 1e-9; the work cap is
    20,000,000 move evaluations (a count, never a time limit). Ties, at the
    start and in nearest neighbour, go to the earliest cache in code order.
+   Nearest neighbour (`nearestNeighbour.ts`) is a sweep west to east, never
+   all pairs: from each cache it measures outwards until a cache is farther
+   east or west than the nearest found, which gives exactly the all-pairs
+   answer; it too is capped, at 20,000,000 distance evaluations per search,
+   after which each step goes on to the next cache east, else west.
+   Once any leg is routed (`walkingDistances` not empty), the order follows
+   the legs (`legMeters`) too: each nearest-neighbour step goes on to the
+   shortest leg among the 8 plane-nearest unvisited caches, 2-opt starts from
+   the shorter by legs of that order and the plane order, and measures by
+   legs only the moves that join a cache to one of its 8 plane-nearest
+   (`NEAR_COUNT`). 2-opt never lengthens a walk, so the order is never longer
+   by its legs than the plane order; a move that leaves out an unroutable
+   (Infinity) leg is always taken. Both caps apply as before.
 4. **Split** the ordered path greedily into walks whose legs plus way back
    stay at or below `maxWalkKilometers`; walks with fewer than `minCaches` caches are
    dropped. This also drops the components smaller than `minCaches`: a small
    group can only split into small walks.
    With `loopsOnly` (`roundTrips.ts`), each walk is then closed into a round
    trip: 2-opt over the closed tour from the walk's order (`shortenLoop` in
-   `orderPath.ts`; the first cache stays put, the same work cap), kept only
+   `orderPath.ts`; the first cache stays put, the same work cap, by legs
+   once any leg is routed, as in step 3), kept only
    if it walks shorter than the order it started from, then started after its
    shortest leg, the earliest on a tie, so that leg is the way back. Walks
    whose way back is longer than `maxReturnMeters` are dropped. A round trip
@@ -282,14 +309,27 @@ joins them. `legMetersFor(distances, detourFactor)`, `isWalkableGap(legMeters,
 
 - `routingBatches(caches, input)` (`planRouting.ts`): the requests still
   needed, each up to `BATCH_SIZE` (50) caches. First, windows along each
-  group of at least `minCaches` in walking order, overlapping by
+  group of at least `minCaches` in straight-line walking order (it stays
+  put as answers arrive; the routed order would not), overlapping by
   `BATCH_OVERLAP` (10), that hold an unrouted pair close enough to link
   (straight line under `maxGapMeters`, found with the spatial grid), so a
-  cache marked found or added shifts the windows without asking again for
-  pairs only a window ever held. Once there are none,
-  every leg of every trail, the way back first, that is still unrouted, two
-  caches each, packed into batches: without `loopsOnly` only ways back are
-  left by then; a round trip can also join caches no window held together. Empty once everything is known.
+  cache marked found or added asks again for no pair only a window ever
+  held. Once there are none, every unrouted link of those groups (a pair
+  closer than `maxGapMeters`, found through the spatial grid), so a barrier
+  between caches far apart in walking order splits the group too. Once
+  those are routed, every leg of every trail, the way back first, that is
+  still unrouted: without `loopsOnly` only ways back are left by then; a
+  round trip can also join caches no window held together. Links and legs
+  are pairs, packed in order by `packPairs` into batches of at most
+  `BATCH_SIZE` distinct caches. Empty once everything is known.
+- `requestPolicy.ts`: FOSSGIS's limits and the route status.
+  `REQUEST_INTERVAL_MS` (1000), `MAX_REQUESTS` (60) a page load,
+  `belowRequestCap(requestCount)`, `nextRequestDelay({ lastRequestAt, now })`
+  (what is left of the second since the last request, never below 0),
+  `nextRequest({ mayRequest, planned, batches, current })` (none once
+  requests must stop; the current one while the plan is behind its input;
+  else the first batch, named by its `tableUrl`), and `checkOf` (`off`, then
+  `failed`, then `done`, then `limited`, else `checking`).
 - `tableUrl(caches)` and `parseTable(caches, body)` (`osrmTable.ts`):
   `https://routing.openstreetmap.de/routed-foot/table/v1/foot/<lon,lat;…>?annotations=distance`
   (six decimals); every pair of the answer's metre matrix, the longer of
@@ -322,15 +362,21 @@ other way round); `recordOutcome(state, code, outcome, at)` (a later outcome
 replaces an earlier one; a code outside the walk is ignored);
 `undoLast(state)`; `nextCode(state)` (the first code without an outcome,
 `undefined` when done); `walkProgress(state)` → `{ done, total, found, dnf }`;
-`walkPace(state, now)` → `{ elapsedMinutes, cachesPerHour }`. Recording
+`walkPace(state, now)` → `{ elapsedMinutes, cachesPerHour }`;
+`withoutMissingCaches(state, present)` (the walk without the open codes not in
+`present`; recorded ones stay). Recording
 `found` also marks the cache found in the app (`useWalkActions.ts`), and undo
-takes that back.
+takes that back. `WalkView` shows `withoutMissingCaches(walk, imported codes)`,
+so a re-import that dropped the next cache goes on with the next one still
+imported, the progress counting only those; the stored walk keeps the code,
+and a later import that brings the cache back puts it back in the walk.
 
 ### `lib/export/`
 
 - `buildTrailGpx(trail, title)`: GPX 1.1 with one waypoint per cache in
   walking order, the parking areas as `PK…` waypoints, and a route through
-  the caches; text XML-escaped, characters XML cannot carry dropped,
+  the caches; text XML-escaped, characters XML cannot carry dropped
+  (`withoutNotXmlCharacters`, shared with the parser),
   coordinates to six decimals. Saved as `powertrail-<rank>.gpx`.
 - `buildFieldNotes(entries)`: Geocaching.com's drafts format,
   `geocache_visits.txt`: UTF-16LE with a byte order mark, CRLF lines of
@@ -346,11 +392,12 @@ it.
 
 ### `data/store.ts`
 
-The only module importing idb-keyval: `loadCaches()`, `saveCaches(caches)`,
+The only module importing idb-keyval: `loadCaches()`,
+`mergeIntoStoredCaches(incoming)` (→ `MergedCaches`),
 `loadSettings()` (through `sanitizeSettings`: unknown keys dropped, missing
 ones defaulted, numbers clamped and rounded), `saveSettings(settings)`,
-`loadLocallyFound()`, `saveLocallyFound(codes)`, `loadIgnored()`,
-`saveIgnored(codes)`, `loadWalk()`, `saveWalk(state | undefined)`,
+`loadLocallyFound()`, `updateLocallyFound(change)`, `loadIgnored()`,
+`updateIgnored(change)`, `loadWalk()`, `saveWalk(state | undefined)`,
 `loadPreferences()` (over `DEFAULT_PREFERENCES`), `savePreferences(p)`,
 `loadImportInfo()`, `saveImportInfo(info)`, `loadWalkingDistances()` (only
 string keys with non-negative or infinite metres), `saveWalkingDistances(map)`,
@@ -367,13 +414,20 @@ returns `parseTable`'s entries; a non-OK status or a bad answer rejects.
 stored distances, then while `enabled` asks for `routingBatches(...)[0]`,
 one request at a time and at least a second apart, at most `MAX_REQUESTS`
 (60) per page load, merges each answer and adds it to the stored ones in one
-transaction (`addWalkingDistances`, so another tab's answers stay), and returns
-`{ walkingDistances, check }`. `walkingDistances` is empty while off.
+transaction (`addWalkingDistances`, so another tab's answers stay), and
+returns `{ walkingDistances, check, clear }`. It plans in a deferred render,
+as `useTrails` finds trails, so no found mark or settings change waits for the
+planner; a request is keyed by its URL, so a new plan with the same first
+batch never re-sends it, and a plan behind its input keeps the request it
+has. Once sent, a request is answered and used even if the input changes, and
+no other is sent meanwhile; only turning routes off, leaving the page or
+`clear()` aborts it. `walkingDistances` is empty while off.
 `check` is `off`, `checking` (with the batches left), `done`, `limited` (the
 cap was reached) or `failed` (a request, a read or a write failed; turning it
-off and on tries again). A request is keyed by its caches and places, not by
-the array, and once sent it is answered and used even if the input changes;
-only turning routes off or leaving the page aborts it.
+off and on tries again); it stays `off` until a plan with routes on exists.
+`clear()` cancels the stored-distance read and the request in flight, drops
+its answer and forgets every distance in memory; the Shell calls it before
+`clearData`, so no answer routed before Clear all data is stored again.
 
 ### `data/sharedFiles.ts`
 
@@ -395,14 +449,31 @@ Everything the app keeps, all in the user's browser, all per origin.
 | same | `preferences` | `{ sort, showOtherCaches, walkingRoutes }`: the trail list's sort, whether caches outside trails are drawn, whether walking routes are on | `data/store.ts` |
 | same | `last-import` | `{ at, cacheCount, fileNames }` of the latest import | `data/store.ts` |
 | same | `walking-distances` | `Map<string, number>` of routed walking metres by cache pair (`Infinity` where no path) | `data/store.ts` |
-| Cache Storage | `powertrailbuddy-shell-<build id>` | The app shell and hashed assets of one build | `public/sw.js` |
+| Cache Storage | `powertrailbuddy-shell-<build id>` | The app shell and hashed assets of one build; the current build's and the one it replaced are kept | `public/sw.js` |
 | Cache Storage | `powertrailbuddy-shared-files` | Files received by the share target until the page imports them | `public/sw.js`, emptied by `data/sharedFiles.ts` |
 | Cache Storage | `powertrailbuddy-tiles` | Up to 5,000 OpenStreetMap tiles the map showed, each with the time it was kept | `public/sw.js` |
 | `localStorage` | `lang` | `de` or `en` | `i18n/I18nProvider.tsx` |
 
 `clearAllData()` removes the eight IndexedDB keys; the language choice and
-the caches of the service worker stay. A new stored value is added
+the caches of the service worker stay. The routed distances held in memory
+are forgotten first and a routing request in flight is cancelled
+(`useWalkingDistances`' `clear`), so none is written back. A new stored value is added
 to this table in the same change.
+
+**Two open instances** (the installed app and a browser tab) share this
+storage, each with its own copy in memory. So `caches`, `locally-found` and
+`ignored` are never written from that copy: an import is merged into the
+stored caches (`mergeIntoStoredCaches`), and a mark is applied to the stored
+codes (`updateLocallyFound`, `updateIgnored`, each given the change, such as
+"add this code"), each read, changed and written in one IndexedDB
+transaction (idb-keyval's `update`). An import then also shows the other
+instance's imports; the other instance's marks show once the app is
+reopened. If the merge is refused, the import is merged into the copy in
+memory and the app shows the save notice. The other
+keys hold one value the user set as a whole (`settings`, `preferences`, the
+`walk`, `last-import`) and are written whole: the later write wins.
+`walking-distances` is written whole too; a pair one instance's write drops
+is only fetched again.
 
 ## Service worker
 
@@ -420,20 +491,32 @@ so `next dev` never pins its changing chunks.
   Leaflet's images included. On `install` the worker fetches that list and
   adds `<base>/`, the shell files below and every listed asset to its build's
   cache, all revalidated (`cache: 'no-cache'`) so an old build's page or list
-  never slips in. Only then does it take over (`skipWaiting`); if any file is
-  missing, the install fails and the old worker and its cache stay. So the
-  app opens offline after a single visit, and after each deploy.
+  never slips in. It then deletes every `powertrailbuddy-shell-*` cache but
+  its own and the one of the worker it replaces (the registration's `active`
+  worker, whose `?build=` names it; still known during `install`, no longer
+  on `activate`). Only then does it take over (`skipWaiting`, then
+  `clients.claim()` on activation); if any file is missing, the install
+  fails, nothing is deleted, and the old worker and its cache stay. So the
+  app opens offline after a single visit, and after each deploy, and a page
+  of the previous build that is still open keeps loading its lazy chunks
+  (the map, fonts) from that build's cache after the new worker claims it.
+  The prefix spares the shared-files and tile caches and other sites' caches
+  on the shared `github.io` origin.
 - **Caching**: cache-first for hashed `/_next/static/**`, network-first for
   navigations and the files every page links by URL (the manifest,
   `logo.svg`, `favicon.ico`, `favicon-32x32.png`, `apple-touch-icon.png`),
-  one shell cache per build. Network-first waits `NETWORK_TIMEOUT_MS` (3 s)
-  for an answer; offline, or past that on a weak signal, the request is
-  answered by the kept page whatever its query, so the share target's
-  `?shared=1` landing opens too, and a late answer still updates the kept
-  copy. With nothing kept it waits for the network after all. On activation
-  it deletes every `powertrailbuddy-shell-*` cache but the current one. The
-  prefix spares the shared-files and tile caches and other sites' caches on
-  the shared `github.io` origin.
+  one shell cache per build. Cache-first looks only in this app's shell
+  caches (`caches.match(request, { cacheName })` for each
+  `powertrailbuddy-shell-*` name), never across the origin's caches, which
+  sibling apps on `github.io` own too; a hashed URL is the same file in
+  either build's cache. A miss is fetched and kept in the current build's
+  cache. Network-first waits `NETWORK_TIMEOUT_MS` (3 s) for an answer;
+  offline, or past that on a weak signal, the request is answered by the
+  kept page whatever its query, so the share target's `?shared=1` landing
+  opens too. With nothing kept it waits for the network after all. Its
+  answers are never stored: after a deploy the network's page is the next
+  build's, whose chunks this build's cache lacks, so the build's own install
+  is the only writer of the kept shell.
 - **Map tiles**: a GET of `https://tile.openstreetmap.org/{z}/{x}/{y}.png`
   (the map loads them with CORS, `crossOrigin` in `components/Map/`, so the
   response is readable) is answered cache-first from
@@ -493,7 +576,7 @@ both.
 | To | What it learns | When |
 | --- | --- | --- |
 | `tile.openstreetmap.org` | The map area on screen | Whenever the map shows an area whose tiles are not kept, or kept for more than a week |
-| `routing.openstreetmap.de` (FOSSGIS OSRM, foot) | Coordinates of caches in candidate trails, in batches of 50 | Only with walking routes on (Settings, off by default); at most one request a second and 60 a page load; never a pair already stored |
+| `routing.openstreetmap.de` (FOSSGIS OSRM, foot) | Coordinates of caches in candidate trails, in batches of up to 50 | Only with walking routes on (Settings, off by default); at most one request a second and 60 a page load; no request once every pair in it is stored |
 
 Nothing else (settings, positions, logs, names, codes) leaves the device. The
 route status beside the trail list shows FOSSGIS's attribution and the

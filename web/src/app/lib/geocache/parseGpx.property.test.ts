@@ -140,6 +140,18 @@ function expectValid(parsed: ParsedGpx): void {
   expect(Number.isInteger(parsed.skippedWaypoints)).toBe(true);
 }
 
+/** What parsing `gpxOf(caches)` gives: the caches, and their parking areas as skipped waypoints. */
+function parsedOf(caches: readonly Geocache[]): ParsedGpx {
+  const parkingAreas = caches.flatMap(({ code, parking }) =>
+    parking ? [{ name: `PK${code.slice(2)}`, ...parking }] : [],
+  );
+  return {
+    caches: [...caches],
+    skippedWaypoints: parkingAreas.length,
+    parkingAreas,
+  };
+}
+
 function parseOrRefusal(xml: string): ParsedGpx | GpxParseError {
   try {
     return parseGpx(xml);
@@ -153,15 +165,7 @@ describe('parseGpx properties', () => {
   it('reads back every cache a generated document holds, in every exporter shape', () => {
     fc.assert(
       fc.property(cachesArbitrary, flavourArbitrary, (caches, flavour) => {
-        const parked = caches.filter((cache) => cache.parking);
-        expect(parseGpx(gpxOf(caches, flavour))).toEqual({
-          caches,
-          skippedWaypoints: parked.length,
-          parkingAreas: parked.map(({ code, parking }) => ({
-            name: `PK${code.slice(2)}`,
-            ...parking,
-          })),
-        });
+        expect(parseGpx(gpxOf(caches, flavour))).toEqual(parsedOf(caches));
       }),
     );
   });
@@ -199,6 +203,66 @@ describe('parseGpx properties', () => {
             document.slice(0, at) + inserted + document.slice(at + removed);
           const outcome = parseOrRefusal(damaged);
           if (!(outcome instanceof GpxParseError)) expectValid(outcome);
+        },
+      ),
+    );
+  });
+});
+
+// What a strict parser refuses: a raw character XML 1.0 forbids, or a numeric reference to one.
+const forbiddenArbitrary = fc.oneof(
+  fc.constantFrom(
+    '\u0000',
+    '\u0001',
+    '\u0008',
+    '\u000B',
+    '\u000C',
+    '\u001F',
+    '\uD800',
+    '\uDFFF',
+    '￾',
+    '￿',
+  ),
+  fc
+    .integer({ min: 0, max: 0x1f })
+    .filter((codePoint) => ![0x9, 0xa, 0xd].includes(codePoint))
+    .chain((codePoint) =>
+      fc.constantFrom(
+        `&#${codePoint};`,
+        `&#x${codePoint.toString(16)};`,
+        `&#x${codePoint.toString(16).toUpperCase()};`,
+      ),
+    ),
+);
+
+/** `xml` with each insertion placed right after the n-th `>`, where a text node starts. */
+function withInsertions(
+  xml: string,
+  insertions: readonly (readonly [number, string])[],
+): string {
+  const textStarts = [...xml.matchAll(/>/g)].map((match) => match.index + 1);
+  const placed = insertions
+    .map(([n, text]) => [textStarts[n % textStarts.length], text] as const)
+    .sort(([a], [b]) => b - a);
+  return placed.reduce(
+    (document, [at, text]) => document.slice(0, at) + text + document.slice(at),
+    xml,
+  );
+}
+
+describe('parseGpx with characters XML forbids', () => {
+  it('reads the same as without them, wherever a text node holds them', () => {
+    fc.assert(
+      fc.property(
+        cachesArbitrary,
+        flavourArbitrary,
+        fc.array(fc.tuple(fc.nat(), forbiddenArbitrary), {
+          minLength: 1,
+          maxLength: 12,
+        }),
+        (caches, flavour, insertions) => {
+          const xml = withInsertions(gpxOf(caches, flavour), insertions);
+          expect(parseGpx(xml)).toEqual(parsedOf(caches));
         },
       ),
     );

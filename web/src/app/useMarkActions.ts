@@ -2,58 +2,65 @@
 
 import { useCallback } from 'react';
 
-import { saveIgnored, saveLocallyFound } from './data/store';
+import { updateIgnored, updateLocallyFound } from './data/store';
 import type { DataCore } from './dataCore';
 
-function withCode(codes: ReadonlySet<string>, code: string): Set<string> {
-  return new Set(codes).add(code);
-}
+type CodesChange = (codes: ReadonlySet<string>) => Set<string>;
 
-function withoutCode(codes: ReadonlySet<string>, code: string): Set<string> {
-  const next = new Set(codes);
-  next.delete(code);
-  return next;
-}
+const withCode =
+  (code: string): CodesChange =>
+  (codes) =>
+    new Set(codes).add(code);
+
+const withoutCode =
+  (code: string): CodesChange =>
+  (codes) => {
+    const next = new Set(codes);
+    next.delete(code);
+    return next;
+  };
+
+const noCodes: CodesChange = () => new Set();
 
 /** Marking caches found or ignored here, which takes them out of every trail, and taking that back. */
 export function useMarkActions({ current, update, persist }: DataCore) {
-  const setLocallyFound = useCallback(
-    (locallyFound: ReadonlySet<string>) => {
-      update({ locallyFound });
-      persist(saveLocallyFound(locallyFound));
+  // The stored codes get the same change rather than this window's copy, which another open window may have outdated.
+  const changeLocallyFound = useCallback(
+    (change: CodesChange) => {
+      update({ locallyFound: change(current().locallyFound) });
+      persist(updateLocallyFound(change));
     },
-    [persist, update],
+    [current, persist, update],
   );
 
-  const setIgnored = useCallback(
-    (ignored: ReadonlySet<string>) => {
-      update({ ignored });
-      persist(saveIgnored(ignored));
+  const changeIgnored = useCallback(
+    (change: CodesChange) => {
+      update({ ignored: change(current().ignored) });
+      persist(updateIgnored(change));
     },
-    [persist, update],
+    [current, persist, update],
   );
 
   return {
     markFound: useCallback(
-      (code: string) => setLocallyFound(withCode(current().locallyFound, code)),
-      [current, setLocallyFound],
+      (code: string) => changeLocallyFound(withCode(code)),
+      [changeLocallyFound],
     ),
     unmarkFound: useCallback(
-      (code: string) =>
-        setLocallyFound(withoutCode(current().locallyFound, code)),
-      [current, setLocallyFound],
+      (code: string) => changeLocallyFound(withoutCode(code)),
+      [changeLocallyFound],
     ),
     resetLocallyFound: useCallback(
-      () => setLocallyFound(new Set()),
-      [setLocallyFound],
+      () => changeLocallyFound(noCodes),
+      [changeLocallyFound],
     ),
     ignore: useCallback(
-      (code: string) => setIgnored(withCode(current().ignored, code)),
-      [current, setIgnored],
+      (code: string) => changeIgnored(withCode(code)),
+      [changeIgnored],
     ),
     unignore: useCallback(
-      (code: string) => setIgnored(withoutCode(current().ignored, code)),
-      [current, setIgnored],
+      (code: string) => changeIgnored(withoutCode(code)),
+      [changeIgnored],
     ),
   };
 }

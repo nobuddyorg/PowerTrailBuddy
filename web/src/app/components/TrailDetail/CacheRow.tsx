@@ -10,6 +10,7 @@ import { CacheLinks } from '../CacheDetails/CacheLinks';
 import { HealthBadge } from '../CacheDetails/HealthBadge';
 import { MarkButtons } from '../CacheDetails/MarkButtons';
 import { Icon } from '../Icon';
+import { viewKey } from '../MainView/usePanel';
 import { buttonClasses } from '../ui/classes';
 
 interface CacheRowProps {
@@ -33,6 +34,7 @@ export function CacheRow({ cache, position, onOpenCache }: CacheRowProps) {
         type="button"
         aria-expanded={open}
         data-testid="trail-cache-toggle"
+        data-focus-key={viewKey({ kind: 'cache', code: cache.code })}
         aria-controls={panelId}
         onClick={() => setOpen((current) => !current)}
         className="flex min-h-11 w-full items-center gap-3 px-3 py-2 text-left"

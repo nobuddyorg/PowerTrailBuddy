@@ -9,7 +9,12 @@ import {
 } from '../trails/trails.test-support';
 import { DEFAULT_TRAIL_SETTINGS, type TrailSettings } from '../trails/types';
 import { pairKey } from '../trails/walkingDistances';
-import { BATCH_OVERLAP, BATCH_SIZE, routingBatches } from './planRouting';
+import {
+  BATCH_OVERLAP,
+  BATCH_SIZE,
+  packPairs,
+  routingBatches,
+} from './planRouting';
 
 function chain(prefix: string, count: number, latitude = 48): Geocache[] {
   return eastwardChain(
@@ -229,11 +234,80 @@ describe('routingBatches', () => {
     expect([first.code, last.code].sort()).toEqual(['GCB000', 'GCB069']);
   });
 
-  it('then asks for a round trip leg no window held, even where it is not the way back', () => {
-    // Out along one row and back along another 250 m north: the leg joining the rows' far ends closes the loop.
+  it('then asks for every link no window held, each cache once, before any leg', () => {
+    // Two rows 250 m apart: a cache links to the one across, far from it in walking order.
     const caches = [
       ...chain('GCU', BATCH_SIZE / 2 + 10),
       ...chain('GCV', BATCH_SIZE / 2 + 10, 48 + 250 * DEGREES_PER_METER),
+    ];
+    const routed = new Map(
+      routingBatches(caches, { settings, locallyFound: nothingFound }).flatMap(
+        (batch) => [...routedAll(batch)],
+      ),
+    );
+    const links = caches.flatMap((cache, index) =>
+      caches
+        .slice(index + 1)
+        .filter(
+          (other) =>
+            distanceMeters(cache, other) < settings.maxGapMeters &&
+            !routed.has(pairKey(cache, other)),
+        )
+        .map((other) => [cache.code, other.code]),
+    );
+    expect(links.length).toBeGreaterThan(BATCH_SIZE / 2);
+
+    const batches = routingBatches(caches, {
+      settings,
+      locallyFound: nothingFound,
+      walkingDistances: routed,
+    });
+    const linked = new Set(links.flat());
+    expect(linked.size).toBeLessThanOrEqual(BATCH_SIZE);
+    expect(codesOf(batches).map((batch) => batch.sort())).toEqual([
+      [...linked].sort(),
+    ]);
+  });
+
+  it('asks for no pair exactly maxGapMeters apart, as it never links', () => {
+    const west = chain('GCW', settings.minCaches);
+    const east = eastwardChain(
+      { latitude: 48, longitude: west[west.length - 1].longitude + 0.003 },
+      { count: settings.minCaches, spacingMeters: 100 },
+    ).map((position, index) => makeCache({ code: `GCZ${index}`, ...position }));
+    const apart = {
+      ...settings,
+      maxGapMeters: distanceMeters(west[west.length - 1], east[0]),
+    };
+    const caches = [...west, ...east];
+    const routed = new Map(
+      routingBatches(caches, {
+        settings: apart,
+        locallyFound: nothingFound,
+      }).flatMap((batch) => [...routedAll(batch)]),
+    );
+    expect(
+      routingBatches(caches, {
+        settings: apart,
+        locallyFound: nothingFound,
+        walkingDistances: routed,
+      }),
+    ).toEqual([]);
+  });
+
+  it('then asks for a round trip leg no window held, even where it is not the way back', () => {
+    // Out along one row, north at its end and back along another 400 m north: too far to link, near enough to close the loop.
+    const out = chain('GCU', BATCH_SIZE / 2 + 10);
+    const caches = [
+      ...out,
+      ...[100, 200, 300].map((north) =>
+        makeCache({
+          code: `GCC${north}`,
+          latitude: 48 + north * DEGREES_PER_METER,
+          longitude: out[out.length - 1].longitude,
+        }),
+      ),
+      ...chain('GCV', BATCH_SIZE / 2 + 10, 48 + 400 * DEGREES_PER_METER),
     ];
     const loops = { ...settings, loopsOnly: true };
     const routed = new Map(
@@ -296,5 +370,30 @@ describe('routingBatches', () => {
       walkingDistances: routed,
     });
     expect(batches.map((batch) => batch.length)).toEqual([BATCH_SIZE, 2]);
+  });
+});
+
+describe('packPairs', () => {
+  const caches = chain('GCP', BATCH_SIZE + 1);
+  const steps = caches
+    .slice(1)
+    .map((cache, index): [Geocache, Geocache] => [caches[index], cache]);
+
+  it('packs nothing into no batch', () => {
+    expect(packPairs([])).toEqual([]);
+  });
+
+  it('counts a cache two pairs share once', () => {
+    expect(packPairs(steps)).toEqual([
+      caches.slice(0, BATCH_SIZE),
+      caches.slice(BATCH_SIZE - 1),
+    ]);
+  });
+
+  it('adds a pair already in a full batch to it', () => {
+    const full = steps.slice(0, BATCH_SIZE - 1);
+    expect(packPairs([...full, [caches[0], caches[BATCH_SIZE - 1]]])).toEqual([
+      caches.slice(0, BATCH_SIZE),
+    ]);
   });
 });

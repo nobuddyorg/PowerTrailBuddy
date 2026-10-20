@@ -18,7 +18,12 @@ export function Header({ walking, onOpenData, onOpenSettings }: HeaderProps) {
   const online = useOnline();
   return (
     <header className="z-[1100] flex items-center justify-between gap-2 border-b border-border/70 bg-card/95 px-3 py-1.5 shadow-soft backdrop-blur">
-      <div className="flex min-w-0 items-center gap-2">
+      {/* A plain link, not a client route: it reloads the app, as a pull-to-refresh would. */}
+      <a
+        href={withBasePath('/')}
+        data-testid="home-link"
+        className="flex min-h-11 min-w-0 items-center gap-2 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      >
         {/* eslint-disable-next-line @next/next/no-img-element -- a static export has no image optimiser to serve next/image */}
         <img
           src={withBasePath('/logo.svg')}
@@ -37,7 +42,7 @@ export function Header({ walking, onOpenData, onOpenSettings }: HeaderProps) {
           </span>
           <span className="text-brand-accent">{t('brand.buddy')}</span>
         </h1>
-      </div>
+      </a>
       <div className="flex shrink-0 items-center gap-1">
         {!online && (
           <span

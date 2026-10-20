@@ -48,9 +48,10 @@ A preference, not a trail setting: `walkingRoutes` in IndexedDB under
 | Constant | Where | Value | Effect |
 | --- | --- | --- | --- |
 | `BARRIER_FACTOR` | `lib/trails/walkingDistances.ts` | 2 | A routed gap longer than this × `maxGapMeters` × `detourFactor` (or with no path) does not link two caches |
+| `NEAR_COUNT` | `lib/trails/orderPath.ts` | 8 | Once any leg is routed, each ordering step and each 2-opt move looks at a cache's this many plane-nearest caches |
 | `BATCH_SIZE` | `lib/routing/planRouting.ts` | 50 caches | Caches per routing request; one request answers every pair among them |
 | `BATCH_OVERLAP` | same | 10 caches | Caches each window along a trail shares with the next |
-| `REQUEST_INTERVAL_MS` | `useWalkingDistances.ts` | 1,000 ms | At least this long between two requests (FOSSGIS's policy) |
+| `REQUEST_INTERVAL_MS` | `lib/routing/requestPolicy.ts` | 1,000 ms | At least this long between two requests (FOSSGIS's policy) |
 | `MAX_REQUESTS` | same | 60 | Requests per page load; past it the rest stays estimated until a reload |
 | `ROUTER_ORIGIN` | `lib/routing/osrmTable.ts` | `https://routing.openstreetmap.de` | FOSSGIS's OSRM server, foot graph under `/routed-foot` |
 
@@ -73,6 +74,7 @@ A preference, not a trail setting: `walkingRoutes` in IndexedDB under
 | Entries per `.zip` (`MAX_ARCHIVE_ENTRIES`) | 50 | A Pocket Query zip holds two files; anything far beyond that is not one |
 | Uncompressed size of a `.zip`'s GPX entries, total (`MAX_IMPORT_BYTES`) | 100 MiB, by the declared sizes and again while inflating | 1,000 caches with logs is a few MB; the limit keeps a hostile archive from exhausting a phone's memory |
 | Size of any one imported file | 100 MiB | Refused before it is read |
+| Caches in one import (`MAX_IMPORT_CACHES`) | 20,000, each code once | Twenty full Pocket Queries; keeps trail finding on every launch within its measured budget. A file that would go past it is refused whole. Per import: separate imports of different queries add up |
 
 The service worker's share target has its own limits (`public/sw.js`): at most
 20 files and 100 MB in one share, refused whole past either.
@@ -93,7 +95,8 @@ There are no secrets and no `.env` file.
 | --- | --- | --- |
 | Unit coverage, global | `web/vitest.config.mts` `GLOBAL_COVERAGE_THRESHOLDS` | 99% statements, branches, functions, lines |
 | Unit coverage, per file | same file, `PER_FILE_FLOOR`, over `mutation-targets.mjs` | 100% |
-| Unit coverage, what counts | same file, `coverage.exclude` | Product code only; left out: `types.ts`, `*.test-support.*`, the dictionaries, `*.d.ts`, and the glue Playwright verifies (`layout.tsx`, `page.tsx`, `components/Map/index.tsx`) |
+| Unit coverage, what counts | same file, `coverage.include`, `coverage.exclude` | Product code under `src/app/` only; left out: `types.ts`, `*.test-support.*`, the dictionaries, `*.d.ts`, and the glue Playwright verifies (`layout.tsx`, `page.tsx`, `components/Map/index.tsx`). `public/sw.js` is not measured: its tests evaluate the source text with `new Function`, which V8 cannot attribute to the file, so it is mutation-tested instead |
+| Mutation targets | `web/mutation-targets.mjs` | `MUTATE_TARGETS`, which also get the per-file coverage floor, plus `MUTATE_ONLY_TARGETS` (`public/sw.js`), mutated without one |
 | Mutation score | `web/stryker.config.mjs` `thresholds.break` | 99 — one below 100, so a single new equivalent mutant cannot block unrelated work |
 | E2E JS/CSS coverage | `web/e2e/coverage.ts` `COVERAGE_THRESHOLDS` | 88% statements, 74% branches, 88% functions, 88% lines — about 3 points under the first full run (chromium and mobile: 91.1%, 76.9%, 90.9%, 91.4%) |
 
@@ -103,14 +106,19 @@ never lowered to make a change fit. `autoUpdate` is off in Vitest.
 Stryker runs the unit suite through `web/vitest.mutation.config.mts`, which
 leaves out `*.performance.test.ts`: their wall-clock bounds hold for the plain
 code, not under Stryker's instrumentation, and a timing assertion kills no
-mutant. They run in `npm test` as usual.
+mutant. They run in `npm test` as usual. `vitest.related` is off: no test
+imports `public/sw.js` (its tests read it as text, which in Stryker's sandbox
+is the instrumented copy), so Vitest's related-file lookup would run none of
+them.
 
 ## End-to-end tests
 
 [`web/playwright.config.ts`](../../web/playwright.config.ts), specs in
 `web/e2e/public/`. Projects: `chromium` (Desktop Chrome), `mobile` (Pixel 7),
-`firefox`. The three offline-through-the-worker cases run in the Chromium
-projects only (developer-guide.md, "Offline through the service worker").
+`firefox`. The offline-through-the-worker cases run in the Chromium projects
+only (developer-guide.md, "Offline through the service worker"), and so does
+the share during a walk: Playwright routes no request a Firefox worker makes
+itself, so the walk's moving map logs the worker's failed tile loads there.
 
 | Variable | Effect |
 | --- | --- |

@@ -32,18 +32,27 @@ function focusablesIn(panel: HTMLElement): HTMLElement[] {
   return [...panel.querySelectorAll<HTMLElement>(FOCUSABLE)];
 }
 
-/** Keeps Tab inside the panel: past the last control back to the first, and the reverse. */
+/** Keeps Tab inside the panel: past the last control back to the first, and the reverse; from outside, back in. */
 function trapTab(panel: HTMLElement, event: KeyboardEvent) {
   const focusables = focusablesIn(panel);
   const first = focusables[0];
   const last = focusables[focusables.length - 1];
-  if (event.shiftKey && document.activeElement === first) {
+  const current = document.activeElement;
+  // On the panel itself or outside it, as after its focused control went away.
+  const away = current === panel || !panel.contains(current);
+  if (event.shiftKey && (away || current === first)) {
     event.preventDefault();
     last.focus();
-  } else if (!event.shiftKey && document.activeElement === last) {
+  } else if (!event.shiftKey && (away || current === last)) {
     event.preventDefault();
     first.focus();
   }
+}
+
+/** The dialog drawn over every other: the last open one in the document, as a nested dialog comes after its parent. */
+function isTopMost(panel: HTMLElement): boolean {
+  const open = document.querySelectorAll('[aria-modal="true"]');
+  return open[open.length - 1] === panel;
 }
 
 /** A modal dialog: focus moves in and is trapped, Escape closes, focus returns to where it was. */
@@ -73,19 +82,37 @@ export function Modal({
     // The first field or action, not the close button: that is what the dialog was opened for.
     const [close, ...rest] = focusablesIn(panel);
     (rest[0] ?? close).focus();
-    // Stopped here, so a dialog opened over another one closes alone.
+    // On the document, so a key counts wherever focus fell: on the body after the focused control went away.
     const onKeyDown = (event: KeyboardEvent) => {
+      if (!isTopMost(panel)) return;
       if (event.key === 'Escape') {
-        event.stopPropagation();
+        // So the dialog below, once this one is gone, does not close on the same key press.
+        event.stopImmediatePropagation();
         onCloseRef.current();
       } else if (event.key === 'Tab') {
-        event.stopPropagation();
+        event.stopImmediatePropagation();
         trapTab(panel, event);
       }
     };
-    panel.addEventListener('keydown', onKeyDown);
+    let refocus: number | undefined;
+    const pullFocusBack = () => {
+      const current = document.activeElement;
+      // Not when the window itself lost focus: the user is coming back to the field they left.
+      if (!isTopMost(panel) || panel.contains(current) || !document.hasFocus())
+        return;
+      panel.focus({ preventScroll: true });
+    };
+    // Checked once the move is over: a focus() during focusout is undone by the move it interrupts.
+    const onFocusOut = () => {
+      window.clearTimeout(refocus);
+      refocus = window.setTimeout(pullFocusBack);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    panel.addEventListener('focusout', onFocusOut);
     return () => {
-      panel.removeEventListener('keydown', onKeyDown);
+      window.clearTimeout(refocus);
+      document.removeEventListener('keydown', onKeyDown);
+      panel.removeEventListener('focusout', onFocusOut);
       opener?.focus();
     };
   }, []);
@@ -97,12 +124,13 @@ export function Modal({
     >
       <div
         ref={panelRef}
+        tabIndex={-1}
         role={role}
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
         data-testid={testId}
-        className={`flex ${layout.panel} w-full max-w-lg flex-col overflow-hidden bg-card text-card-foreground shadow-2xl sm:rounded-3xl`}
+        className={`flex ${layout.panel} w-full max-w-lg flex-col overflow-hidden bg-card outline-none text-card-foreground shadow-2xl sm:rounded-3xl`}
       >
         <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
           <h2 id={titleId} className="text-lg font-semibold">

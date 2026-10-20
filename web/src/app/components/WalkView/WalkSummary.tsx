@@ -1,5 +1,7 @@
 'use client';
 
+import { useRef } from 'react';
+
 import { useI18n } from '../../i18n/useI18n';
 import { buildFieldNotes } from '../../lib/export/fieldNotes';
 import { formatDuration, formatRate } from '../../lib/format/format';
@@ -10,6 +12,7 @@ import { Icon } from '../Icon';
 import { useToast } from '../Toast/ToastProvider';
 import { buttonClasses } from '../ui/classes';
 import { downloadFile } from '../ui/download';
+import { useFocusOnMount } from '../ui/focus';
 
 interface WalkSummaryProps {
   walk: WalkState;
@@ -37,6 +40,8 @@ export function WalkSummary({
 }: WalkSummaryProps) {
   const { t, locale } = useI18n();
   const toast = useToast();
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  useFocusOnMount(titleRef);
   const entries = visitEntries(walk);
   const counts = {
     found: progress.found,
@@ -76,9 +81,11 @@ export function WalkSummary({
           <Icon name="trophy" className="h-7 w-7" />
         </span>
         <h2
+          ref={titleRef}
           id="walk-summary-title"
           data-testid="walk-summary-title"
-          className="text-xl font-bold"
+          tabIndex={-1}
+          className="text-xl font-bold outline-none"
         >
           {canResume ? t('summary.paused') : t('summary.title')}
         </h2>

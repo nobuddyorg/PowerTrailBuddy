@@ -25,12 +25,23 @@ passed.
 | Reading or writing browser storage | `web/src/app/data/` | Unit with a fake store |
 | UI | `web/src/app/components/<Name>/` | Component tests; one E2E case per journey |
 | Anything touching Leaflet | `web/src/app/components/Map/` only | E2E (the wrapper is excluded from unit coverage) |
-| Service worker behavior | `web/public/sw.js`, as small named functions | `web/src/app/sw.test.ts`, evaluating them from source |
+| Service worker behavior | `web/public/sw.js`, as small named functions | `web/src/app/sw*.test.ts`, evaluating them from source; mutation (no coverage floor) |
 | User-facing text | `t('area.key')` + both `de.json` and `en.json` | `parity.test.ts` |
 
 The boundaries are checked by `npm run depcruise`
-([Architecture](../reference/architecture.md#modules)). A new dependency is a
-decision to raise, not a side effect of a change.
+([Architecture](../reference/architecture.md#modules)): `lib/` imports nothing
+from `src/app/` outside `lib/` and no Node built-in, `data/` only `lib/`, and
+`i18n/` only the `localStorage` shim. A new dependency is a decision to raise,
+not a side effect of a change.
+
+`npm run knip` runs Knip twice. The default run counts tests as entry points
+and finds unused files, exports and dependencies. The second,
+`knip --production --exports`, leaves the tests out, so it fails on an export
+that only tests call: delete it, or move it into a `*.test-support.ts` if the
+tests still need it. An export the module itself also uses is a deliberate
+test seam (`ignoreExportsUsedInFile` in `knip.config.ts`) and passes. The
+second run checks exports only: without the tests, every `*.test-support.ts`,
+`e2e/` and `scripts/` file would read as unused.
 
 ## Write a unit test
 
@@ -76,9 +87,10 @@ cd web
 npm run test:mutation
 ```
 
-Stryker mutates exactly the files in [`mutation-targets.mjs`](../../web/mutation-targets.mjs),
-which `vitest.config.mts` also reads for its per-file 100% coverage floors, so
-the two cannot drift. It runs the suite through `vitest.mutation.config.mts`,
+Stryker mutates exactly the files in [`mutation-targets.mjs`](../../web/mutation-targets.mjs):
+`MUTATE_TARGETS`, which `vitest.config.mts` also reads for its per-file 100%
+coverage floors, so the two cannot drift, and `MUTATE_ONLY_TARGETS`
+(`public/sw.js`, which V8 coverage cannot measure). It runs the suite through `vitest.mutation.config.mts`,
 which leaves out the `*.performance.test.ts` timing tests. There is no `Stryker disable` or `/* v8 ignore */` in
 `src/`; a survivor is a missing assertion or dead code to delete.
 
@@ -203,7 +215,7 @@ grep -rn 'getByTestId\|getByRole\|locator(' web/e2e --include=*.spec.ts
   (`SW_ONLY_IN_CHROMIUM` in `e2e/helpers.ts`): Playwright drives service
   workers there alone, and its Firefox offline mode fails a navigation
   before the worker sees it. The worker's offline logic is unit-tested from
-  source in `sw.test.ts` for every engine.
+  source in `sw*.test.ts` for every engine.
 - `offerInstall(page)` fires the `beforeinstallprompt` event Chromium sends
   once the install criteria hold, which no headless run does by itself.
 - `bottom-sheet.spec.ts` sets a phone-sized viewport for every project, as the
@@ -213,9 +225,13 @@ grep -rn 'getByTestId\|getByRole\|locator(' web/e2e --include=*.spec.ts
 
 With `E2E_COVERAGE_SOURCEMAPS=true` for both `npm run build` and
 `npm run e2e`, the Chromium projects collect JS/CSS coverage through
-Playwright's `page.coverage` and write `web/coverage-e2e/`. CI's `e2e` job does
-this, and fails below the floor in `e2e/coverage.ts`
+Playwright's `page.coverage` and write `web/coverage-e2e/`. CI's `e2e` job and
+the checklist in [CONTRIBUTING.md](../../CONTRIBUTING.md#before-opening-a-pull-request)
+do this, and fail below the floor in `e2e/coverage.ts`
 ([Configuration](../reference/configuration.md#coverage-and-mutation-thresholds)).
+The floor is for the whole suite, so leave the variable unset for a run of a
+few specs or a single project. It makes the build emit source maps: only a
+test build sets it, never the deployed one (`pages-deploy.yml` does not).
 To find what no journey reaches, read the function coverage per file in
 `web/coverage-e2e/index.html`, not the line coverage.
 

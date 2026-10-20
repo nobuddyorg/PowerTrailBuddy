@@ -74,7 +74,7 @@ export interface MapProps {
   coveredBottom: number;
   onSelectTrail?: (trailId: string) => void;
   onSelectCache?: (code: string) => void;
-  /** The user moved the map by hand, which ends following. */
+  /** The user panned or zoomed the map by hand, which ends following. */
   onUserPan?: () => void;
   /** Already translated; read once when the map loads. */
   labels: {

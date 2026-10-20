@@ -34,6 +34,7 @@ interface Walk {
     finish(): Promise<void>;
     found(): Promise<void>;
     reverse(): Promise<void>;
+    showHint(): Promise<void>;
     skip(): Promise<void>;
     undo(): Promise<void>;
   };
@@ -48,6 +49,8 @@ interface Walk {
     };
     close: Locator;
     distance: Locator;
+    heading: Locator;
+    hint: Locator;
     links: CacheLinks;
     locationMessage: Locator;
     progress: Locator;
@@ -106,6 +109,8 @@ export function initWalk(page: Page): Walk {
     },
     close: target.getByTestId('walk-close'),
     distance: target.getByTestId('walk-distance'),
+    heading: target.getByRole('heading', { level: 2 }),
+    hint: target.getByTestId('hint'),
     links: initCacheLinks(target),
     locationMessage: target.getByTestId('walk-location'),
     progress: root.getByTestId('walk-progress'),
@@ -131,6 +136,10 @@ export function initWalk(page: Page): Walk {
     },
     found: () => changingProgress(locators.buttons.found),
     reverse: () => changingTarget(locators.buttons.reverse),
+    showHint: async () => {
+      await target.getByTestId('hint-toggle').click();
+      await expect(locators.hint).toBeVisible();
+    },
     skip: () => changingProgress(locators.buttons.skip),
     undo: () => changingProgress(locators.buttons.undo),
   };

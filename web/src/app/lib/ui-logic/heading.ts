@@ -55,3 +55,9 @@ export function headingChanged(
   const difference = Math.abs(normalize(next - shown));
   return Math.min(difference, 360 - difference) >= thresholdDegrees;
 }
+
+/** The rotation to render next: `previous` turned the short way (at most 180°) to face `next`, so crossing north never spins the arrow. */
+export function unwrapRotation(previous: number, next: number): number {
+  const turn = normalize(next - previous);
+  return previous + (turn > 180 ? turn - 360 : turn);
+}

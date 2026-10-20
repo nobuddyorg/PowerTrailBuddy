@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 
-import { saveLocallyFound, saveWalk } from './data/store';
+import { saveWalk, updateLocallyFound } from './data/store';
 import type { Trail } from './lib/trails/types';
 import {
   orientWalk,
@@ -36,11 +36,14 @@ export function useWalkActions({ current, update, persist }: DataCore) {
 
   const setFound = useCallback(
     (code: string, found: boolean) => {
-      const locallyFound = new Set(current().locallyFound);
-      if (found) locallyFound.add(code);
-      else locallyFound.delete(code);
-      update({ locallyFound });
-      persist(saveLocallyFound(locallyFound));
+      const change = (codes: ReadonlySet<string>) => {
+        const next = new Set(codes);
+        if (found) next.add(code);
+        else next.delete(code);
+        return next;
+      };
+      update({ locallyFound: change(current().locallyFound) });
+      persist(updateLocallyFound(change));
     },
     [current, persist, update],
   );

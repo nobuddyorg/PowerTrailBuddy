@@ -2,11 +2,24 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 
 import type { CacheType, Geocache } from '../geocache/types';
-import { findTrails } from './findTrails';
+import { findTrails, orderedGroups } from './findTrails';
 import { distanceMeters } from './geo';
 import { makeCache, pointsNear } from './trails.test-support';
 import type { TrailSettings } from './types';
-import { pairKey } from './walkingDistances';
+import { pairKey, type LegMeters } from './walkingDistances';
+
+const codesOf = (caches: readonly Geocache[]) =>
+  caches.map((cache) => cache.code);
+
+/** Along the order, without the way back. */
+function lengthOf(caches: readonly Geocache[], legMeters: LegMeters): number {
+  return caches
+    .slice(1)
+    .reduce(
+      (total, cache, index) => total + legMeters(caches[index], cache),
+      0,
+    );
+}
 
 const cacheTypes: CacheType[] = [
   'traditional',
@@ -209,7 +222,7 @@ describe('findTrails, for random caches and settings', () => {
     );
   });
 
-  it('finds the same trails when every route is as long as the straight line times the detour factor', () => {
+  it('links the same groups when every route is as long as the straight line times the detour factor, and walks each no longer', () => {
     fc.assert(
       fc.property(anyInput, ([caches, settings, locallyFound]) => {
         const asEstimated = new Map(
@@ -222,14 +235,20 @@ describe('findTrails, for random caches and settings', () => {
               ]),
           ),
         );
-        const summary = (walkingDistances?: Map<string, number>) =>
-          findTrails(caches, { settings, locallyFound, walkingDistances }).map(
-            (trail) => ({
-              codes: trail.caches.map((cache) => cache.code),
-              walkMeters: Math.round(trail.walkMeters * 1000),
-            }),
-          );
-        expect(summary(asEstimated)).toEqual(summary());
+        const routed = orderedGroups(caches, {
+          settings,
+          locallyFound,
+          walkingDistances: asEstimated,
+        });
+        const estimated = orderedGroups(caches, { settings, locallyFound });
+        const codeSets = (groups: readonly Geocache[][]) =>
+          groups.map((group) => codesOf(group).sort());
+        expect(codeSets(routed.groups)).toEqual(codeSets(estimated.groups));
+        routed.groups.forEach((group, index) =>
+          expect(lengthOf(group, routed.legMeters)).toBeLessThanOrEqual(
+            lengthOf(estimated.groups[index], routed.legMeters) + 1e-6,
+          ),
+        );
       }),
     );
   });

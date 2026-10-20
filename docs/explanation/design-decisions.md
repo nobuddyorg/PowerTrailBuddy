@@ -76,18 +76,41 @@ sends the trail caches' coordinates to a third party:
   matrix limits are stricter and unpublished; BRouter has no matrix. Keyed
   services (GraphHopper, openrouteservice) would need a backend.
 - **Within its policy.** At most one request a second, batches of 50 caches,
-  at most 60 requests a visit, distances kept in IndexedDB so a pair is never
-  asked twice, attribution and a "fix the map" link beside the trails. A
-  window is asked for only while a pair close enough to link lacks a route,
-  so marking caches found on a walk costs no requests, and a request once
-  sent is never thrown away for newer input: the server has done the work.
+  at most 60 requests a visit, distances kept in IndexedDB so a request goes
+  out only while a pair in it is unknown, attribution and a "fix the map"
+  link beside the trails. The limits and the request decisions live in pure
+  functions (`lib/routing/requestPolicy.ts`) under mutation testing, not in
+  the hook.
+- **What gets asked, in which order.** Windows of 50 consecutive caches in
+  each group's straight-line walking order first: one request answers 1,225
+  pairs, most of them the legs. The routed order would shift with every
+  answer and move the windows over pairs already known; the straight-line
+  one stays put. A window is asked for only while a pair close enough to
+  link lacks a route, so marking caches found on a walk costs no requests. A
+  link between caches far apart in that order, such as across a river two
+  parallel rows of caches run along, no window holds; leaving it on its
+  estimate would keep both banks one trail. So every remaining link of a
+  group big enough for a trail, found through the spatial grid rather than
+  all pairs, is asked next, packed so a cache two links share is sent once.
+  Trail legs come last, because the links may still split the trails.
+- **Off the urgent render.** Planning runs the link, order and split stages
+  again, as long as finding the trails itself; it runs in a deferred render
+  like `useTrails`, and a request is named by its URL, so a found mark that
+  leaves the first batch as it was neither waits for the planner nor re-sends
+  that batch. A request once sent is never thrown away for newer input: the
+  server has done the work; only turning routes off, leaving the page or
+  Clear all data drops it.
 - **What a route changes.** Trail finding still links caches closer than
   `maxGapMeters` in a straight line; a routed gap longer than
   `2 × maxGapMeters × detourFactor` (or unroutable) is a barrier and does not
   link. Each leg of a walk and its way back counts its routed distance where
   known, else the straight line times the detour factor, so walk splitting,
-  time and caches per hour follow real paths. With every route equal to its
-  estimate the trails are exactly those without routes.
+  time and caches per hour follow real paths. The walking order follows the
+  routed legs too: a straight-line order zig-zags across a canal, each
+  crossing then a detour to a bridge, and the walk splits into fragments.
+  Ordered by legs, it goes along each bank and crosses on the bridges, and it
+  is never a longer walk than the straight-line order. Until any leg is
+  routed the order is the straight-line one, exactly as without routes.
 - **Determinism.** `findTrails` takes the routed distances as an input, so
   the same distances give the same trails; only the hook that fetches them is
   asynchronous.
@@ -127,9 +150,28 @@ segments while that shortens the path). Nearest neighbour alone leaves
 crossings that 2-opt removes; anything heavier (Lin–Kernighan, exact TSP)
 buys little for chains of tens to hundreds of caches. The improvement loop has
 a fixed iteration cap — a count, never a time limit — so the result is
-deterministic and testable. Long chains are then **split greedily** along the
+deterministic and testable. Nearest neighbour compares a cache only with
+those a sweep from west to east meets before they are farther east or west
+than the nearest so far, which is the same answer as all pairs at a fraction
+of the work, under its own count cap. Long chains are then **split greedily** along the
 order into walks that fit `maxWalkKilometers` including the walk back to the
 start, which is how people actually walk long trails: one section per outing.
+
+## Why a cap on caches per import, and no Web Worker
+
+Trail finding runs on the main thread, on every launch, over everything
+stored. The ordering is the costly part: 2-opt is capped per group, nearest
+neighbour is a sweep, but the whole still grows with the import. So an import
+holds at most 20,000 caches (twenty full Pocket Queries), which keeps a
+start-up trail search within the budget `findTrails.performance.test.ts`
+measures, and a file past it is refused with a message, not silently
+trimmed. The cap is per import, not on everything stored: separate imports of
+different queries add up, since a stored total would make an import depend
+on what earlier ones left, and a newer run of a query still replaces its own
+caches. Moving trail finding into a Web Worker would free the main thread
+whatever the size, but it adds a second bundle, a message protocol and a
+loading state for every result; that is a design change of its own, not a
+bound on work.
 
 ## Why round trips are opt-in, and closed after the split
 
@@ -178,15 +220,40 @@ is a short Next.js adapter whose `onBuildComplete` runs at the end of every
 `next build`, so no way of building can leave the list out (a separate step
 after the build could be skipped, and the worker would then fail to install
 without a word). Its decision functions are kept as small named functions so
-`sw.test.ts` and `sw.strategies.test.ts` can extract and test them from the
-source text; shell caches are prefixed `powertrailbuddy-shell-` so the
+`sw.test.ts`, `sw.strategies.test.ts` and `sw.lifecycle.test.ts` can extract
+and test them from the source text; shell caches are prefixed `powertrailbuddy-shell-` so the
 cleanup can never delete the `powertrailbuddy-shared-files` cache a share is
 waiting in, or the `powertrailbuddy-tiles` cache.
 
 The shell is network-first so a deploy reaches users at once, but with a
 three-second limit: on one bar of signal a request neither answers nor
 fails for tens of seconds, and the walk the app exists for starts exactly
-there. Tiles are the opposite trade: cache-first for a week, because a map a
+there. The network's answer is never stored: after a deploy it is the next
+build's page, whose chunks the old build's cache lacks, and an offline start
+from it would never hydrate. A build's own install is the only writer of its
+shell cache, and that install already holds the page.
+
+A new worker still takes over at once (`skipWaiting`), since Pages serves only
+the new build and waiting for every window to close can take days on an
+installed app. What an open page of the previous build still needs, the
+lazily loaded map chunk and fonts, stays reachable because the install keeps
+the cache of the worker it replaces (read from the registration's `active`
+worker, so no record of the build order is kept) and deletes only older
+ones; cache-first looks in every shell cache of this app. Dropping
+`skipWaiting` instead would need a reload prompt and would leave the old
+build running until every window closed.
+
+Cache-first never searches the whole origin's caches: on GitHub Pages every
+project site of an account shares one `github.io` origin, so a sibling app's
+cache holding one of this app's URLs would otherwise be served as this app's
+script. The restriction is by name, so it stops accidents and blunt
+injection, not a sibling that writes into `powertrailbuddy-shell-*` itself;
+such an app can already read this app's IndexedDB and its `lang` key, and its
+scripts count as `'self'` under this app's CSP. That residue is inherent to
+the shared origin, and deploying under a custom domain (`PAGES_BASE_URL`)
+removes it ([risk model](../reference/risk-model.md)).
+
+Tiles are the opposite trade: cache-first for a week, because a map a
 few days old is as good for a walk and every tile not fetched is load off
 OpenStreetMap's volunteer-run servers. For the same reason the map fetches
 tiles only for the zoom a pinch ends at, not each level it passes, and keeps
@@ -223,7 +290,9 @@ finder, the walk state — and a wrong answer there looks exactly like a right
 one. Mutation testing proves the tests would notice. It runs on the files in
 `web/mutation-targets.mjs`, the same list that gets a 100% per-file coverage
 floor, and never on rendering code, where mutants are near-equivalent by the
-thousand ([TEST_STRATEGY.md](../../TEST_STRATEGY.md) §11).
+thousand ([TEST_STRATEGY.md](../../TEST_STRATEGY.md) §11). The service worker
+is mutated too, from a list of its own: its tests evaluate the script's text,
+so V8 coverage cannot see it and mutation is its only gate.
 
 ## npm audit: what's accepted
 

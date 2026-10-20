@@ -41,13 +41,19 @@ interface WorkerScript {
   NETWORK_TIMEOUT_MS: number;
   cacheNameFor: (search: string) => string;
   basePathFor: (workerPathname: string) => string;
-  isStaleCache: (key: string, current: string) => boolean;
+  isOwnShellCache: (key: string) => boolean;
+  isStaleCache: (key: string, kept: string[]) => boolean;
+  shellCachesToKeep: (
+    current: string,
+    active: { scriptURL: string } | null,
+  ) => string[];
   strategyFor: (request: RequestShape, worker: Worker) => Strategy;
   sharedFilePath: (basePath: string, index: number, name: string) => string;
   sharedFilesWithinLimits: (values: (File | string)[]) => File[];
   receiveShare: (request: Request) => Promise<Response>;
   cacheFirst: (request: Request) => Promise<Response>;
   networkFirst: (request: Request, timeoutMs?: number) => Promise<Response>;
+  settlesWithin: <T>(promise: Promise<T>, timeoutMs: number) => Promise<T>;
   tileFirst: (request: Request, now?: number) => Promise<Response>;
   evictOldTiles: (cache: Cache, maxTiles: number) => Promise<void>;
 }
@@ -65,13 +71,16 @@ const EXPORTED = [
   'NETWORK_TIMEOUT_MS',
   'cacheNameFor',
   'basePathFor',
+  'isOwnShellCache',
   'isStaleCache',
+  'shellCachesToKeep',
   'strategyFor',
   'sharedFilePath',
   'sharedFilesWithinLimits',
   'receiveShare',
   'cacheFirst',
   'networkFirst',
+  'settlesWithin',
   'tileFirst',
   'evictOldTiles',
 ];
@@ -83,11 +92,23 @@ export function installCaches(options: { refusePut?: boolean } = {}) {
   return fake;
 }
 
+interface LoadOptions {
+  scriptUrl?: string;
+  /** The script of the worker this one replaces, the active one while it installs. */
+  replacing?: string;
+}
+
 // sw.js is a plain script with no import path, so the whole source runs against a fake `self` and its names are returned.
-export function loadWorker(scriptUrl = SCRIPT_URL) {
+export function loadWorker({
+  scriptUrl = SCRIPT_URL,
+  replacing,
+}: LoadOptions = {}) {
   const listeners = new Map<string, (event: FakeEvent) => void>();
   const self = {
     location: new URL(scriptUrl),
+    registration: {
+      active: replacing === undefined ? null : { scriptURL: replacing },
+    },
     addEventListener: (type: string, listener: (event: FakeEvent) => void) =>
       listeners.set(type, listener),
     skipWaiting: vi.fn(),
@@ -99,4 +120,14 @@ export function loadWorker(scriptUrl = SCRIPT_URL) {
     `${source}\nreturn { ${EXPORTED.join(', ')} };`,
   ) as (scope: typeof self) => WorkerScript;
   return { worker: factory(self), self, listeners };
+}
+
+/** A share target POST as the browser sends it, the files under `field`. */
+export function sharePost(files: File[], field = 'files') {
+  const form = new FormData();
+  for (const file of files) form.append(field, file);
+  return new Request(`${ORIGIN}/PowerTrailBuddy/share-target/`, {
+    method: 'POST',
+    body: form,
+  });
 }

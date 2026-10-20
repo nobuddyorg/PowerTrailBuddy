@@ -1,5 +1,10 @@
 import { createStore, del, delMany, get, set, update } from 'idb-keyval';
 
+import {
+  mergeCaches,
+  type IncomingCaches,
+  type MergedCaches,
+} from '../lib/geocache/mergeCaches';
 import type { Geocache } from '../lib/geocache/types';
 import type { TrailSettings } from '../lib/trails/types';
 import type { WalkingDistances } from '../lib/trails/walkingDistances';
@@ -70,9 +75,20 @@ function isWalkState(value: unknown): value is WalkState {
   );
 }
 
-async function loadCodes(key: string): Promise<Set<string>> {
-  const stored: unknown = await get(key, store);
+function codesOf(stored: unknown): Set<string> {
   return new Set(Array.isArray(stored) ? stored.filter(isString) : []);
+}
+
+async function loadCodes(key: string): Promise<Set<string>> {
+  return codesOf(await get(key, store));
+}
+
+// Read, changed and written in one transaction, so another open window's marks in between are kept.
+function updateCodes(
+  key: string,
+  change: (codes: Set<string>) => ReadonlySet<string>,
+): Promise<void> {
+  return update(key, (stored: unknown) => [...change(codesOf(stored))], store);
 }
 
 // Caches stored before owner, hint, logs and sources were read get them empty, so the UI never meets a missing field.
@@ -87,15 +103,31 @@ function withLaterFields(cache: Record<string, unknown>): Geocache {
   } as unknown as Geocache;
 }
 
-export async function loadCaches(): Promise<Geocache[]> {
-  const stored: unknown = await get(KEYS.caches, store);
+function cachesOf(stored: unknown): Geocache[] {
   return Array.isArray(stored)
     ? stored.filter(isRecord).map(withLaterFields)
     : [];
 }
 
-export function saveCaches(caches: readonly Geocache[]): Promise<void> {
-  return set(KEYS.caches, [...caches], store);
+export async function loadCaches(): Promise<Geocache[]> {
+  return cachesOf(await get(KEYS.caches, store));
+}
+
+/** Merges an import into the stored caches in one transaction, so an import from another open window is kept too. */
+export async function mergeIntoStoredCaches(
+  incoming: IncomingCaches,
+): Promise<MergedCaches> {
+  // Set by the updater, which idb-keyval runs before the write it resolves on.
+  let merged!: MergedCaches;
+  await update(
+    KEYS.caches,
+    (stored: unknown) => {
+      merged = mergeCaches(cachesOf(stored), incoming);
+      return merged.caches;
+    },
+    store,
+  );
+  return merged;
 }
 
 /** Stored settings with the defaults filled in for anything missing, and anything out of range clamped. */
@@ -112,8 +144,10 @@ export function loadLocallyFound(): Promise<Set<string>> {
   return loadCodes(KEYS.locallyFound);
 }
 
-export function saveLocallyFound(codes: ReadonlySet<string>): Promise<void> {
-  return set(KEYS.locallyFound, [...codes], store);
+export function updateLocallyFound(
+  change: (codes: Set<string>) => ReadonlySet<string>,
+): Promise<void> {
+  return updateCodes(KEYS.locallyFound, change);
 }
 
 /** Codes the user never wants in a trail. */
@@ -121,8 +155,10 @@ export function loadIgnored(): Promise<Set<string>> {
   return loadCodes(KEYS.ignored);
 }
 
-export function saveIgnored(codes: ReadonlySet<string>): Promise<void> {
-  return set(KEYS.ignored, [...codes], store);
+export function updateIgnored(
+  change: (codes: Set<string>) => ReadonlySet<string>,
+): Promise<void> {
+  return updateCodes(KEYS.ignored, change);
 }
 
 export async function loadWalk(): Promise<WalkState | undefined> {

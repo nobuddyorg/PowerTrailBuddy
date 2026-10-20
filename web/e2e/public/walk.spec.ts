@@ -36,11 +36,13 @@ test.describe('walking a trail', () => {
 
     await moveDevice(context, offset(-10));
     await expect(walk.locators.close).toBeVisible();
+    await walk.do.showHint();
 
     await walk.do.found();
     await expect(walk.locators.progress).toHaveText('1/11');
     await expect(walk.locators.targetCode).toHaveText(codes[1]);
     await expect(walk.locators.close).toBeHidden();
+    await expect(walk.locators.hint).toBeHidden();
 
     await walk.do.dnf();
     await walk.do.skip();
@@ -111,6 +113,30 @@ test.describe('walking a trail', () => {
 
     await expect(app.walk.locators.targetCode).toHaveText(codes.at(-1)!);
     await expect(app.walk.locators.progress).toHaveText('1/11');
+  });
+
+  test('a zoom by hand stops following, and outlasts the next position', async ({
+    on,
+    page,
+    context,
+  }) => {
+    const app = on(page);
+    await app.trail.do.startAtNearestEnd();
+    await expect(app.map.locators.locate).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+
+    await app.map.do.zoomOut();
+
+    await expect(app.map.locators.locate).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    const zoomed = await app.map.settledZoom();
+    await moveDevice(context, offset(-100));
+    await expect(app.walk.locators.distance).toHaveText('100 m');
+    expect(await app.map.settledZoom()).toBe(zoomed);
   });
 
   test('can start at any cache of the trail', async ({ on, page }) => {

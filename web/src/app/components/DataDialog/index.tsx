@@ -50,7 +50,12 @@ export function DataDialog(props: DataDialogProps) {
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   return (
-    <Modal title={t('data.title')} onClose={props.onClose} testId="data-dialog">
+    <Modal
+      title={t('data.title')}
+      onClose={props.onClose}
+      phoneLayout="fullScreen"
+      testId="data-dialog"
+    >
       <div className="space-y-5">
         <dl className="grid grid-cols-2 gap-2">
           <Count

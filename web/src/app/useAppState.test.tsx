@@ -316,6 +316,71 @@ describe('marks', () => {
   });
 });
 
+// The installed app and a browser tab each hold their own copy; what either does must survive a reload.
+describe('two open windows', () => {
+  const MORE = makeCaches(2, 'GCMORE');
+  const codesOf = (caches: readonly Geocache[]) =>
+    caches.map((cache) => cache.code);
+
+  it('keeps the imports of both, and shows the other one at the next import', async () => {
+    const first = await renderReady();
+    const second = await renderReady();
+
+    await act(() => second.result.current.importFiles([pqFile(CACHES)]));
+    await act(() =>
+      first.result.current.importFiles([pqFile(MORE, 'more.gpx')]),
+    );
+
+    const all = [...codesOf(CACHES), ...codesOf(MORE)];
+    expect(codesOf(first.result.current.caches)).toEqual(all);
+    expect(first.result.current.lastImport?.cacheCount).toBe(2);
+    const reloaded = await renderReady();
+    expect(codesOf(reloaded.result.current.caches)).toEqual(all);
+  });
+
+  it('keeps the found and ignored marks of both', async () => {
+    const first = await renderReady();
+    const second = await renderReady();
+
+    act(() => {
+      second.result.current.markFound('GCAPP1');
+      second.result.current.ignore('GCAPP2');
+    });
+    act(() => {
+      first.result.current.markFound('GCMORE1');
+      first.result.current.ignore('GCMORE2');
+    });
+    await act(() => Promise.resolve());
+
+    const reloaded = await renderReady();
+    expect([...reloaded.result.current.locallyFound]).toEqual([
+      'GCAPP1',
+      'GCMORE1',
+    ]);
+    expect([...reloaded.result.current.ignored]).toEqual(['GCAPP2', 'GCMORE2']);
+  });
+
+  it('takes back one mark another window made, keeping its others', async () => {
+    const first = await renderReady();
+    const second = await renderReady();
+    act(() => {
+      second.result.current.markFound('GCAPP1');
+      second.result.current.markFound('GCAPP3');
+      second.result.current.ignore('GCAPP2');
+      second.result.current.ignore('GCMORE1');
+    });
+
+    act(() => {
+      first.result.current.unmarkFound('GCAPP1');
+      first.result.current.unignore('GCAPP2');
+    });
+    await act(() => Promise.resolve());
+
+    expect(storedValue('locally-found')).toEqual(['GCAPP3']);
+    expect(storedValue('ignored')).toEqual(['GCMORE1']);
+  });
+});
+
 describe('walking', () => {
   const TRAIL = makeTrail({ id: 'walk-trail', caches: CACHES });
   const codes = (walk: { codes: string[] } | undefined) => walk?.codes;

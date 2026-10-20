@@ -53,9 +53,12 @@ it read from how many files, and why it refused a file:
 
 - **not a geocache .zip or .gpx file**: another kind of file, or XML that is
   not GPX;
-- **damaged**: the file could not be read, or a zip is broken;
-- **too large**: a zip of more than 50 files or more than 100 MB unpacked, or
-  any file over 100 MB.
+- **damaged**: the file could not be read, or a zip is broken (control
+  characters that XML forbids, which some apps put in log texts, are left
+  out instead);
+- **too large**: a zip of more than 50 files or more than 100 MB unpacked,
+  any file over 100 MB, or a file that would take one import past 20,000
+  caches (about twenty full Pocket Queries); import the rest separately.
 
 Importing again adds to what is already there: a cache imported twice is
 kept once, the newer file's details winning. A newer run of the same Pocket
@@ -73,6 +76,10 @@ caches.
 Name other GPX files you import (from GSAK, c:geo, …) after what they hold:
 importing a different area under the same file name replaces the first
 area's caches.
+
+With the app open twice, say installed and in a browser tab, neither loses
+what the other imports, marks found or ignores; reopen one to see what the
+other did.
 
 ## Share a file to the app (Android)
 
@@ -103,7 +110,7 @@ maintenance, disabled).
 - **Find a cache** by code or name with the search box.
 - On the map, tap a trail's numbered badge or line to open it; the layers
   button shows or hides the caches that are on no trail, the target button
-  shows and follows your position.
+  shows and follows your position until you drag or zoom the map yourself.
 
 On a phone the list sits in a panel over the map: drag or tap its handle to
 make it small, half or full height.
@@ -116,7 +123,8 @@ Long chains are split into several walks no longer than the
 <img src="../images/phone-trail.png" alt="A trail on a phone: its numbers, the nearest parking, Start walk and the caches in walking order" width="280">
 
 A trail shows its numbers, the nearest parking with a link that opens your
-navigation app, and its caches in walking order. **Reverse** walks it the
+navigation app (Apple Maps on an iPhone, iPad or Mac), and its caches in
+walking order. **Reverse** walks it the
 other way round. **Export GPX** saves `powertrail-<number>.gpx` with the caches
 in order, the parking and a route, for a navigation app such as OsmAnd or
 Locus. Open a cache in the list for its links and marks.
@@ -126,7 +134,8 @@ Locus. Open a cache in the list for its links and marks.
 A cache shows its code, name, type, ratings, size and owner, how far away and
 in which direction it is, its latest logs and its hint (hidden until you ask).
 Its links open the cache page (`coord.info`, or the Geocaching app when
-installed), your navigation app, or Google Maps walking directions; **Copy**
+installed), your navigation app (Apple Maps on an iPhone, iPad or Mac), or
+Google Maps walking directions; **Copy**
 puts its coordinates on the clipboard as geocachers write them
 (`N 50° 18.000′ E 008° 54.000′`).
 
@@ -161,9 +170,13 @@ phone vibrates once.
   **Undo** takes the last one back.
 - The reverse button turns the rest of the walk around.
 - **Finish** ends early; **Resume walk** goes on.
+- The map keeps you and the next cache in view. Drag or zoom it and it stays
+  where you put it; the target button follows you again.
 
 The screen stays on while you walk, and the walk is saved as you go: reopen
-the app to continue. Caches you mark found are left out of every trail, even
+the app to continue. If a newer Pocket Query you import during the walk no
+longer lists a cache still ahead of you, the walk leaves it out and goes on
+with the next one. Caches you mark found are left out of every trail, even
 before your next Pocket Query.
 
 At the end, the summary shows your finds and DNFs, time and caches per hour.
@@ -202,11 +215,15 @@ second at most. With the answers:
 - Distances, times and caches per hour follow real footpaths.
 - Two caches with no path between them, or only a very long one, no longer
   link, so a trail splits at the barrier (and may disappear if neither part
-  is big enough).
+  is big enough). Every pair of caches close enough to link is checked, also
+  across a river two rows of caches run along.
+- The walking order follows real footpaths too: along a river or a motorway
+  it walks up one side and back the other, crossing where a bridge is,
+  instead of zig-zagging across.
 
 A line below the trail list shows the progress ("Checking walking routes …"),
 then "Distances follow real footpaths." The answers are kept in this browser,
-so a cache pair is never asked twice. If the server can't be reached, the
+so nothing already known is asked for on its own again. If the server can't be reached, the
 line says so and the straight-line estimates stay. A very large import is
 checked in part per visit; reload to check more. Untick the box to go back to
 straight lines; nothing is sent while it is off. A wrong route is usually a
@@ -215,12 +232,14 @@ report or add it.
 
 ## See and clear your data
 
-**Your data** shows how many caches, trails, finds marked here and ignored
-caches are stored, and when and from which files you last imported.
+**Your data** (full screen on a phone) shows how many caches, trails, finds
+marked here and ignored caches are stored, and when and from which files you
+last imported.
 
 **Clear all data** removes every imported cache, your settings, the caches you
 marked found or ignored, any walk in progress and the stored walking routes
-from this browser, after asking. Nothing else holds a copy; the routing server
+from this browser, after asking; a walking-route answer still on its way is
+dropped. Nothing else holds a copy; the routing server
 keeps only its own request log of the coordinates it was asked about, if you
 turned walking routes on. The kept map tiles stay: they are OpenStreetMap's
 pictures of the areas you viewed, and your browser's site settings remove
@@ -235,7 +254,11 @@ them.
 Installed, the app opens full screen and works offline once it has been
 loaded, with your trails and any walk in progress; an **Offline** badge shows
 while there is no connection. On a weak signal it opens its kept copy after
-about three seconds instead of waiting for the network.
+about three seconds instead of waiting for the network. After an update the
+browser keeps the previous version's files as well, so a window still open
+from before keeps working; the version before that is removed. An installed
+app has no reload button: tap the logo or the name at the top to reload it,
+with your data, finds and any walk kept.
 
 The map keeps the tiles you viewed while online (the latest 5,000 or so, about
 75–125 MB), so a trail you looked at at home still has its map in the woods.

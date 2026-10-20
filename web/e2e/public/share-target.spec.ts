@@ -2,8 +2,18 @@ import type { Page } from '@playwright/test';
 
 import { expect, test } from '../fixture';
 
-import { SW_ONLY_IN_CHROMIUM } from '../helpers';
-import { ALL_CACHES, pocketQueryGpx } from '../pocketQuery';
+import {
+  placeDevice,
+  SW_ONLY_IN_CHROMIUM,
+  WORKER_MAP_ONLY_IN_CHROMIUM,
+} from '../helpers';
+import {
+  ALL_CACHES,
+  offset,
+  pocketQueryGpx,
+  pocketQueryZip,
+  QUICK_TRAIL,
+} from '../pocketQuery';
 
 // The worker is what these specs test, so they allow it in every project, Firefox included (playwright.config.ts).
 test.use({ locale: 'en-GB', serviceWorkers: 'allow' });
@@ -121,6 +131,41 @@ test.describe('sharing a Pocket Query to the app', () => {
     ]);
     await app.sharedImport.do.accept();
     await expect(app.trails.locators.count).toHaveText('2 trails');
+  });
+
+  // A newer run of the walk's query, shared mid-walk, no longer lists the next cache (found online since, say).
+  test('goes on with the walk when a shared newer run drops its next cache', async ({
+    on,
+    page,
+    context,
+    browserName,
+  }) => {
+    test.skip(browserName !== 'chromium', WORKER_MAP_ONLY_IN_CHROMIUM);
+    await placeDevice(context, offset(-200));
+    const app = on(page);
+    await app.emptyState.do.importFiles([await pocketQueryZip()]);
+    await app.home.do.dismissImportSummary();
+    await app.trails.do.openTrail(0);
+    await app.trail.do.startAtNearestEnd();
+    await app.walk.do.found();
+    const codes = QUICK_TRAIL.map((cache) => cache.code);
+    await expect(app.walk.locators.targetCode).toHaveText(codes[1]);
+
+    const newerRun = ALL_CACHES.filter((cache) => cache.code !== codes[1]);
+    await share(page, [
+      { name: '9876543.gpx', text: pocketQueryGpx(newerRun) },
+    ]);
+    await app.sharedImport.do.accept();
+
+    await expect(app.home.locators.removedCaches).toHaveText(
+      'Removed 1 cache the query no longer lists.',
+    );
+    await expect(app.walk.locators.targetCode).toHaveText(codes[2]);
+    await expect(app.walk.locators.progress).toHaveText('1/10');
+    for (let left = codes.length - 2; left > 0; left -= 1) {
+      await app.walk.do.found();
+    }
+    await expect(app.walk.summary.locators.title).toHaveText('Walk complete!');
   });
 
   test('says so when the share delivered nothing it could keep', async ({

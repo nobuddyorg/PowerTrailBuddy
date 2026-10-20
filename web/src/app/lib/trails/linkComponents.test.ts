@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import type { Coordinates } from '../geocache/types';
 import { distanceMeters } from './geo';
+import { gridNeighbourhood, linkComponentsWhere } from './linkComponents';
 import {
-  gridNeighbourhood,
+  DEGREES_PER_METER,
+  eastwardChain,
   linkComponents,
-  linkComponentsWhere,
-} from './linkComponents';
-import { DEGREES_PER_METER, eastwardChain } from './trails.test-support';
+} from './trails.test-support';
 
 interface Labelled extends Coordinates {
   label: string;
@@ -265,14 +265,6 @@ describe('linkComponentsWhere', () => {
           (a.label === first && b.label === second) ||
           (a.label === second && b.label === first),
       );
-
-  it('links like linkComponents when every gap is allowed', () => {
-    expect(
-      labelsOf(
-        linkComponentsWhere(chain, { maxGapMeters: 300, isLinked: () => true }),
-      ),
-    ).toEqual(labelsOf(linkComponents(chain, 300)));
-  });
 
   it('splits a chain where its only link is refused, either way round', () => {
     const expected = [

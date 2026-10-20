@@ -33,7 +33,9 @@ describe('closeLoop', () => {
       [100, 100],
       [100, 0],
     ]);
-    expect(codesOf(closeLoop(square, straight))).toEqual(codesOf(square));
+    expect(codesOf(closeLoop(square, { legMeters: straight }))).toEqual(
+      codesOf(square),
+    );
   });
 
   it('starts after the shortest leg, so that leg is the way back', () => {
@@ -43,7 +45,7 @@ describe('closeLoop', () => {
       [100, 100],
       [100, 20],
     ]);
-    expect(codesOf(closeLoop(ring, straight))).toEqual([
+    expect(codesOf(closeLoop(ring, { legMeters: straight }))).toEqual([
       'GCR3',
       'GCR0',
       'GCR1',
@@ -58,7 +60,7 @@ describe('closeLoop', () => {
       [100, 0],
       [0, 100],
     ]);
-    expect(codesOf(closeLoop(crossed, straight))).toEqual([
+    expect(codesOf(closeLoop(crossed, { legMeters: straight }))).toEqual([
       'GCR0',
       'GCR2',
       'GCR1',
@@ -74,7 +76,7 @@ describe('closeLoop', () => {
       [0, 100],
     ]);
     const everyLegAlike = () => 50;
-    expect(codesOf(closeLoop(crossed, everyLegAlike))).toEqual(
+    expect(codesOf(closeLoop(crossed, { legMeters: everyLegAlike }))).toEqual(
       codesOf(crossed),
     );
   });

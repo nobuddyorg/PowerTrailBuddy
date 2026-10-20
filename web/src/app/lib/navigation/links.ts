@@ -20,6 +20,11 @@ export function geoUri(target: Coordinates, label: string): string {
   return `geo:${pair}?q=${pair}(${encodeLabel(label)})`;
 }
 
+/** The same pin for Apple's Maps, which iPhone, iPad and Mac open; they have no handler for `geo:`. */
+export function appleMapsUrl(target: Coordinates, label: string): string {
+  return `https://maps.apple.com/?ll=${coordinatePair(target)}&q=${encodeURIComponent(label)}`;
+}
+
 /** The cache's listing on geocaching.com, through its official short-link service; the Geocaching app opens it when installed. */
 export function cachePageUrl(code: string): string {
   return `https://coord.info/${encodeURIComponent(code)}`;

@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
+
 import { useI18n } from '../../i18n/useI18n';
 import type { Coordinates } from '../../lib/geocache/types';
 import { exclusionReasons } from '../../lib/trails/filterCaches';
@@ -16,11 +18,14 @@ import { CacheSearch } from '../Search';
 import { TrailDetail } from '../TrailDetail';
 import { TrailList } from '../TrailList';
 import { buttonClasses } from '../ui/classes';
+import { focusQuietly, mayTakeFocus } from '../ui/focus';
 import type { PanelView } from './usePanel';
 
 interface PanelContentProps {
   app: AppState;
   view: PanelView;
+  /** After Back, the `data-focus-key` of the card or row that opened the view left. */
+  returnFocus: string;
   backToList: boolean;
   onBack: () => void;
   trails: readonly Trail[];
@@ -53,7 +58,7 @@ function Gone({ onBack }: { onBack: () => void }) {
 }
 
 /** The panel's current view: the trail list with search, one trail, or one cache. */
-export function PanelContent(props: PanelContentProps) {
+function CurrentView(props: PanelContentProps) {
   const { app, view, trails, position, onBack, onSelectTrail, onSelectCache } =
     props;
   const { t, tCount } = useI18n();
@@ -136,6 +141,31 @@ export function PanelContent(props: PanelContentProps) {
         onOpenSettings={props.onOpenSettings}
       />
       <RouteStatus check={props.routeCheck} />
+    </div>
+  );
+}
+
+/** After Back, the card or row the view was opened from; else the view's heading; else the panel itself. */
+function focusTarget(panel: HTMLElement, returnFocus: string): HTMLElement {
+  const origin = [
+    ...panel.querySelectorAll<HTMLElement>('[data-focus-key]'),
+  ].find((element) => element.dataset.focusKey === returnFocus);
+  return (
+    origin ?? panel.querySelector<HTMLElement>('[data-view-heading]') ?? panel
+  );
+}
+
+/** The current view, with focus moved into it whenever it changes, so keyboard and screen-reader users follow along. */
+export function PanelContent(props: PanelContentProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const { view, returnFocus } = props;
+  useEffect(() => {
+    const panel = panelRef.current!;
+    if (mayTakeFocus(panel)) focusQuietly(focusTarget(panel, returnFocus));
+  }, [view, returnFocus]);
+  return (
+    <div ref={panelRef} tabIndex={-1} className="outline-none">
+      <CurrentView {...props} />
     </div>
   );
 }

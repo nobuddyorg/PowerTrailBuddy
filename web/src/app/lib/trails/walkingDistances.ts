@@ -24,13 +24,18 @@ export function pairKey(a: Geocache, b: Geocache): string {
   return `${first}|${second}`;
 }
 
-/** The routed distance where one is known, else the straight line times the detour factor. */
+/** The straight line times the detour factor: a leg's walk until it is routed. */
+export function estimatedLegMeters(detourFactor: number): LegMeters {
+  return (from, to) => distanceMeters(from, to) * detourFactor;
+}
+
+/** The routed distance where one is known, else the estimate. */
 export function legMetersFor(
   distances: WalkingDistances,
   detourFactor: number,
 ): LegMeters {
-  return (from, to) =>
-    distances.get(pairKey(from, to)) ?? distanceMeters(from, to) * detourFactor;
+  const estimated = estimatedLegMeters(detourFactor);
+  return (from, to) => distances.get(pairKey(from, to)) ?? estimated(from, to);
 }
 
 /** Whether a gap is walkable: never false without a routed distance, as the straight line is under the largest gap. */

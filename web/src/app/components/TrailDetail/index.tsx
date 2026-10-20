@@ -11,11 +11,12 @@ import {
   formatRate,
 } from '../../lib/format/format';
 import type { Coordinates } from '../../lib/geocache/types';
-import { geoUri } from '../../lib/navigation/links';
+import { appleMapsUrl, geoUri } from '../../lib/navigation/links';
 import { nearestEnd } from '../../lib/trails/nearby';
 import type { Trail } from '../../lib/trails/types';
 import { nearestParking } from '../../lib/ui-logic/parking';
 import { healthSummary } from '../../lib/ui-logic/trailCards';
+import { useApplePlatform } from '../../useBrowserState';
 import type { WalkStart } from '../../useWalkActions';
 import { Icon } from '../Icon';
 import { trailColor } from '../Map/content';
@@ -53,6 +54,7 @@ export function TrailDetail({
 }: TrailDetailProps) {
   const { t, tCount, locale } = useI18n();
   const toast = useToast();
+  const navigateUrl = useApplePlatform() ? appleMapsUrl : geoUri;
   const [reversed, setReversed] = useState(false);
   const caches = useMemo(
     () => (reversed ? [...trail.caches].reverse() : trail.caches),
@@ -98,7 +100,9 @@ export function TrailDetail({
         <h2
           id="trail-detail-title"
           data-testid="trail-detail-title"
-          className="flex-1 text-xl font-bold"
+          data-view-heading
+          tabIndex={-1}
+          className="flex-1 text-xl font-bold outline-none"
         >
           {title}
         </h2>
@@ -150,7 +154,7 @@ export function TrailDetail({
 
       {parking && (
         <a
-          href={geoUri(parking, t('detail.parkingLabel', { rank }))}
+          href={navigateUrl(parking, t('detail.parkingLabel', { rank }))}
           data-testid="trail-parking"
           className="flex min-h-11 items-center gap-3 rounded-xl bg-card px-3 py-2 ring-1 ring-border hover:bg-muted"
         >
