@@ -76,5 +76,6 @@ describe('routingBatches, answered one request at a time', () => {
       // Each run plans until nothing is left and reruns for every planner mutant; 20 keep it near a second.
       { numRuns: 20 },
     );
-  });
+    // Under Stryker's instrumentation on a CI runner, those rounds pass the 5 s default.
+  }, 30_000);
 });
