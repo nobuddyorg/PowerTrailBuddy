@@ -77,7 +77,10 @@ sends the trail caches' coordinates to a third party:
   services (GraphHopper, openrouteservice) would need a backend.
 - **Within its policy.** At most one request a second, batches of 50 caches,
   at most 60 requests a visit, distances kept in IndexedDB so a pair is never
-  asked twice, attribution and a "fix the map" link beside the trails.
+  asked twice, attribution and a "fix the map" link beside the trails. A
+  window is asked for only while a pair close enough to link lacks a route,
+  so marking caches found on a walk costs no requests, and a request once
+  sent is never thrown away for newer input: the server has done the work.
 - **What a route changes.** Trail finding still links caches closer than
   `maxGapMeters` in a straight line; a routed gap longer than
   `2 × maxGapMeters × detourFactor` (or unroutable) is a barrier and does not
@@ -185,8 +188,10 @@ three-second limit: on one bar of signal a request neither answers nor
 fails for tens of seconds, and the walk the app exists for starts exactly
 there. Tiles are the opposite trade: cache-first for a week, because a map a
 few days old is as good for a walk and every tile not fetched is load off
-OpenStreetMap's volunteer-run servers. Only tiles already viewed are kept,
-since the tile usage policy forbids downloading an area in advance.
+OpenStreetMap's volunteer-run servers. For the same reason the map fetches
+tiles only for the zoom a pinch ends at, not each level it passes, and keeps
+up to 5,000 of them. Only tiles already viewed are kept, since the tile usage
+policy forbids downloading an area in advance.
 
 ## Why there is only a light theme
 

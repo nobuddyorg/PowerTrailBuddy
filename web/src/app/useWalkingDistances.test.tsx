@@ -145,7 +145,49 @@ describe('useWalkingDistances', () => {
     );
   });
 
-  it('does not count a request it gave up for newer input as a failure', async () => {
+  it('sends a request once though its caches come again as a new list, and uses its answer', async () => {
+    let answer: (entries: [string, number][]) => void = () => {};
+    router.fetch.mockImplementationOnce(
+      () => new Promise((resolve) => (answer = resolve)),
+    );
+    const { result, rerender } = renderRoutes();
+    await waitFor(() => expect(router.fetch).toHaveBeenCalledTimes(1));
+    rerender({ enabled: true, caches: [...CACHES] });
+    await act(() => new Promise((resolve) => setTimeout(resolve, 1100)));
+    expect(router.fetch).toHaveBeenCalledTimes(1);
+    expect(router.fetch.mock.calls[0][1].aborted).toBe(false);
+
+    act(() => answer(answerFor(CACHES)));
+    await waitFor(() =>
+      expect(result.current.check).toEqual({ status: 'done' }),
+    );
+    expect(router.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps a request it sent when the caches change, and asks for the rest after its answer', async () => {
+    let answer: (entries: [string, number][]) => void = () => {};
+    router.fetch.mockImplementationOnce(
+      () => new Promise((resolve) => (answer = resolve)),
+    );
+    const { result, rerender } = renderRoutes();
+    await waitFor(() => expect(router.fetch).toHaveBeenCalledTimes(1));
+    const moved = { ...CACHES[3], code: 'GCROUTE9' };
+    rerender({ enabled: true, caches: [...CACHES.slice(0, 3), moved] });
+    await act(() => new Promise((resolve) => setTimeout(resolve, 1100)));
+    expect(router.fetch).toHaveBeenCalledTimes(1);
+
+    act(() => answer(answerFor(CACHES)));
+    await waitFor(
+      () => expect(result.current.check).toEqual({ status: 'done' }),
+      { timeout: 3000 },
+    );
+    expect(router.fetch).toHaveBeenCalledTimes(2);
+    expect(
+      result.current.walkingDistances.get(pairKey(CACHES[0], CACHES[1])),
+    ).toBe(120);
+  });
+
+  it('drops a request when turned off, without counting it a failure', async () => {
     router.fetch.mockImplementationOnce(
       (_caches, signal) =>
         new Promise((_resolve, reject) =>
@@ -156,12 +198,13 @@ describe('useWalkingDistances', () => {
     );
     const { result, rerender } = renderRoutes();
     await waitFor(() => expect(router.fetch).toHaveBeenCalledTimes(1));
-    rerender({ enabled: true, caches: CACHES.slice(0, 3) });
+    rerender({ enabled: false, caches: CACHES });
+    expect(router.fetch.mock.calls[0][1].aborted).toBe(true);
+    rerender({ enabled: true, caches: CACHES });
     await waitFor(
       () => expect(result.current.check).toEqual({ status: 'done' }),
       { timeout: 3000 },
     );
-    expect(router.fetch.mock.calls[0][1].aborted).toBe(true);
   });
 
   it('reports storage it cannot read or write', async () => {

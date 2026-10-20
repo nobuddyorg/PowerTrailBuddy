@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { loadWalkingDistances, saveWalkingDistances } from './data/store';
+import { addWalkingDistances, loadWalkingDistances } from './data/store';
 import { fetchWalkingDistances } from './data/walkingRoutes';
 import type { Geocache } from './lib/geocache/types';
 import { routingBatches } from './lib/routing/planRouting';
@@ -31,6 +31,23 @@ interface RouteInput {
   locallyFound: ReadonlySet<string>;
   /** The user opted in to sending trail caches' coordinates to the routing server. */
   enabled: boolean;
+}
+
+interface Request {
+  /** The same for the same caches at the same places until one is sent, whatever the array. */
+  key: string;
+  caches: readonly Geocache[];
+}
+
+function requestFor(
+  caches: readonly Geocache[] | undefined,
+  sentBefore: number,
+): Request | undefined {
+  if (caches === undefined) return undefined;
+  const places = caches
+    .map(({ code, latitude, longitude }) => `${code}@${latitude},${longitude}`)
+    .join(';');
+  return { key: `${sentBefore}|${places}`, caches };
 }
 
 function checkOf({
@@ -63,8 +80,11 @@ export function useWalkingDistances({
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
   const [requestCount, setRequestCount] = useState(0);
+  const [inFlight, setInFlight] = useState(false);
   const [wasEnabled, setWasEnabled] = useState(enabled);
+  const [request, setRequest] = useState<Request>();
   const lastRequestAt = useRef(-Infinity);
+  const sent = useRef(new AbortController());
 
   // Turning it on again is a fresh try after a failure.
   if (wasEnabled !== enabled) {
@@ -89,6 +109,14 @@ export function useWalkingDistances({
     };
   }, []);
 
+  // A request already sent is answered even if the input moves on; only turning routes off or leaving drops it.
+  useEffect(() => {
+    if (!enabled) return;
+    const controller = new AbortController();
+    sent.current = controller;
+    return () => controller.abort();
+  }, [enabled]);
+
   const batches = useMemo(
     () =>
       enabled
@@ -102,36 +130,38 @@ export function useWalkingDistances({
   );
 
   // Until the stored distances are in, the batches are an estimate to show, not requests to send.
-  const canRequest = loaded && !failed && requestCount < MAX_REQUESTS;
-  const next = canRequest ? batches[0] : undefined;
+  const canRequest =
+    loaded && !failed && !inFlight && requestCount < MAX_REQUESTS;
+  const next = requestFor(canRequest ? batches[0] : undefined, requestCount);
+  // Kept while its caches are the same, so a new array for them neither cancels nor repeats the request.
+  if (next?.key !== request?.key) setRequest(next);
 
   useEffect(() => {
-    if (next === undefined) return;
-    const controller = new AbortController();
+    if (request === undefined) return;
     const wait = Math.max(
       0,
       lastRequestAt.current + REQUEST_INTERVAL_MS - performance.now(),
     );
     const timer = setTimeout(() => {
+      const { signal } = sent.current;
       lastRequestAt.current = performance.now();
       setRequestCount((count) => count + 1);
-      fetchWalkingDistances(next, controller.signal).then(
-        (entries) => {
-          const merged = new Map([...distances, ...entries]);
-          setDistances(merged);
-          saveWalkingDistances(merged).catch(() => setFailed(true));
-        },
-        () => {
-          // An abort is this effect giving way to newer input, not a failure.
-          if (!controller.signal.aborted) setFailed(true);
-        },
-      );
+      setInFlight(true);
+      fetchWalkingDistances(request.caches, signal)
+        .then(
+          (entries) => {
+            setDistances((known) => new Map([...known, ...entries]));
+            addWalkingDistances(entries).catch(() => setFailed(true));
+          },
+          () => {
+            // An abort is routes turned off or the page left, not a failure.
+            if (!signal.aborted) setFailed(true);
+          },
+        )
+        .finally(() => setInFlight(false));
     }, wait);
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [next, distances]);
+    return () => clearTimeout(timer);
+  }, [request]);
 
   return {
     walkingDistances: enabled ? distances : NO_WALKING_DISTANCES,

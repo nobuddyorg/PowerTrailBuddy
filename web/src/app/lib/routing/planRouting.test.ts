@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Geocache } from '../geocache/types';
+import { distanceMeters } from '../trails/geo';
 import {
   DEGREES_PER_METER,
   eastwardChain,
   makeCache,
 } from '../trails/trails.test-support';
-import { DEFAULT_TRAIL_SETTINGS } from '../trails/types';
+import { DEFAULT_TRAIL_SETTINGS, type TrailSettings } from '../trails/types';
 import { pairKey } from '../trails/walkingDistances';
 import { BATCH_OVERLAP, BATCH_SIZE, routingBatches } from './planRouting';
 
@@ -43,6 +44,23 @@ const settings = {
 
 function codesOf(batches: readonly Geocache[][]): string[][] {
   return batches.map((batch) => batch.map((cache) => cache.code));
+}
+
+/** Every pair the planner asks for, answered one request at a time as useWalkingDistances does. */
+function routeUntilDone(
+  caches: readonly Geocache[],
+  { settings }: { settings: TrailSettings },
+): Map<string, number> {
+  const routed = new Map<string, number>();
+  for (;;) {
+    const [batch] = routingBatches(caches, {
+      settings,
+      locallyFound: nothingFound,
+      walkingDistances: routed,
+    });
+    if (batch === undefined) return routed;
+    for (const [key, meters] of routedAll(batch)) routed.set(key, meters);
+  }
 }
 
 describe('routingBatches', () => {
@@ -117,17 +135,80 @@ describe('routingBatches', () => {
     expect(batches).toHaveLength(2);
   });
 
-  it('asks for a window again when only one of its pairs is missing', () => {
+  it('asks for a window again when one pair close enough to link is missing', () => {
     const caches = chain('GCM', 8);
     const routed = routedAll(caches);
-    routed.delete(pairKey(caches[0], caches[7]));
+    routed.delete(pairKey(caches[2], caches[4]));
+    expect(
+      codesOf(
+        routingBatches(caches, {
+          settings,
+          locallyFound: nothingFound,
+          walkingDistances: routed,
+        }),
+      ).map((batch) => batch.sort()),
+    ).toEqual(codesOf([caches]));
+  });
+
+  it('asks no window for a missing pair too far apart to link, a gap exactly the largest included', () => {
+    const caches = chain('GCF', 8);
+    const routed = routedAll(caches);
+    routed.delete(pairKey(caches[0], caches[3]));
+    routed.delete(pairKey(caches[1], caches[6]));
     expect(
       routingBatches(caches, {
-        settings,
+        settings: {
+          ...settings,
+          maxGapMeters: distanceMeters(caches[0], caches[3]),
+        },
         locallyFound: nothingFound,
         walkingDistances: routed,
       }),
-    ).toHaveLength(1);
+    ).toEqual([]);
+  });
+
+  it('asks only for the way back once its window is routed but for that far pair', () => {
+    const caches = chain('GCW', 8);
+    const routed = routedAll(caches);
+    routed.delete(pairKey(caches[0], caches[7]));
+    expect(
+      codesOf(
+        routingBatches(caches, {
+          settings,
+          locallyFound: nothingFound,
+          walkingDistances: routed,
+        }),
+      ).map((batch) => batch.sort()),
+    ).toEqual([['GCW000', 'GCW007']]);
+  });
+
+  it('asks nothing again when a cache of a routed trail is marked found', () => {
+    const caches = chain('GCN', 3 * BATCH_SIZE);
+    const routed = routeUntilDone(caches, { settings });
+    expect(
+      routingBatches(caches, {
+        settings,
+        locallyFound: new Set([caches[BATCH_SIZE].code]),
+        walkingDistances: routed,
+      }),
+    ).toEqual([]);
+  });
+
+  it('asks only for the windows holding a cache added to a routed trail', () => {
+    const caches = chain('GCI', 3 * BATCH_SIZE);
+    const routed = routeUntilDone(caches, { settings });
+    const added = makeCache({
+      code: 'GCI999',
+      latitude: caches[5].latitude + 30 * DEGREES_PER_METER,
+      longitude: caches[5].longitude,
+    });
+    const batches = routingBatches([...caches, added], {
+      settings,
+      locallyFound: nothingFound,
+      walkingDistances: routed,
+    });
+    expect(batches).toHaveLength(1);
+    expect(codesOf(batches)[0]).toContain('GCI999');
   });
 
   it('then asks for the way back of each trail longer than one window, in pairs', () => {

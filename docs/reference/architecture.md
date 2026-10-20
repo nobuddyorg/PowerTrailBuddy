@@ -283,7 +283,10 @@ joins them. `legMetersFor(distances, detourFactor)`, `isWalkableGap(legMeters,
 - `routingBatches(caches, input)` (`planRouting.ts`): the requests still
   needed, each up to `BATCH_SIZE` (50) caches. First, windows along each
   group of at least `minCaches` in walking order, overlapping by
-  `BATCH_OVERLAP` (10), that hold an unrouted pair. Once there are none,
+  `BATCH_OVERLAP` (10), that hold an unrouted pair close enough to link
+  (straight line under `maxGapMeters`, found with the spatial grid), so a
+  cache marked found or added shifts the windows without asking again for
+  pairs only a window ever held. Once there are none,
   every leg of every trail, the way back first, that is still unrouted, two
   caches each, packed into batches: without `loopsOnly` only ways back are
   left by then; a round trip can also join caches no window held together. Empty once everything is known.
@@ -363,11 +366,14 @@ returns `parseTable`'s entries; a non-OK status or a bad answer rejects.
 `useWalkingDistances({ caches, settings, locallyFound, enabled })` loads the
 stored distances, then while `enabled` asks for `routingBatches(...)[0]`,
 one request at a time and at least a second apart, at most `MAX_REQUESTS`
-(60) per page load, merges and stores each answer, and returns
+(60) per page load, merges each answer and adds it to the stored ones in one
+transaction (`addWalkingDistances`, so another tab's answers stay), and returns
 `{ walkingDistances, check }`. `walkingDistances` is empty while off.
 `check` is `off`, `checking` (with the batches left), `done`, `limited` (the
 cap was reached) or `failed` (a request, a read or a write failed; turning it
-off and on tries again).
+off and on tries again). A request is keyed by its caches and places, not by
+the array, and once sent it is answered and used even if the input changes;
+only turning routes off or leaving the page aborts it.
 
 ### `data/sharedFiles.ts`
 
@@ -391,7 +397,7 @@ Everything the app keeps, all in the user's browser, all per origin.
 | same | `walking-distances` | `Map<string, number>` of routed walking metres by cache pair (`Infinity` where no path) | `data/store.ts` |
 | Cache Storage | `powertrailbuddy-shell-<build id>` | The app shell and hashed assets of one build | `public/sw.js` |
 | Cache Storage | `powertrailbuddy-shared-files` | Files received by the share target until the page imports them | `public/sw.js`, emptied by `data/sharedFiles.ts` |
-| Cache Storage | `powertrailbuddy-tiles` | Up to 2,000 OpenStreetMap tiles the map showed, each with the time it was kept | `public/sw.js` |
+| Cache Storage | `powertrailbuddy-tiles` | Up to 5,000 OpenStreetMap tiles the map showed, each with the time it was kept | `public/sw.js` |
 | `localStorage` | `lang` | `de` or `en` | `i18n/I18nProvider.tsx` |
 
 `clearAllData()` removes the eight IndexedDB keys; the language choice and
@@ -435,7 +441,7 @@ so `next dev` never pins its changing chunks.
   (7 days, stamped in the kept copy's `x-powertrailbuddy-kept-at` header) is
   served without a request; an older one is fetched again, and still served
   when the network fails or refuses. A fetched tile is kept, and the cache
-  then trimmed to `MAX_TILES` (2,000) entries, oldest first (putting a tile
+  then trimmed to `MAX_TILES` (5,000) entries, oldest first (putting a tile
   again moves it to the end). Offline with nothing kept, the answer is a
   `504`, never a rejected fetch. Only tiles the map asked for are kept;
   nothing is fetched in advance (the OpenStreetMap tile usage policy forbids
