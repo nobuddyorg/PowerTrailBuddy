@@ -134,7 +134,7 @@ one in one log's free text no longer makes the whole query `not-xml`.
 
 ### `lib/geocache/importFiles.ts`
 
-`importFiles(files: readonly File[]): Promise<ImportResult>`,
+`importFiles(files: readonly File[], { maxCaches = MAX_IMPORT_CACHES } = {}): Promise<ImportResult>`,
 `ImportResult = { caches: Geocache[]; files: ImportedFile[]; sources:
 string[] }`,
 `ImportedFile = { name: string; cacheCount: number; error?: 'unsupported' |
