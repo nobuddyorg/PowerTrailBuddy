@@ -2,7 +2,11 @@ import type { Page } from '@playwright/test';
 
 import { expect, test } from '../fixture';
 
-import { placeDevice, SW_ONLY_IN_CHROMIUM } from '../helpers';
+import {
+  placeDevice,
+  SW_ONLY_IN_CHROMIUM,
+  WORKER_MAP_ONLY_IN_CHROMIUM,
+} from '../helpers';
 import {
   ALL_CACHES,
   offset,
@@ -134,7 +138,9 @@ test.describe('sharing a Pocket Query to the app', () => {
     on,
     page,
     context,
+    browserName,
   }) => {
+    test.skip(browserName !== 'chromium', WORKER_MAP_ONLY_IN_CHROMIUM);
     await placeDevice(context, offset(-200));
     const app = on(page);
     await app.emptyState.do.importFiles([await pocketQueryZip()]);

@@ -115,8 +115,10 @@ them.
 
 [`web/playwright.config.ts`](../../web/playwright.config.ts), specs in
 `web/e2e/public/`. Projects: `chromium` (Desktop Chrome), `mobile` (Pixel 7),
-`firefox`. The three offline-through-the-worker cases run in the Chromium
-projects only (developer-guide.md, "Offline through the service worker").
+`firefox`. The offline-through-the-worker cases run in the Chromium projects
+only (developer-guide.md, "Offline through the service worker"), and so does
+the share during a walk: Playwright routes no request a Firefox worker makes
+itself, so the walk's moving map logs the worker's failed tile loads there.
 
 | Variable | Effect |
 | --- | --- |
