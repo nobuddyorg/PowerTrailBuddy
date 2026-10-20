@@ -88,6 +88,34 @@ test.describe('walking routes', () => {
     expect(asked).toEqual([...askedBeforeClear, ...askedBeforeClear]);
   });
 
+  test('ask nothing more when a cache of a routed trail is marked found', async ({
+    on,
+    page,
+  }) => {
+    const asked = await fakeRouter(page, { barrierLongitude: MOTORWAY });
+    const app = on(page);
+    await app.settings.do.open();
+    await app.settings.do.toggleWalkingRoutes();
+    await app.settings.do.close();
+    await expect(app.trails.locators.routeStatus).toHaveText(
+      'Distances follow real footpaths.',
+    );
+    const askedBeforeFound = asked.length;
+
+    await app.trails.do.search('GCE2B06');
+    await app.trails.do.openSearchResult();
+    await app.cache.do.markFound();
+    await app.cache.do.back();
+
+    await expect(app.trails.card(0).locators.summary).toContainText(
+      '10 caches',
+    );
+    await expect(app.trails.locators.routeStatus).toHaveText(
+      'Distances follow real footpaths.',
+    );
+    expect(asked).toHaveLength(askedBeforeFound);
+  });
+
   test('say so when the routing server fails, and keep the estimated trails', async ({
     on,
     page,

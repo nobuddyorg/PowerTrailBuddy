@@ -77,15 +77,18 @@ sends the trail caches' coordinates to a third party:
   services (GraphHopper, openrouteservice) would need a backend.
 - **Within its policy.** At most one request a second, batches of 50 caches,
   at most 60 requests a visit, distances kept in IndexedDB so a request goes
-  out only while a pair in it is unknown, attribution and a "fix the map" link beside the trails. The
-  limits and the request decisions live in pure functions
-  (`lib/routing/requestPolicy.ts`) under mutation testing, not in the hook.
+  out only while a pair in it is unknown, attribution and a "fix the map"
+  link beside the trails. The limits and the request decisions live in pure
+  functions (`lib/routing/requestPolicy.ts`) under mutation testing, not in
+  the hook.
 - **What gets asked, in which order.** Windows of 50 consecutive caches in
   each group's straight-line walking order first: one request answers 1,225
   pairs, most of them the legs. The routed order would shift with every
   answer and move the windows over pairs already known; the straight-line
-  one stays put. A link between caches far apart in that order, such as across a river
-  two parallel rows of caches run along, no window holds; leaving it on its
+  one stays put. A window is asked for only while a pair close enough to
+  link lacks a route, so marking caches found on a walk costs no requests. A
+  link between caches far apart in that order, such as across a river two
+  parallel rows of caches run along, no window holds; leaving it on its
   estimate would keep both banks one trail. So every remaining link of a
   group big enough for a trail, found through the spatial grid rather than
   all pairs, is asked next, packed so a cache two links share is sent once.
@@ -93,8 +96,10 @@ sends the trail caches' coordinates to a third party:
 - **Off the urgent render.** Planning runs the link, order and split stages
   again, as long as finding the trails itself; it runs in a deferred render
   like `useTrails`, and a request is named by its URL, so a found mark that
-  leaves the first batch as it was neither waits for the planner nor aborts
-  and re-sends that batch.
+  leaves the first batch as it was neither waits for the planner nor re-sends
+  that batch. A request once sent is never thrown away for newer input: the
+  server has done the work; only turning routes off, leaving the page or
+  Clear all data drops it.
 - **What a route changes.** Trail finding still links caches closer than
   `maxGapMeters` in a straight line; a routed gap longer than
   `2 × maxGapMeters × detourFactor` (or unroutable) is a barrier and does not
@@ -250,8 +255,10 @@ removes it ([risk model](../reference/risk-model.md)).
 
 Tiles are the opposite trade: cache-first for a week, because a map a
 few days old is as good for a walk and every tile not fetched is load off
-OpenStreetMap's volunteer-run servers. Only tiles already viewed are kept,
-since the tile usage policy forbids downloading an area in advance.
+OpenStreetMap's volunteer-run servers. For the same reason the map fetches
+tiles only for the zoom a pinch ends at, not each level it passes, and keeps
+up to 5,000 of them. Only tiles already viewed are kept, since the tile usage
+policy forbids downloading an area in advance.
 
 ## Why there is only a light theme
 

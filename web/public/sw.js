@@ -13,8 +13,8 @@ const SHARE_FILES_FIELD = 'files';
 // Kept across builds like the shared files: the tiles viewed online, so the same area still has a map offline.
 const TILE_CACHE = 'powertrailbuddy-tiles';
 const TILE_ORIGIN = 'https://tile.openstreetmap.org';
-// About 30-50 MB of OpenStreetMap tiles; the oldest go first.
-const MAX_TILES = 2000;
+// About 75-125 MB of OpenStreetMap tiles, so a week of walks needs no second download; the oldest go first.
+const MAX_TILES = 5000;
 // Older than this, a tile is fetched again when the network answers; offline it is still shown.
 const MAX_TILE_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 // A tile's own headers say nothing about when it was kept, so the kept copy carries that itself.

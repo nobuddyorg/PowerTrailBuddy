@@ -9,7 +9,7 @@ import {
   useState,
 } from 'react';
 
-import { loadWalkingDistances, saveWalkingDistances } from './data/store';
+import { addWalkingDistances, loadWalkingDistances } from './data/store';
 import { fetchWalkingDistances } from './data/walkingRoutes';
 import type { Geocache } from './lib/geocache/types';
 import { routingBatches } from './lib/routing/planRouting';
@@ -41,8 +41,6 @@ interface PlanInput extends RouteInput {
   distances: WalkingDistances;
 }
 
-function nothingToCancel() {}
-
 // Nothing to plan, so the first paint never waits for the first plan.
 const NO_PLAN_INPUT: PlanInput = {
   caches: [],
@@ -68,13 +66,16 @@ export function useWalkingDistances({
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
   const [requestCount, setRequestCount] = useState(0);
+  const [inFlight, setInFlight] = useState(false);
   const [wasEnabled, setWasEnabled] = useState(enabled);
   const [request, setRequest] = useState(NO_REQUEST);
   const lastRequestAt = useRef(-Infinity);
   // An answer merges into the latest distances, which the deferred plan may lag behind.
   const latest = useRef(NO_WALKING_DISTANCES);
-  const cancelLoad = useRef(nothingToCancel);
-  const cancelRequest = useRef(nothingToCancel);
+  // Aborted by a clear, so stored pairs it overtakes never come back.
+  const loading = useRef(new AbortController());
+  // Aborts what was sent: turning routes off, leaving the page or a clear, never newer input.
+  const sent = useRef(new AbortController());
 
   const keep = useCallback((next: WalkingDistances) => {
     latest.current = next;
@@ -88,23 +89,32 @@ export function useWalkingDistances({
   }
 
   useEffect(() => {
-    let cancelled = false;
-    const cancel = () => {
-      cancelled = true;
-    };
-    cancelLoad.current = cancel;
+    const controller = new AbortController();
+    loading.current = controller;
+    const { signal } = controller;
     loadWalkingDistances().then(
       (stored) => {
-        if (cancelled) return;
+        if (signal.aborted) return;
         keep(stored);
         setLoaded(true);
       },
       () => {
-        if (!cancelled) setFailed(true);
+        if (!signal.aborted) setFailed(true);
       },
     );
-    return cancel;
+    return () => controller.abort();
   }, [keep]);
+
+  // A request already sent is answered even if the input moves on; only turning routes off or leaving drops it.
+  useEffect(() => {
+    if (!enabled) return;
+    const controller = new AbortController();
+    sent.current = controller;
+    return () => {
+      controller.abort();
+      setInFlight(false);
+    };
+  }, [enabled]);
 
   const input = useMemo(
     () => ({ caches, settings, locallyFound, enabled, distances }),
@@ -125,7 +135,12 @@ export function useWalkingDistances({
 
   const next = nextRequest({
     // Until the stored distances are in, the batches are an estimate to show, not requests to send.
-    mayRequest: enabled && loaded && !failed && belowRequestCap(requestCount),
+    mayRequest:
+      enabled &&
+      loaded &&
+      !failed &&
+      !inFlight &&
+      belowRequestCap(requestCount),
     planned: deferred === input,
     batches,
     current: request,
@@ -134,40 +149,44 @@ export function useWalkingDistances({
 
   useEffect(() => {
     if (request.caches.length === 0) return;
-    const controller = new AbortController();
     const timer = setTimeout(
       () => {
+        const controller = sent.current;
+        const { signal } = controller;
         lastRequestAt.current = performance.now();
         setRequestCount((count) => count + 1);
-        fetchWalkingDistances(request.caches, controller.signal).then(
-          (entries) => {
-            if (controller.signal.aborted) return;
-            const merged = new Map([...latest.current, ...entries]);
-            keep(merged);
-            saveWalkingDistances(merged).catch(() => setFailed(true));
-          },
-          () => {
-            // An abort is giving way to newer input or a clear, not a failure.
-            if (!controller.signal.aborted) setFailed(true);
-          },
-        );
+        setInFlight(true);
+        fetchWalkingDistances(request.caches, signal)
+          .then(
+            (entries) => {
+              if (signal.aborted) return;
+              keep(new Map([...latest.current, ...entries]));
+              addWalkingDistances(entries).catch(() => setFailed(true));
+            },
+            () => {
+              // An abort is routes turned off, the page left or a clear, not a failure.
+              if (!signal.aborted) setFailed(true);
+            },
+          )
+          .finally(() => {
+            // A clear has already moved on to a fresh controller and let the next request go.
+            if (sent.current === controller) setInFlight(false);
+          });
       },
       nextRequestDelay({
         lastRequestAt: lastRequestAt.current,
         now: performance.now(),
       }),
     );
-    const cancel = () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-    cancelRequest.current = cancel;
-    return cancel;
+    // Only a request not yet sent gives way to newer input; one sent is answered.
+    return () => clearTimeout(timer);
   }, [request, keep]);
 
   const clear = useCallback(() => {
-    cancelLoad.current();
-    cancelRequest.current();
+    loading.current.abort();
+    sent.current.abort();
+    sent.current = new AbortController();
+    setInFlight(false);
     // The cancelled request is not pending any more: the same batch, planned again, is sent again.
     setRequest(NO_REQUEST);
     keep(NO_WALKING_DISTANCES);

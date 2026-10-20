@@ -260,8 +260,8 @@ from before keeps working; the version before that is removed. An installed
 app has no reload button: tap the logo or the name at the top to reload it,
 with your data, finds and any walk kept.
 
-The map keeps the tiles you viewed while online (the latest 2,000 or so, about
-30–50 MB), so a trail you looked at at home still has its map in the woods.
+The map keeps the tiles you viewed while online (the latest 5,000 or so, about
+75–125 MB), so a trail you looked at at home still has its map in the woods.
 An area you have not viewed stays blank offline: OpenStreetMap's rules forbid
 downloading areas in advance. A kept tile is fetched again after a week, when
 there is a connection.

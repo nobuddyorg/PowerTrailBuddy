@@ -21,14 +21,22 @@ export const BATCH_OVERLAP = 10;
 
 type Pair = readonly [Geocache, Geocache];
 
-function hasUnroutedPair(
-  caches: readonly Geocache[],
-  distances: WalkingDistances,
+/** Whether two caches close enough to link, as linkComponentsWhere tests them, still lack a routed distance. */
+function hasUnroutedLink(
+  batch: readonly Geocache[],
+  {
+    distances,
+    maxGapMeters,
+  }: { distances: WalkingDistances; maxGapMeters: number },
 ): boolean {
-  return caches.some((cache, index) =>
-    caches
-      .slice(index + 1)
-      .some((other) => !distances.has(pairKey(cache, other))),
+  const neighbourhood = gridNeighbourhood(batch, maxGapMeters);
+  return batch.some((cache, index) =>
+    neighbourhood(index).some(
+      (other) =>
+        other !== index &&
+        distanceMeters(cache, batch[other]) < maxGapMeters &&
+        !distances.has(pairKey(cache, batch[other])),
+    ),
   );
 }
 
@@ -110,7 +118,12 @@ export function routingBatches(
   const along = groups
     .map((group) => orderPath(group))
     .flatMap(windows)
-    .filter((batch) => hasUnroutedPair(batch, distances));
+    .filter((batch) =>
+      hasUnroutedLink(batch, {
+        distances,
+        maxGapMeters: settings.maxGapMeters,
+      }),
+    );
   if (along.length > 0) return along;
   // A link between caches far apart in walking order can cross a barrier no window held.
   const links = packPairs(

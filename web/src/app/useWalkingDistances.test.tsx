@@ -155,7 +155,50 @@ describe('useWalkingDistances', () => {
     expect(result.current.check).toEqual({ status: 'done' });
   });
 
-  it('does not count a request it gave up for newer input as a failure', async () => {
+  it('sends a request once though its caches come again as a new list, and uses its answer', async () => {
+    vi.useFakeTimers(FAKE_CLOCK);
+    let answer: (entries: [string, number][]) => void = () => {};
+    router.fetch.mockImplementationOnce(
+      () => new Promise((resolve) => (answer = resolve)),
+    );
+    const { result, rerender } = renderRoutes();
+    await elapse(500);
+    expect(router.fetch).toHaveBeenCalledTimes(1);
+    rerender({ enabled: true, caches: [...CACHES] });
+    await elapse(1500);
+    expect(router.fetch).toHaveBeenCalledTimes(1);
+    expect(router.fetch.mock.calls[0][1].aborted).toBe(false);
+
+    await act(async () => answer(answerFor(CACHES)));
+    await elapse(500);
+    expect(result.current.check).toEqual({ status: 'done' });
+    expect(router.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps a request it sent when the caches change, and asks for the rest after its answer', async () => {
+    vi.useFakeTimers(FAKE_CLOCK);
+    let answer: (entries: [string, number][]) => void = () => {};
+    router.fetch.mockImplementationOnce(
+      () => new Promise((resolve) => (answer = resolve)),
+    );
+    const { result, rerender } = renderRoutes();
+    await elapse(500);
+    expect(router.fetch).toHaveBeenCalledTimes(1);
+    const moved = { ...CACHES[3], code: 'GCROUTE9' };
+    rerender({ enabled: true, caches: [...CACHES.slice(0, 3), moved] });
+    await elapse(1500);
+    expect(router.fetch).toHaveBeenCalledTimes(1);
+
+    await act(async () => answer(answerFor(CACHES)));
+    await elapse(1500);
+    expect(result.current.check).toEqual({ status: 'done' });
+    expect(router.fetch).toHaveBeenCalledTimes(2);
+    expect(
+      result.current.walkingDistances.get(pairKey(CACHES[0], CACHES[1])),
+    ).toBe(120);
+  });
+
+  it('drops a request when turned off, without counting it a failure', async () => {
     vi.useFakeTimers(FAKE_CLOCK);
     router.fetch.mockImplementationOnce(
       (_caches, signal) =>
@@ -168,10 +211,11 @@ describe('useWalkingDistances', () => {
     const { result, rerender } = renderRoutes();
     await elapse(500);
     expect(router.fetch).toHaveBeenCalledTimes(1);
-    rerender({ enabled: true, caches: CACHES.slice(0, 3) });
+    rerender({ enabled: false, caches: CACHES });
+    expect(router.fetch.mock.calls[0][1].aborted).toBe(true);
+    rerender({ enabled: true, caches: CACHES });
     await elapse(1500);
     expect(result.current.check).toEqual({ status: 'done' });
-    expect(router.fetch.mock.calls[0][1].aborted).toBe(true);
   });
 
   it('reports storage it cannot read or write', async () => {
@@ -216,18 +260,6 @@ describe('useWalkingDistances', () => {
     }
     expect(router.fetch).toHaveBeenCalledTimes(MAX_REQUESTS);
     expect(result.current.check).toEqual({ status: 'limited' });
-  });
-
-  it('never gives up and sends again a batch whose caches are unchanged', async () => {
-    vi.useFakeTimers(FAKE_CLOCK);
-    router.fetch.mockImplementation(() => new Promise(() => {}));
-    const { rerender } = renderRoutes();
-    await elapse(500);
-    expect(router.fetch).toHaveBeenCalledTimes(1);
-    rerender({ enabled: true, caches: CACHES.map((cache) => ({ ...cache })) });
-    await elapse(1500);
-    expect(router.fetch).toHaveBeenCalledTimes(1);
-    expect(router.fetch.mock.calls[0][1].aborted).toBe(false);
   });
 
   it('forgets every routed pair on a clear, and stores none of them again, whatever is in flight', async () => {

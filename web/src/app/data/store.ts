@@ -220,9 +220,7 @@ export function saveImportInfo(info: ImportInfo): Promise<void> {
 const isWalkingMeters = (value: unknown): value is number =>
   typeof value === 'number' && value >= 0;
 
-/** Routed walking distances kept from earlier answers; Infinity, which IndexedDB keeps, where no path joins a pair. */
-export async function loadWalkingDistances(): Promise<WalkingDistances> {
-  const stored: unknown = await get(KEYS.walkingDistances, store);
+function walkingDistancesFrom(stored: unknown): Map<string, number> {
   if (!(stored instanceof Map)) return new Map();
   return new Map(
     [...stored].filter(
@@ -232,10 +230,20 @@ export async function loadWalkingDistances(): Promise<WalkingDistances> {
   );
 }
 
-export function saveWalkingDistances(
-  distances: WalkingDistances,
+/** Routed walking distances kept from earlier answers; Infinity, which IndexedDB keeps, where no path joins a pair. */
+export async function loadWalkingDistances(): Promise<WalkingDistances> {
+  return walkingDistancesFrom(await get(KEYS.walkingDistances, store));
+}
+
+/** Adds routed distances to the kept ones in one transaction, so what another tab added meanwhile stays. */
+export function addWalkingDistances(
+  entries: readonly [string, number][],
 ): Promise<void> {
-  return set(KEYS.walkingDistances, new Map(distances), store);
+  return update(
+    KEYS.walkingDistances,
+    (stored: unknown) => new Map([...walkingDistancesFrom(stored), ...entries]),
+    store,
+  );
 }
 
 /** Everything this app stored: caches, settings, found and ignored marks, the walk, preferences, the import record, the routed distances. */
