@@ -234,9 +234,10 @@ function cacheCountWith(
   return byCode.size + new Set(added.map((cache) => cache.code)).size;
 }
 
-/** Reads Pocket Query `.zip` archives and `.gpx` files into caches, one after another, refusing a file that would take the import past MAX_IMPORT_CACHES. */
+/** Reads Pocket Query `.zip` archives and `.gpx` files into caches, one after another, refusing a file that would take the import past maxCaches. */
 export async function importFiles(
   files: readonly File[],
+  { maxCaches = MAX_IMPORT_CACHES }: { maxCaches?: number } = {},
 ): Promise<ImportResult> {
   const byCode = new Map<string, Geocache>();
   const parkingAreas: ParkingArea[] = [];
@@ -246,7 +247,7 @@ export async function importFiles(
     const read = await importFile(file);
     // A file that would take the import past the limit is refused whole, so none of its queries counts as read.
     const imported =
-      cacheCountWith(byCode, read.caches) > MAX_IMPORT_CACHES
+      cacheCountWith(byCode, read.caches) > maxCaches
         ? refused(file, 'too-large')
         : read;
     for (const cache of imported.caches) {

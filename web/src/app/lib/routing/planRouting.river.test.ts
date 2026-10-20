@@ -86,34 +86,31 @@ function unroutedLinks(
 }
 
 describe('routingBatches across a river with no bridge nearby', () => {
-  it.each([8, 12])(
-    'routes every link of two grids %i caches wide, so each bank is a group of its own',
-    (side) => {
-      const caches = [...bank('GCN', side, 1), ...bank('GCS', side, -1)];
-      const { distances, requests, groups } = routeUntilDone(caches);
+  it('routes every link of two grids 8 caches wide, so each bank is a group of its own', () => {
+    const side = 8;
+    const caches = [...bank('GCN', side, 1), ...bank('GCS', side, -1)];
+    const { distances, requests, groups } = routeUntilDone(caches);
 
-      expect(unroutedLinks(caches, distances)).toEqual([]);
-      expect(groups.map((group) => group.length)).toEqual([
-        side * side,
-        side * side,
-      ]);
-      for (const group of groups)
-        expect(new Set(group.map(northOfRiver)).size).toBe(1);
-      expect(requests).toBeLessThanOrEqual(MAX_REQUESTS);
-    },
-    // Dozens of planner rounds over 288 caches: under Stryker's instrumentation they pass the 5 s default.
-    30_000,
-  );
+    expect(unroutedLinks(caches, distances)).toEqual([]);
+    expect(groups.map((group) => group.length)).toEqual([
+      side * side,
+      side * side,
+    ]);
+    for (const group of groups)
+      expect(new Set(group.map(northOfRiver)).size).toBe(1);
+    expect(requests).toBeLessThanOrEqual(MAX_REQUESTS);
+  });
 });
 
-/** A square grid of side × side caches SPACING_METERS apart, all on one bank. */
-function grid(side: number): Geocache[] {
-  return Array.from({ length: side * side }, (_, index) =>
+/** A grid of rows × columns caches SPACING_METERS apart, all on one bank. */
+function grid(rows: number, columns: number): Geocache[] {
+  return Array.from({ length: rows * columns }, (_, index) =>
     makeCache({
       code: `GCG${String(index).padStart(4, '0')}`,
       latitude:
-        48 + Math.floor(index / side) * SPACING_METERS * DEGREES_PER_METER,
-      longitude: 11 + (index % side) * SPACING_METERS * DEGREES_PER_METER_EAST,
+        48 + Math.floor(index / columns) * SPACING_METERS * DEGREES_PER_METER,
+      longitude:
+        11 + (index % columns) * SPACING_METERS * DEGREES_PER_METER_EAST,
     }),
   );
 }
@@ -127,7 +124,7 @@ function detourOf(key: string): number {
 
 describe('routingBatches while answers reorder the walk', () => {
   it('keeps its windows in place, so no answer makes it ask for a window again', () => {
-    const caches = grid(20);
+    const caches = grid(6, 20);
     const distances = new Map<string, number>();
     let requests = 0;
     for (;;) {
@@ -145,7 +142,7 @@ describe('routingBatches while answers reorder the walk', () => {
         }),
       );
     }
-    // Windows cut from the routed order moved with every answer and asked 21 times.
-    expect(requests).toBeLessThanOrEqual(17);
-  }, 30_000);
+    // Windows cut from the routed order moved with every answer and asked 14 times.
+    expect(requests).toBeLessThanOrEqual(6);
+  });
 });

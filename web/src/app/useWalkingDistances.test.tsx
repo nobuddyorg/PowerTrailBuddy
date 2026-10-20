@@ -41,6 +41,18 @@ const SETTINGS = { ...DEFAULT_TRAIL_SETTINGS, minCaches: 3 };
 const CACHES = makeCaches(4, 'GCROUTE');
 const nothingFound = new Set<string>();
 
+// The second request waits out the one-second gap; a fake clock passes it at once.
+const FAKE_CLOCK: Parameters<typeof vi.useFakeTimers>[0] = {
+  toFake: ['setTimeout', 'clearTimeout', 'performance'],
+};
+
+/** Passes time in short steps, each its own act, so every answer renders before the next timer. */
+async function elapse(milliseconds: number) {
+  for (let passed = 0; passed < milliseconds; passed += 100) {
+    await act(() => vi.advanceTimersByTimeAsync(100));
+  }
+}
+
 function renderRoutes(enabled = true, caches: readonly Geocache[] = CACHES) {
   return renderHook(
     (props: { enabled: boolean; caches: readonly Geocache[] }) =>
@@ -112,6 +124,7 @@ describe('useWalkingDistances', () => {
   });
 
   it('waits a second between requests', async () => {
+    vi.useFakeTimers(FAKE_CLOCK);
     const elsewhere = makeCaches(4, 'GCFAR').map((cache) => ({
       ...cache,
       latitude: cache.latitude + 1,
@@ -122,31 +135,28 @@ describe('useWalkingDistances', () => {
       return Promise.resolve(answerFor(caches));
     });
     const { result } = renderRoutes(true, [...CACHES, ...elsewhere]);
-    await waitFor(
-      () => expect(result.current.check).toEqual({ status: 'done' }),
-      { timeout: 3000 },
-    );
+    await elapse(3000);
+    expect(result.current.check).toEqual({ status: 'done' });
     expect(startedAt).toHaveLength(2);
-    expect(startedAt[1] - startedAt[0]).toBeGreaterThanOrEqual(990);
+    expect(startedAt[1] - startedAt[0]).toBeGreaterThanOrEqual(1000);
   });
 
   it('reports a failed request, and tries again when turned off and on', async () => {
+    vi.useFakeTimers(FAKE_CLOCK);
     router.fetch.mockRejectedValueOnce(new Error('Routing server: 503'));
     const { result, rerender } = renderRoutes();
-    await waitFor(() =>
-      expect(result.current.check).toEqual({ status: 'failed' }),
-    );
+    await elapse(500);
+    expect(result.current.check).toEqual({ status: 'failed' });
     expect(result.current.walkingDistances.size).toBe(0);
     rerender({ enabled: false, caches: CACHES });
     expect(result.current.check).toEqual({ status: 'off' });
     rerender({ enabled: true, caches: CACHES });
-    await waitFor(
-      () => expect(result.current.check).toEqual({ status: 'done' }),
-      { timeout: 3000 },
-    );
+    await elapse(1500);
+    expect(result.current.check).toEqual({ status: 'done' });
   });
 
   it('does not count a request it gave up for newer input as a failure', async () => {
+    vi.useFakeTimers(FAKE_CLOCK);
     router.fetch.mockImplementationOnce(
       (_caches, signal) =>
         new Promise((_resolve, reject) =>
@@ -156,12 +166,11 @@ describe('useWalkingDistances', () => {
         ),
     );
     const { result, rerender } = renderRoutes();
-    await waitFor(() => expect(router.fetch).toHaveBeenCalledTimes(1));
+    await elapse(500);
+    expect(router.fetch).toHaveBeenCalledTimes(1);
     rerender({ enabled: true, caches: CACHES.slice(0, 3) });
-    await waitFor(
-      () => expect(result.current.check).toEqual({ status: 'done' }),
-      { timeout: 3000 },
-    );
+    await elapse(1500);
+    expect(result.current.check).toEqual({ status: 'done' });
     expect(router.fetch.mock.calls[0][1].aborted).toBe(true);
   });
 
@@ -193,7 +202,7 @@ describe('useWalkingDistances', () => {
   });
 
   it(`stops after ${MAX_REQUESTS} requests in one visit`, async () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] });
+    vi.useFakeTimers(FAKE_CLOCK);
     // One group, and so one request, more than a visit may ask for.
     const groups = Array.from({ length: MAX_REQUESTS + 1 }, (_, index) =>
       makeCaches(3, `GCCAP${index}X`).map((cache) => ({
@@ -210,24 +219,26 @@ describe('useWalkingDistances', () => {
   });
 
   it('never gives up and sends again a batch whose caches are unchanged', async () => {
+    vi.useFakeTimers(FAKE_CLOCK);
     router.fetch.mockImplementation(() => new Promise(() => {}));
     const { rerender } = renderRoutes();
-    await waitFor(() => expect(router.fetch).toHaveBeenCalledTimes(1));
+    await elapse(500);
+    expect(router.fetch).toHaveBeenCalledTimes(1);
     rerender({ enabled: true, caches: CACHES.map((cache) => ({ ...cache })) });
-    await act(() => new Promise((resolve) => setTimeout(resolve, 1100)));
+    await elapse(1500);
     expect(router.fetch).toHaveBeenCalledTimes(1);
     expect(router.fetch.mock.calls[0][1].aborted).toBe(false);
   });
 
   it('forgets every routed pair on a clear, and stores none of them again, whatever is in flight', async () => {
+    vi.useFakeTimers(FAKE_CLOCK);
     const later = makeCaches(4, 'GCLATER').map((cache) => ({
       ...cache,
       latitude: cache.latitude + 1,
     }));
     const { result, rerender } = renderRoutes();
-    await waitFor(() =>
-      expect(result.current.check).toEqual({ status: 'done' }),
-    );
+    await elapse(500);
+    expect(result.current.check).toEqual({ status: 'done' });
     let answer = () => {};
     router.fetch.mockImplementationOnce(
       (caches) =>
@@ -236,9 +247,8 @@ describe('useWalkingDistances', () => {
         }),
     );
     rerender({ enabled: true, caches: [...CACHES, ...later] });
-    await waitFor(() => expect(router.fetch).toHaveBeenCalledTimes(2), {
-      timeout: 3000,
-    });
+    await elapse(1500);
+    expect(router.fetch).toHaveBeenCalledTimes(2);
 
     // As Clear all data does: forget, empty the store, then the caches.
     act(() => result.current.clear());
@@ -250,31 +260,28 @@ describe('useWalkingDistances', () => {
     expect(storedValue('walking-distances')).toBeUndefined();
 
     rerender({ enabled: true, caches: later });
-    await waitFor(
-      () => expect(result.current.check).toEqual({ status: 'done' }),
-      { timeout: 3000 },
-    );
+    await elapse(1500);
+    expect(result.current.check).toEqual({ status: 'done' });
     expect(storedValue('walking-distances')).toEqual(
       new Map(answerFor(router.fetch.mock.calls[2][0])),
     );
   });
 
   it('asks again after a clear that left the caches in place, as a failed Clear all data does', async () => {
+    vi.useFakeTimers(FAKE_CLOCK);
     router.fetch.mockImplementationOnce(() => new Promise(() => {}));
     const { result } = renderRoutes();
-    await waitFor(() => expect(router.fetch).toHaveBeenCalledTimes(1));
+    await elapse(500);
+    expect(router.fetch).toHaveBeenCalledTimes(1);
 
     act(() => result.current.clear());
 
-    await waitFor(() => expect(router.fetch).toHaveBeenCalledTimes(2), {
-      timeout: 3000,
-    });
+    await elapse(1500);
+    expect(router.fetch).toHaveBeenCalledTimes(2);
     expect(router.fetch.mock.calls[1][0]).toEqual(
       router.fetch.mock.calls[0][0],
     );
-    await waitFor(() =>
-      expect(result.current.check).toEqual({ status: 'done' }),
-    );
+    expect(result.current.check).toEqual({ status: 'done' });
   });
 
   it('drops stored pairs that a clear overtakes on their way in', async () => {
