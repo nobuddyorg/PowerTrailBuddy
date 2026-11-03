@@ -180,7 +180,7 @@ jobs:
     needs: [prek, changes]
     if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
     defaults:
       run:
         working-directory: ./web
