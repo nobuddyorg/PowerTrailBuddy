@@ -283,8 +283,15 @@
     "lastImport": "Letzter Import",
     "importHelp": "Weitere Pocket Query oder einen neueren Lauf importieren: Sie wird mit dem Vorhandenen zusammengeführt, neuere Daten gewinnen; ein Cache, den ein neuerer Lauf nicht mehr enthält, wird entfernt.",
     "import": "Weitere importieren",
-    "notesHelp": "Field Notes gespeichert, aber noch nicht hochgeladen? Logge alle Besuche auf einmal mit der Datei geocache_visits.txt.",
+    "notesHelp": "Field Notes gespeichert, aber noch nicht hochgeladen? Lade geocache_visits.txt hier, ergänze einen Logtext und speichere sie neu. Ein Logtext in der Datei wird ersetzt.",
     "notesLink": "Entwürfe hochladen",
+    "notesButton": "Field Notes laden",
+    "notesRead": "{count} Besuche gelesen.",
+    "notesRead_one": "{count} Besuch gelesen.",
+    "notesError": {
+      "file": "Das ist keine Field-Notes-Datei (geocache_visits.txt).",
+      "line": "Zeile {line} ist kein Eintrag „Found it“ oder „Didn’t find it“."
+    },
     "privacy": "Alles wird nur in diesem Browser gespeichert.",
     "clear": "Alle Daten löschen"
   },
@@ -353,6 +360,8 @@
     "shareText": "Powertrail-Tour mit PowerTrailBuddy: {found} von {total} Caches gefunden in {duration} ({rate} pro Stunde).",
     "found": "Gefunden",
     "dnf": "Nicht gefunden",
+    "messageLabel": "Logtext für alle Caches (optional)",
+    "messagePlaceholder": "z. B. DFDC",
     "exportNotes": "Field Notes exportieren",
     "notesHelp": "Speichert geocache_visits.txt. Lade sie auf geocaching.com unter „Entwürfe“ (Drafts) hoch, um alle Besuche auf einmal zu loggen.",
     "notesLink": "Entwürfe hochladen",

@@ -26,21 +26,21 @@ FOSSGIS's OSRM foot router ([Outside requests](#outside-requests)).
 
 All paths relative to `web/src/app/`.
 
-| Directory | Holds | May import |
-| --- | --- | --- |
-| `lib/geocache/` | Cache types, the GPX parser, the characters XML 1.0 forbids (`xmlCharacters.ts`), recent logs (`recentLogs.ts`), parking areas (`parking.ts`), cache health (`health.ts`), the file importer (zip and gpx), the merge | `jszip`, other `lib/` |
-| `lib/trails/` | Trail settings and their defaults, geometry, the trail finder and its stages (`filterCaches`, `linkComponents`, `orderPath` with `nearestNeighbour`, `splitWalks`, `scoreTrail`, `trailShape`, `projection`, `compareCodes`), routed walking distances and barriers (`walkingDistances.ts`), distances from the user (`nearby.ts`) | other `lib/` |
-| `lib/routing/` | Which caches still need walking distances (`planRouting.ts`), the OSRM table request and its answer (`osrmTable.ts`), FOSSGIS's rate limits, the next request and the route status (`requestPolicy.ts`) | other `lib/` |
-| `lib/walk/` | Walk state: start, orient, reverse, record, undo, next cache, progress, pace, leaving out caches a re-import dropped | other `lib/` |
-| `lib/export/` | The two downloads: a trail as GPX (`trailGpx.ts`), a walk as Geocaching.com field notes (`fieldNotes.ts`) | other `lib/` |
-| `lib/format/` | Display formatting: distances, durations, rates, ratings, coordinates, dates, compass points, decimal input | other `lib/` |
-| `lib/navigation/` | Outbound links (`coord.info`, `geo:`, Apple Maps for Apple devices, Google Maps walking directions) and the share-target landing (`sharedLaunch.ts`) | other `lib/` |
-| `lib/ui-logic/` | Pure decisions behind the UI: trail cards (sort, filter, health), search, presets, heading, parking, bottom-sheet snapping, walk statistics | other `lib/` |
-| `data/` | Browser storage: IndexedDB through idb-keyval (`store.ts`), settings validation (`sanitizeSettings.ts`), shared files from Cache Storage (`sharedFiles.ts`), the `localStorage` shim (`browserStorage.ts`); the routing server's `fetch` (`walkingRoutes.ts`) | `lib/`, `idb-keyval` |
-| `components/` | React UI | `lib/`, `data/`, `i18n/` |
-| `components/Map/` | The only Leaflet wrapper; owns the tile URL. `content.ts` (pure) turns trails and a walk into markers, lines and badges; `userMoves.ts` tells a pan or zoom by hand, which ends following, from the app's own fits | `leaflet`, `lib/` |
-| `i18n/` | `I18nProvider`, `useI18n`, the pure helpers in `translate.ts`, `de.json`, `en.json` | `data/browserStorage.ts` only |
-| top level | `layout.tsx`, `page.tsx`, `env.ts` (base path), `useAppState.ts` with `useMarkActions.ts` and `useWalkActions.ts` (the state and its actions; shared types in `dataCore.ts`), the device hooks (`useGeolocation`, `useCompass`, `useWakeLock`, `useFollow`, `useInstallPrompt`, `useBrowserState`), `useTrails.ts`, `useWalkingDistances.ts` (fetches and keeps routed distances while walking routes are on), `useServiceWorker.ts`, `ServiceWorkerRegistration.tsx`, `globals.css` | anything above |
+| Directory         | Holds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | May import                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------- |
+| `lib/geocache/`   | Cache types, the GPX parser, the characters XML 1.0 forbids (`xmlCharacters.ts`), recent logs (`recentLogs.ts`), parking areas (`parking.ts`), cache health (`health.ts`), the file importer (zip and gpx), the merge                                                                                                                                                                                                                                                                | `jszip`, other `lib/`         |
+| `lib/trails/`     | Trail settings and their defaults, geometry, the trail finder and its stages (`filterCaches`, `linkComponents`, `orderPath` with `nearestNeighbour`, `splitWalks`, `scoreTrail`, `trailShape`, `projection`, `compareCodes`), routed walking distances and barriers (`walkingDistances.ts`), distances from the user (`nearby.ts`)                                                                                                                                                   | other `lib/`                  |
+| `lib/routing/`    | Which caches still need walking distances (`planRouting.ts`), the OSRM table request and its answer (`osrmTable.ts`), FOSSGIS's rate limits, the next request and the route status (`requestPolicy.ts`)                                                                                                                                                                                                                                                                              | other `lib/`                  |
+| `lib/walk/`       | Walk state: start, orient, reverse, record, undo, next cache, progress, pace, leaving out caches a re-import dropped                                                                                                                                                                                                                                                                                                                                                                 | other `lib/`                  |
+| `lib/export/`     | The two downloads: a trail as GPX (`trailGpx.ts`), a walk as Geocaching.com field notes (`fieldNotes.ts`)                                                                                                                                                                                                                                                                                                                                                                            | other `lib/`                  |
+| `lib/format/`     | Display formatting: distances, durations, rates, ratings, coordinates, dates, compass points, decimal input                                                                                                                                                                                                                                                                                                                                                                          | other `lib/`                  |
+| `lib/navigation/` | Outbound links (`coord.info`, `geo:`, Apple Maps for Apple devices, Google Maps walking directions) and the share-target landing (`sharedLaunch.ts`)                                                                                                                                                                                                                                                                                                                                 | other `lib/`                  |
+| `lib/ui-logic/`   | Pure decisions behind the UI: trail cards (sort, filter, health), search, presets, heading, parking, bottom-sheet snapping, walk statistics                                                                                                                                                                                                                                                                                                                                          | other `lib/`                  |
+| `data/`           | Browser storage: IndexedDB through idb-keyval (`store.ts`), settings validation (`sanitizeSettings.ts`), shared files from Cache Storage (`sharedFiles.ts`), the `localStorage` shim (`browserStorage.ts`); the routing server's `fetch` (`walkingRoutes.ts`)                                                                                                                                                                                                                        | `lib/`, `idb-keyval`          |
+| `components/`     | React UI                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | `lib/`, `data/`, `i18n/`      |
+| `components/Map/` | The only Leaflet wrapper; owns the tile URL. `content.ts` (pure) turns trails and a walk into markers, lines and badges; `userMoves.ts` tells a pan or zoom by hand, which ends following, from the app's own fits                                                                                                                                                                                                                                                                   | `leaflet`, `lib/`             |
+| `i18n/`           | `I18nProvider`, `useI18n`, the pure helpers in `translate.ts`, `de.json`, `en.json`                                                                                                                                                                                                                                                                                                                                                                                                  | `data/browserStorage.ts` only |
+| top level         | `layout.tsx`, `page.tsx`, `env.ts` (base path), `useAppState.ts` with `useMarkActions.ts` and `useWalkActions.ts` (the state and its actions; shared types in `dataCore.ts`), the device hooks (`useGeolocation`, `useCompass`, `useWakeLock`, `useFollow`, `useInstallPrompt`, `useBrowserState`), `useTrails.ts`, `useWalkingDistances.ts` (fetches and keeps routed distances while walking routes are on), `useServiceWorker.ts`, `ServiceWorkerRegistration.tsx`, `globals.css` | anything above                |
 
 `web/public/sw.js` is the service worker (a plain script, no bundler);
 `web/public/site.webmanifest` the manifest.
@@ -65,24 +65,36 @@ in the commit and updates this section.
 ### `lib/geocache/types.ts`
 
 ```ts
-export type CacheType = 'traditional' | 'multi' | 'mystery' | 'letterbox' | 'wherigo'
-  | 'earthcache' | 'virtual' | 'webcam' | 'event' | 'other';
-export interface Coordinates { latitude: number; longitude: number }
+export type CacheType =
+  | "traditional"
+  | "multi"
+  | "mystery"
+  | "letterbox"
+  | "wherigo"
+  | "earthcache"
+  | "virtual"
+  | "webcam"
+  | "event"
+  | "other";
+export interface Coordinates {
+  latitude: number;
+  longitude: number;
+}
 export interface Geocache extends Coordinates {
-  code: string;          // e.g. GC1ABCD or OC1234, upper-case, unique identity
+  code: string; // e.g. GC1ABCD or OC1234, upper-case, unique identity
   name: string;
   type: CacheType;
-  difficulty: number;    // 1..5 in 0.5 steps
-  terrain: number;       // 1..5 in 0.5 steps
-  container: string;     // as given, e.g. 'Micro', 'Small', 'Not chosen'
-  available: boolean;    // false when temporarily disabled
+  difficulty: number; // 1..5 in 0.5 steps
+  terrain: number; // 1..5 in 0.5 steps
+  container: string; // as given, e.g. 'Micro', 'Small', 'Not chosen'
+  available: boolean; // false when temporarily disabled
   archived: boolean;
-  found: boolean;        // found by the PQ owner according to the file (<sym>Geocache Found</sym>)
-  placedBy: string;      // '' when absent
-  hint: string;          // groundspeak:encoded_hints, '' when none
-  recentLogs: RecentLog[];   // { type: 'found' | 'dnf' | 'note' | 'maintenance' | 'disabled' | 'other'; date: 'YYYY-MM-DD' }, newest first, at most 5
-  sources: string[];         // the queries that delivered it (sourceName of each GPX file), sorted; [] from parseGpx and for a cache stored before sources were kept
-  parking?: Coordinates;     // the nearest 'Parking Area' additional waypoint of this cache in the same import
+  found: boolean; // found by the PQ owner according to the file (<sym>Geocache Found</sym>)
+  placedBy: string; // '' when absent
+  hint: string; // groundspeak:encoded_hints, '' when none
+  recentLogs: RecentLog[]; // { type: 'found' | 'dnf' | 'note' | 'maintenance' | 'disabled' | 'other'; date: 'YYYY-MM-DD' }, newest first, at most 5
+  sources: string[]; // the queries that delivered it (sourceName of each GPX file), sorted; [] from parseGpx and for a cache stored before sources were kept
+  parking?: Coordinates; // the nearest 'Parking Area' additional waypoint of this cache in the same import
 }
 ```
 
@@ -122,15 +134,15 @@ one in one log's free text no longer makes the whole query `not-xml`.
   case-insensitively; missing means available and not archived. `found` is
   `<sym>Geocache Found</sym>`, case-insensitive.
 
-| `groundspeak:type` of a log | `RecentLog` type | Effect on `cacheHealth` as the newest log |
-| --- | --- | --- |
-| `Found it`, `Attended`, `Webcam Photo Taken` | found | none |
-| `Didn't find it` | dnf | two in a row: `dnf-streak` |
-| `Write note` | note | none |
-| `Needs Maintenance`, `Needs Archived` | maintenance | `needs-maintenance` |
-| `Temporarily Disable Listing` | disabled | none (`available` decides `disabled`) |
-| `Owner Maintenance`, `Enable Listing`, `Update Coordinates`, `Post Reviewer Note` | other | none: the owner or a reviewer acted, which clears an earlier warning |
-| `Publish Listing`, `Retract Listing`, `Archive`, `Permanently Archived`, `Unarchive`, `Will Attend`, `Announcement`, anything else | other | none (`archived` keeps an archived cache out of every trail) |
+| `groundspeak:type` of a log                                                                                                        | `RecentLog` type | Effect on `cacheHealth` as the newest log                            |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ---------------- | -------------------------------------------------------------------- |
+| `Found it`, `Attended`, `Webcam Photo Taken`                                                                                       | found            | none                                                                 |
+| `Didn't find it`                                                                                                                   | dnf              | two in a row: `dnf-streak`                                           |
+| `Write note`                                                                                                                       | note             | none                                                                 |
+| `Needs Maintenance`, `Needs Archived`                                                                                              | maintenance      | `needs-maintenance`                                                  |
+| `Temporarily Disable Listing`                                                                                                      | disabled         | none (`available` decides `disabled`)                                |
+| `Owner Maintenance`, `Enable Listing`, `Update Coordinates`, `Post Reviewer Note`                                                  | other            | none: the owner or a reviewer acted, which clears an earlier warning |
+| `Publish Listing`, `Retract Listing`, `Archive`, `Permanently Archived`, `Unarchive`, `Will Attend`, `Announcement`, anything else | other            | none (`archived` keeps an archived cache out of every trail)         |
 
 ### `lib/geocache/importFiles.ts`
 
@@ -207,14 +219,14 @@ and:
 
 ```ts
 export interface Trail {
-  id: string;                  // stable: derived from the codes it contains, never random
-  caches: Geocache[];          // in walking order
-  pathMeters: number;          // straight line along the order
-  returnMeters: number;        // straight line last → first
-  walkMeters: number;          // each leg and the way back: routed where known, else straight * detourFactor
-  durationMinutes: number;     // walkMeters at walkingSpeedKmh + caches * minutesPerCache
+  id: string; // stable: derived from the codes it contains, never random
+  caches: Geocache[]; // in walking order
+  pathMeters: number; // straight line along the order
+  returnMeters: number; // straight line last → first
+  walkMeters: number; // each leg and the way back: routed where known, else straight * detourFactor
+  durationMinutes: number; // walkMeters at walkingSpeedKmh + caches * minutesPerCache
   cachesPerHour: number;
-  shape: 'line' | 'area';      // eigenvalue ratio of the projected coordinates; line when elongated
+  shape: "line" | "area"; // eigenvalue ratio of the projected coordinates; line when elongated
   center: Coordinates;
 }
 ```
@@ -345,13 +357,13 @@ straight-line metres to its nearest cache.
 ### `lib/walk/walk.ts`
 
 ```ts
-export type WalkOutcome = 'found' | 'dnf' | 'skipped';
+export type WalkOutcome = "found" | "dnf" | "skipped";
 export interface WalkState {
   trailId: string;
-  codes: string[];             // walking order; caches with an outcome are kept in front
-  startedAt: string;           // ISO date-time
+  codes: string[]; // walking order; caches with an outcome are kept in front
+  startedAt: string; // ISO date-time
   outcomes: Record<string, { outcome: WalkOutcome; at: string }>;
-  history: string[];           // codes with an outcome, oldest first; undo takes the last
+  history: string[]; // codes with an outcome, oldest first; undo takes the last
 }
 ```
 
@@ -378,10 +390,18 @@ and a later import that brings the cache back puts it back in the walk.
   the caches; text XML-escaped, characters XML cannot carry dropped
   (`withoutNotXmlCharacters`, shared with the parser),
   coordinates to six decimals. Saved as `powertrail-<rank>.gpx`.
-- `buildFieldNotes(entries)`: Geocaching.com's drafts format,
+- `buildFieldNotes(entries, message)`: Geocaching.com's drafts format,
   `geocache_visits.txt`: UTF-16LE with a byte order mark, CRLF lines of
-  `<code>,<YYYY-MM-DDTHH:MMZ>,<Found it|Didn't find it>,""`, UTC, oldest
-  first. Skipped caches are left out.
+  `<code>,<YYYY-MM-DDTHH:MMZ>,<Found it|Didn't find it>,"<message>"`, UTC,
+  oldest first. Skipped caches are left out. The one optional `message` goes
+  on every line, line breaks turned into spaces and `"` into `'`; it is typed
+  in the walk summary or the data dialog and not stored.
+- `readFieldNotes(bytes)`: the way back, a `geocache_visits.txt` into
+  `{ entries }`, or `{ problem, line }` with `problem` `'not-field-notes'`
+  (line 0) or `'bad-line'` (the 1-based first line that is no entry). Only
+  UTF-16LE with a byte order mark and lines of Found it / Didn't find it are
+  accepted. A log text already in the file is not read; saving again
+  replaces it.
 
 ### `lib/geocache/health.ts`
 
@@ -439,20 +459,20 @@ deletes the files the service worker stored in the Cache Storage cache
 
 Everything the app keeps, all in the user's browser, all per origin.
 
-| Where | Key | Holds | Written by |
-| --- | --- | --- | --- |
-| IndexedDB database `powertrailbuddy`, object store `state` | `caches` | `Geocache[]`, the merged imports, each with the queries that delivered it (`sources`; read as `[]` when missing or not a list of strings, as from a build before them) | `data/store.ts` |
-| same | `settings` | `TrailSettings` | `data/store.ts` |
-| same | `locally-found` | `string[]` of codes marked found in the app (by hand or on a walk) | `data/store.ts` |
-| same | `ignored` | `string[]` of codes the user chose to ignore | `data/store.ts` |
-| same | `walk` | `WalkState` of the walk in progress | `data/store.ts` |
-| same | `preferences` | `{ sort, showOtherCaches, walkingRoutes }`: the trail list's sort, whether caches outside trails are drawn, whether walking routes are on | `data/store.ts` |
-| same | `last-import` | `{ at, cacheCount, fileNames }` of the latest import | `data/store.ts` |
-| same | `walking-distances` | `Map<string, number>` of routed walking metres by cache pair (`Infinity` where no path) | `data/store.ts` |
-| Cache Storage | `powertrailbuddy-shell-<build id>` | The app shell and hashed assets of one build; the current build's and the one it replaced are kept | `public/sw.js` |
-| Cache Storage | `powertrailbuddy-shared-files` | Files received by the share target until the page imports them | `public/sw.js`, emptied by `data/sharedFiles.ts` |
-| Cache Storage | `powertrailbuddy-tiles` | Up to 5,000 OpenStreetMap tiles the map showed, each with the time it was kept | `public/sw.js` |
-| `localStorage` | `lang` | `de` or `en` | `i18n/I18nProvider.tsx` |
+| Where                                                      | Key                                | Holds                                                                                                                                                                  | Written by                                       |
+| ---------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| IndexedDB database `powertrailbuddy`, object store `state` | `caches`                           | `Geocache[]`, the merged imports, each with the queries that delivered it (`sources`; read as `[]` when missing or not a list of strings, as from a build before them) | `data/store.ts`                                  |
+| same                                                       | `settings`                         | `TrailSettings`                                                                                                                                                        | `data/store.ts`                                  |
+| same                                                       | `locally-found`                    | `string[]` of codes marked found in the app (by hand or on a walk)                                                                                                     | `data/store.ts`                                  |
+| same                                                       | `ignored`                          | `string[]` of codes the user chose to ignore                                                                                                                           | `data/store.ts`                                  |
+| same                                                       | `walk`                             | `WalkState` of the walk in progress                                                                                                                                    | `data/store.ts`                                  |
+| same                                                       | `preferences`                      | `{ sort, showOtherCaches, walkingRoutes }`: the trail list's sort, whether caches outside trails are drawn, whether walking routes are on                              | `data/store.ts`                                  |
+| same                                                       | `last-import`                      | `{ at, cacheCount, fileNames }` of the latest import                                                                                                                   | `data/store.ts`                                  |
+| same                                                       | `walking-distances`                | `Map<string, number>` of routed walking metres by cache pair (`Infinity` where no path)                                                                                | `data/store.ts`                                  |
+| Cache Storage                                              | `powertrailbuddy-shell-<build id>` | The app shell and hashed assets of one build; the current build's and the one it replaced are kept                                                                     | `public/sw.js`                                   |
+| Cache Storage                                              | `powertrailbuddy-shared-files`     | Files received by the share target until the page imports them                                                                                                         | `public/sw.js`, emptied by `data/sharedFiles.ts` |
+| Cache Storage                                              | `powertrailbuddy-tiles`            | Up to 5,000 OpenStreetMap tiles the map showed, each with the time it was kept                                                                                         | `public/sw.js`                                   |
+| `localStorage`                                             | `lang`                             | `de` or `en`                                                                                                                                                           | `i18n/I18nProvider.tsx`                          |
 
 `clearAllData()` removes the eight IndexedDB keys; the language choice and
 the caches of the service worker stay. The routed distances held in memory
@@ -554,6 +574,7 @@ so `next dev` never pins its changing chunks.
   taps **Import**; **Cancel** drops them. Any website can post a form to the
   share target, and the worker cannot tell such a post from a real share, so
   nothing shared is imported without that tap.
+
 - **Share limits**: text fields sent along are ignored. More than **20 files**
   or more than **100 MB** in total is refused whole, never trimmed. A share
   replaces an earlier one the page never took. A file name that a URL would
@@ -573,9 +594,9 @@ both.
 
 ## Outside requests
 
-| To | What it learns | When |
-| --- | --- | --- |
-| `tile.openstreetmap.org` | The map area on screen | Whenever the map shows an area whose tiles are not kept, or kept for more than a week |
+| To                                              | What it learns                                                    | When                                                                                                                                                |
+| ----------------------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tile.openstreetmap.org`                        | The map area on screen                                            | Whenever the map shows an area whose tiles are not kept, or kept for more than a week                                                               |
 | `routing.openstreetmap.de` (FOSSGIS OSRM, foot) | Coordinates of caches in candidate trails, in batches of up to 50 | Only with walking routes on (Settings, off by default); at most one request a second and 60 a page load; no request once every pair in it is stored |
 
 Nothing else (settings, positions, logs, names, codes) leaves the device. The
@@ -599,13 +620,13 @@ keys, and on a key nothing references.
 
 `.github/workflows/ci.yml` on every PR and push to `main`:
 
-| Job | Runs |
-| --- | --- |
-| `prek` | Repo-wide hooks: file hygiene, typos, gitleaks (history), zizmor, actionlint, markdownlint, lockfile-lint |
-| `changes` | Path filter; a push to `main` or a dispatch forces every job |
-| `build_and_test` | `npm run build`, `tsc`, Prettier, ESLint, dependency-cruiser, Knip, `npm test -- --coverage` |
-| `e2e` | Builds the export with source maps and runs Playwright (chromium, mobile, firefox) against it under the base path, with e2e coverage |
-| `mutation_test` | Stryker over `web/mutation-targets.mjs`, incremental on PRs, full on `main` |
+| Job              | Runs                                                                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `prek`           | Repo-wide hooks: file hygiene, typos, gitleaks (history), zizmor, actionlint, markdownlint, lockfile-lint                            |
+| `changes`        | Path filter; a push to `main` or a dispatch forces every job                                                                         |
+| `build_and_test` | `npm run build`, `tsc`, Prettier, ESLint, dependency-cruiser, Knip, `npm test -- --coverage`                                         |
+| `e2e`            | Builds the export with source maps and runs Playwright (chromium, mobile, firefox) against it under the base path, with e2e coverage |
+| `mutation_test`  | Stryker over `web/mutation-targets.mjs`, incremental on PRs, full on `main`                                                          |
 
 `.github/workflows/pages-deploy.yml` runs once CI has passed on `main`'s tip:
 `gate` (the commit is main's tip and CI passed on it) → `build` → `deploy`

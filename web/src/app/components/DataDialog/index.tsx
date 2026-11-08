@@ -5,8 +5,8 @@ import { useState } from 'react';
 import type { ImportInfo } from '../../data/store';
 import { useI18n } from '../../i18n/useI18n';
 import { formatMoment } from '../../lib/format/dates';
-import { DRAFTS_UPLOAD_URL } from '../../lib/navigation/links';
 import { ConfirmDialog } from '../ConfirmDialog';
+import { FieldNotesImport } from '../FieldNotesImport';
 import { Icon } from '../Icon';
 import { ImportButton } from '../ImportButton';
 import { Modal } from '../Modal';
@@ -102,18 +102,7 @@ export function DataDialog(props: DataDialogProps) {
             className="w-full"
           />
         </section>
-        <section className="space-y-1 text-sm">
-          <p className="text-muted-foreground">{t('data.notesHelp')}</p>
-          <a
-            href={DRAFTS_UPLOAD_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            data-testid="upload-drafts-link"
-            className="font-semibold text-primary underline"
-          >
-            {t('data.notesLink')}
-          </a>
-        </section>
+        <FieldNotesImport />
         <section className="space-y-2 border-t border-border pt-4">
           <p className="text-sm text-muted-foreground">{t('data.privacy')}</p>
           <button

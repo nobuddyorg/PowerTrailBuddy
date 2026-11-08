@@ -12,6 +12,7 @@ interface WalkSummary {
   do: {
     backToTrails(): Promise<void>;
     exportFieldNotes(): Promise<Download>;
+    writeLogText(text: string): Promise<void>;
     resume(): Promise<void>;
     undo(): Promise<void>;
   };
@@ -22,6 +23,7 @@ interface WalkSummary {
       resume: Locator;
       undo: Locator;
     };
+    logText: Locator;
     text: Locator;
     title: Locator;
   };
@@ -69,6 +71,7 @@ function initSummary(page: Page, scope: Locator): WalkSummary {
       resume: root.getByTestId('walk-resume'),
       undo: root.getByTestId('summary-undo'),
     },
+    logText: root.getByTestId('field-notes-message'),
     text: root.getByTestId('walk-summary-text'),
     title: root.getByTestId('walk-summary-title'),
   };
@@ -81,6 +84,9 @@ function initSummary(page: Page, scope: Locator): WalkSummary {
       const download = page.waitForEvent('download');
       await locators.buttons.exportNotes.click();
       return download;
+    },
+    writeLogText: async (text: string) => {
+      await locators.logText.fill(text);
     },
     resume: async () => {
       await locators.buttons.resume.click();

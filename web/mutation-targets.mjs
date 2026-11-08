@@ -26,6 +26,7 @@ export const MUTATE_TARGETS = [
   'src/app/lib/routing/requestPolicy.ts',
   'src/app/lib/walk/walk.ts',
   'src/app/lib/export/fieldNotes.ts',
+  'src/app/lib/export/readFieldNotes.ts',
   'src/app/lib/export/trailGpx.ts',
   'src/app/lib/format/compass.ts',
   'src/app/lib/format/coordinates.ts',

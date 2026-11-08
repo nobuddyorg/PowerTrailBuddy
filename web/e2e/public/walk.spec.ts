@@ -69,6 +69,7 @@ test.describe('walking a trail', () => {
       '10 of 11 caches found',
     );
 
+    await walk.summary.do.writeLogText('TFTC, "great" trail');
     const notes = await walk.summary.do.exportFieldNotes();
     expect(notes.suggestedFilename()).toBe('geocache_visits.txt');
     const bytes = await downloadedBytes(notes);
@@ -83,6 +84,11 @@ test.describe('walking a trail', () => {
       "Didn't find it",
       ...Array<string>(9).fill('Found it'),
     ]);
+    expect(
+      lines
+        .slice(0, -1)
+        .every((line) => line.endsWith(`,"TFTC, 'great' trail"`)),
+    ).toBe(true);
     expect(logged[0][1]).toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\dZ$/);
 
     await walk.summary.do.backToTrails();

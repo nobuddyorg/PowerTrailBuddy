@@ -180,7 +180,9 @@ with the next one. Caches you mark found are left out of every trail, even
 before your next Pocket Query.
 
 At the end, the summary shows your finds and DNFs, time and caches per hour.
-**Export field notes** saves `geocache_visits.txt`; upload it on
+Type a **log text** first if you want one: the same text goes on every log
+(line breaks become spaces, `"` becomes `'`), and it is not kept after the
+summary closes. **Export field notes** saves `geocache_visits.txt`; upload it on
 geocaching.com under **Drafts** (the link is beside the button) to log every
 visit at once. **Share** sends a short summary through your phone's share
 sheet. **Back to trails** ends the walk.
@@ -235,7 +237,11 @@ report or add it.
 **Your data** (full screen on a phone) shows how many caches, trails, finds
 marked here and ignored caches are stored, and when and from which files you
 last imported. It also keeps the **Upload drafts** link to geocaching.com, so
-you can upload saved field notes later, after the walk is over.
+you can upload saved field notes later, after the walk is over. Saved your
+field notes before adding a log text? **Load field notes** reads the
+`geocache_visits.txt` again; give it a log text and save it anew. A log text
+already in the file is replaced, and only Found it and Didn't find it entries
+are read. Nothing of the file is kept.
 
 **Clear all data** removes every imported cache, your settings, the caches you
 marked found or ignored, any walk in progress and the stored walking routes

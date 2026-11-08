@@ -21,6 +21,34 @@ describe('buildFieldNotes', () => {
     );
   });
 
+  it('puts the same log text on every line', () => {
+    const text = textOf(
+      buildFieldNotes(
+        [
+          { code: 'GC0FN1', outcome: 'found', at: '2001-02-03T04:05:00Z' },
+          { code: 'GC0FN2', outcome: 'dnf', at: '2001-02-03T04:15:00Z' },
+        ],
+        'TFTC, Grüße!',
+      ),
+    );
+    expect(text).toBe(
+      '\uFEFFGC0FN1,2001-02-03T04:05Z,Found it,"TFTC, Grüße!"\r\n' +
+        'GC0FN2,2001-02-03T04:15Z,Didn\'t find it,"TFTC, Grüße!"\r\n',
+    );
+  });
+
+  it('keeps the log text on one line and inside its quotes', () => {
+    const text = textOf(
+      buildFieldNotes(
+        [{ code: 'GC0FN1', outcome: 'found', at: '2001-02-03T04:05:00Z' }],
+        '  Thanks\r\nfor "this"\n\none  ',
+      ),
+    );
+    expect(text).toBe(
+      '\uFEFFGC0FN1,2001-02-03T04:05Z,Found it,"Thanks for \'this\' one"\r\n',
+    );
+  });
+
   it('starts with a little-endian byte order mark and stores two bytes per character', () => {
     const bytes = buildFieldNotes([
       { code: 'GC0FN1', outcome: 'found', at: '2001-02-03T04:05:00Z' },
@@ -82,23 +110,27 @@ describe('buildFieldNotes', () => {
         .map((time) => new Date(time).toISOString()),
     });
     fc.assert(
-      fc.property(fc.array(entry, { maxLength: 10 }), (entries) => {
-        const text = textOf(buildFieldNotes(entries));
-        expect(text.startsWith('\uFEFF')).toBe(true);
-        const lines = text.slice(1).split('\r\n');
-        expect(lines.pop()).toBe('');
-        expect(lines.length).toBe(entries.length);
-        const minutes = lines.map((line) => line.split(',')[1]);
-        expect(minutes).toEqual([...minutes].sort());
-        for (const line of lines) {
-          expect(line).toMatch(
-            /^GC[0-9A-Z]+,\d{4}-\d\d-\d\dT\d\d:\d\dZ,(Found it|Didn't find it),""$/,
+      fc.property(
+        fc.array(entry, { maxLength: 10 }),
+        fc.string(),
+        (entries, message) => {
+          const text = textOf(buildFieldNotes(entries, message));
+          expect(text.startsWith('\uFEFF')).toBe(true);
+          const lines = text.slice(1).split('\r\n');
+          expect(lines.pop()).toBe('');
+          expect(lines.length).toBe(entries.length);
+          const minutes = lines.map((line) => line.split(',')[1]);
+          expect(minutes).toEqual([...minutes].sort());
+          for (const line of lines) {
+            expect(line).toMatch(
+              /^GC[0-9A-Z]+,\d{4}-\d\d-\d\dT\d\d:\d\dZ,(Found it|Didn't find it),"[^"]*"$/,
+            );
+          }
+          expect(lines.map((line) => line.split(',')[0]).sort()).toEqual(
+            entries.map((each) => each.code).sort(),
           );
-        }
-        expect(lines.map((line) => line.split(',')[0]).sort()).toEqual(
-          entries.map((each) => each.code).sort(),
-        );
-      }),
+        },
+      ),
     );
   });
 });

@@ -1,4 +1,9 @@
-import { expect, type Locator, type Page } from '@playwright/test';
+import {
+  expect,
+  type Download,
+  type Locator,
+  type Page,
+} from '@playwright/test';
 
 import type { FilePayload } from '../pocketQuery';
 
@@ -8,18 +13,28 @@ interface DataDialog {
     clearAll(): Promise<void>;
     close(): Promise<void>;
     importFiles(files: FilePayload[]): Promise<void>;
+    loadFieldNotes(file: FilePayload): Promise<void>;
     open(): Promise<void>;
+    saveFieldNotes(): Promise<Download>;
+    writeLogText(text: string): Promise<void>;
   };
   locators: {
     buttons: {
       clear: Locator;
       close: Locator;
+      saveFieldNotes: Locator;
     };
     counts: {
       caches: Locator;
       ignored: Locator;
       locallyFound: Locator;
       trails: Locator;
+    };
+    fieldNotes: {
+      input: Locator;
+      logText: Locator;
+      problem: Locator;
+      read: Locator;
     };
     importInput: Locator;
     lastImport: Locator;
@@ -36,12 +51,19 @@ export function initDataDialog(page: Page): DataDialog {
     buttons: {
       clear: root.getByTestId('clear-data'),
       close: root.getByTestId('dialog-close').first(),
+      saveFieldNotes: root.getByTestId('export-field-notes'),
     },
     counts: {
       caches: root.getByTestId('data-caches'),
       ignored: root.getByTestId('data-ignored'),
       locallyFound: root.getByTestId('data-locally-found'),
       trails: root.getByTestId('data-trails'),
+    },
+    fieldNotes: {
+      input: root.getByTestId('field-notes-input'),
+      logText: root.getByTestId('field-notes-message'),
+      problem: root.getByTestId('field-notes-error'),
+      read: root.getByTestId('field-notes-read'),
     },
     importInput: root.getByTestId('import-input'),
     lastImport: root.getByTestId('last-import'),
@@ -67,6 +89,21 @@ export function initDataDialog(page: Page): DataDialog {
       await locators.importInput.setInputFiles(files);
       await expect(root).toBeHidden();
       await expect(page.getByTestId('import-summary')).toBeVisible();
+    },
+    // What the dialog says about the file, a count or a problem, is the load's own postcondition.
+    loadFieldNotes: async (file: FilePayload) => {
+      await locators.fieldNotes.input.setInputFiles(file);
+      await expect(
+        locators.fieldNotes.read.or(locators.fieldNotes.problem),
+      ).toBeVisible();
+    },
+    saveFieldNotes: async () => {
+      const download = page.waitForEvent('download');
+      await locators.buttons.saveFieldNotes.click();
+      return download;
+    },
+    writeLogText: async (text: string) => {
+      await locators.fieldNotes.logText.fill(text);
     },
     open: async () => {
       await page.getByTestId('open-data').click();

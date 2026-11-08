@@ -378,6 +378,24 @@ describe('the end of the walk', () => {
     expect(mapStub.props?.follow).toEqual([]);
   });
 
+  it('writes the log text typed in the summary on every exported line', () => {
+    renderWalk({ walk: DONE });
+    fireEvent.change(
+      screen.getByLabelText('Log text for every cache (optional)'),
+      {
+        target: { value: 'TFTC' },
+      },
+    );
+    fireEvent.click(button('Export field notes'));
+    const [{ data }] = vi.mocked(downloadFile).mock.calls[0];
+    const lines = new TextDecoder('utf-16le')
+      .decode(data as Uint8Array)
+      .trim()
+      .split('\r\n');
+    expect(lines).toHaveLength(2);
+    expect(lines.every((line) => line.endsWith(',"TFTC"'))).toBe(true);
+  });
+
   it('shares the summary where the device can, and ends the walk', () => {
     const share = vi.fn(() =>
       Promise.reject(new DOMException('dismissed', 'AbortError')),

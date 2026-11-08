@@ -283,8 +283,15 @@
     "lastImport": "Last import",
     "importHelp": "Import another Pocket Query, or a newer run of one: it is merged with what is here and newer data wins; a cache a newer run no longer lists is removed.",
     "import": "Import more",
-    "notesHelp": "Saved your field notes but not uploaded them yet? Log every visit at once with the file geocache_visits.txt.",
+    "notesHelp": "Saved your field notes but not uploaded them yet? Load geocache_visits.txt here, add a log text, and save it again. The log text in the file is replaced.",
     "notesLink": "Upload drafts",
+    "notesButton": "Load field notes",
+    "notesRead": "{count} visits read.",
+    "notesRead_one": "{count} visit read.",
+    "notesError": {
+      "file": "This is not a field notes file (geocache_visits.txt).",
+      "line": "Line {line} is not a “Found it” or “Didn’t find it” entry."
+    },
     "privacy": "Everything is stored in this browser only.",
     "clear": "Clear all data"
   },
@@ -353,6 +360,8 @@
     "shareText": "Power trail walk with PowerTrailBuddy: {found} of {total} caches found in {duration} ({rate} per hour).",
     "found": "Found",
     "dnf": "Not found",
+    "messageLabel": "Log text for every cache (optional)",
+    "messagePlaceholder": "e.g. TFTC",
     "exportNotes": "Export field notes",
     "notesHelp": "Saves geocache_visits.txt. Upload it at geocaching.com under Drafts to log every visit at once.",
     "notesLink": "Upload drafts",

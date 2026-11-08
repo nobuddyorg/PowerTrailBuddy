@@ -3,15 +3,13 @@
 import { useRef } from 'react';
 
 import { useI18n } from '../../i18n/useI18n';
-import { buildFieldNotes } from '../../lib/export/fieldNotes';
 import { formatDuration, formatRate } from '../../lib/format/format';
 import { DRAFTS_UPLOAD_URL } from '../../lib/navigation/links';
 import { paceKnown, visitEntries } from '../../lib/ui-logic/walkStats';
 import type { WalkPace, WalkProgress, WalkState } from '../../lib/walk/walk';
+import { FieldNotesExport } from '../FieldNotesExport';
 import { Icon } from '../Icon';
-import { useToast } from '../Toast/ToastProvider';
 import { buttonClasses } from '../ui/classes';
-import { downloadFile } from '../ui/download';
 import { useFocusOnMount } from '../ui/focus';
 
 interface WalkSummaryProps {
@@ -39,7 +37,6 @@ export function WalkSummary({
   onDone,
 }: WalkSummaryProps) {
   const { t, locale } = useI18n();
-  const toast = useToast();
   const titleRef = useRef<HTMLHeadingElement>(null);
   useFocusOnMount(titleRef);
   const entries = visitEntries(walk);
@@ -54,16 +51,6 @@ export function WalkSummary({
         rate: formatRate(pace.cachesPerHour, locale),
       })
     : t('summary.shareTextShort', counts);
-
-  const exportNotes = () => {
-    downloadFile({
-      name: 'geocache_visits.txt',
-      // A copy on a plain ArrayBuffer, which is what Blob accepts.
-      data: Uint8Array.from(buildFieldNotes(entries)),
-      type: 'text/plain;charset=utf-16le',
-    });
-    toast.show(t('toast.notesSaved'));
-  };
 
   const share = () => {
     // A dismissed share sheet rejects; that is the user's choice, not an error.
@@ -110,15 +97,7 @@ export function WalkSummary({
       </dl>
       {entries.length > 0 && (
         <div className="space-y-2 rounded-2xl bg-card p-3 ring-1 ring-border/60">
-          <button
-            type="button"
-            onClick={exportNotes}
-            data-testid="export-field-notes"
-            className={buttonClasses('primary', 'w-full')}
-          >
-            <Icon name="download" />
-            {t('summary.exportNotes')}
-          </button>
+          <FieldNotesExport entries={entries} />
           <p className="text-xs text-muted-foreground">
             {t('summary.notesHelp')}{' '}
             <a
