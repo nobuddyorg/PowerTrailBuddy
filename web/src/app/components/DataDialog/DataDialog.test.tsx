@@ -50,6 +50,14 @@ describe('DataDialog', () => {
     expect(screen.getByText('pq.zip, extra.gpx')).toBeInTheDocument();
   });
 
+  it('keeps the drafts upload within reach after a walk', () => {
+    renderDialog();
+    expect(screen.getByRole('link', { name: 'Upload drafts' })).toHaveAttribute(
+      'href',
+      'https://www.geocaching.com/my/uploadfieldnotes.aspx',
+    );
+  });
+
   it('leaves out the last import before there was one', () => {
     renderDialog({ importInfo: undefined });
     expect(screen.queryByTestId('last-import')).not.toBeInTheDocument();

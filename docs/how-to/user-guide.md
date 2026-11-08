@@ -234,7 +234,8 @@ report or add it.
 
 **Your data** (full screen on a phone) shows how many caches, trails, finds
 marked here and ignored caches are stored, and when and from which files you
-last imported.
+last imported. It also keeps the **Upload drafts** link to geocaching.com, so
+you can upload saved field notes later, after the walk is over.
 
 **Clear all data** removes every imported cache, your settings, the caches you
 marked found or ignored, any walk in progress and the stored walking routes

@@ -29,6 +29,23 @@ test.describe('the data on this device', () => {
     await expect(app.data.locators.lastImport).toHaveText(/\d/);
   });
 
+  test('links to the drafts upload without a walk in progress', async ({
+    on,
+    page,
+  }) => {
+    const app = on(page);
+    await app.home.do.open();
+    await app.emptyState.do.importFiles([await pocketQueryZip()]);
+    await app.home.do.dismissImportSummary();
+
+    await app.data.do.open();
+
+    await expect(app.data.locators.links.uploadDrafts).toHaveAttribute(
+      'href',
+      'https://www.geocaching.com/my/uploadfieldnotes.aspx',
+    );
+  });
+
   test('fills the whole screen on a phone', async ({ on, page, isMobile }) => {
     test.skip(!isMobile, 'a sheet over the app on a wider screen');
     const app = on(page);
