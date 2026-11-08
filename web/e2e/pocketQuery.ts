@@ -206,6 +206,18 @@ export function gpxFile(
   };
 }
 
+/** A `geocache_visits.txt` as geocaching.com's drafts upload reads it: UTF-16LE with a byte order mark. */
+export function fieldNotesFile(lines: readonly string[]): FilePayload {
+  return {
+    name: 'geocache_visits.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from(
+      `\uFEFF${lines.map((line) => `${line}\r\n`).join('')}`,
+      'utf16le',
+    ),
+  };
+}
+
 /** A file the importer refuses. */
 export function notAPocketQuery(): FilePayload {
   return {

@@ -237,7 +237,11 @@ report or add it.
 **Your data** (full screen on a phone) shows how many caches, trails, finds
 marked here and ignored caches are stored, and when and from which files you
 last imported. It also keeps the **Upload drafts** link to geocaching.com, so
-you can upload saved field notes later, after the walk is over.
+you can upload saved field notes later, after the walk is over. Saved your
+field notes before adding a log text? **Load field notes** reads the
+`geocache_visits.txt` again; give it a log text and save it anew. A log text
+already in the file is replaced, and only Found it and Didn't find it entries
+are read. Nothing of the file is kept.
 
 **Clear all data** removes every imported cache, your settings, the caches you
 marked found or ignored, any walk in progress and the stored walking routes

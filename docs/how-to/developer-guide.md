@@ -19,14 +19,14 @@ passed.
 
 ## Where code goes
 
-| You are writing… | It goes in | Tested by |
-| --- | --- | --- |
-| Parsing, geometry, trail finding, walk state | `web/src/app/lib/` — pure functions, no browser APIs | Unit + property + mutation; add the file to `mutation-targets.mjs` |
-| Reading or writing browser storage | `web/src/app/data/` | Unit with a fake store |
-| UI | `web/src/app/components/<Name>/` | Component tests; one E2E case per journey |
-| Anything touching Leaflet | `web/src/app/components/Map/` only | E2E (the wrapper is excluded from unit coverage) |
-| Service worker behavior | `web/public/sw.js`, as small named functions | `web/src/app/sw*.test.ts`, evaluating them from source; mutation (no coverage floor) |
-| User-facing text | `t('area.key')` + both `de.json` and `en.json` | `parity.test.ts` |
+| You are writing…                             | It goes in                                           | Tested by                                                                            |
+| -------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Parsing, geometry, trail finding, walk state | `web/src/app/lib/` — pure functions, no browser APIs | Unit + property + mutation; add the file to `mutation-targets.mjs`                   |
+| Reading or writing browser storage           | `web/src/app/data/`                                  | Unit with a fake store                                                               |
+| UI                                           | `web/src/app/components/<Name>/`                     | Component tests; one E2E case per journey                                            |
+| Anything touching Leaflet                    | `web/src/app/components/Map/` only                   | E2E (the wrapper is excluded from unit coverage)                                     |
+| Service worker behavior                      | `web/public/sw.js`, as small named functions         | `web/src/app/sw*.test.ts`, evaluating them from source; mutation (no coverage floor) |
+| User-facing text                             | `t('area.key')` + both `de.json` and `en.json`       | `parity.test.ts`                                                                     |
 
 The boundaries are checked by `npm run depcruise`
 ([Architecture](../reference/architecture.md#modules)): `lib/` imports nothing
@@ -309,7 +309,7 @@ them gets a look:
 - **`next`**: read `node_modules/next/dist/docs/` for the changed version
   (`web/AGENTS.md`), and check that the precache adapter (`adapterPath` in
   `next.config.ts`) still runs: the build prints `precache-manifest.json: <n>
-  assets`, and `scripts/serve-export.mjs` refuses an export without it.
+assets`, and `scripts/serve-export.mjs` refuses an export without it.
 
 ## Bump a pinned CI tool
 

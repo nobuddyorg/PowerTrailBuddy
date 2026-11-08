@@ -13,6 +13,11 @@ interface ImportButtonProps {
   disabled: boolean;
   variant?: ButtonVariant;
   className?: string;
+  /** The file types to offer; a Pocket Query's by default. */
+  accept?: string;
+  /** Whether several files can be chosen at once; they can by default. */
+  multiple?: boolean;
+  testId?: string;
 }
 
 /** A file input dressed as a button: a real, focusable input, so keyboard and screen readers reach it as one. */
@@ -22,6 +27,9 @@ export function ImportButton({
   disabled,
   variant = 'primary',
   className = '',
+  accept = ACCEPT,
+  multiple = true,
+  testId = 'import-input',
 }: ImportButtonProps) {
   return (
     <label
@@ -32,10 +40,10 @@ export function ImportButton({
     >
       <input
         type="file"
-        accept={ACCEPT}
-        multiple
+        accept={accept}
+        multiple={multiple}
         disabled={disabled}
-        data-testid="import-input"
+        data-testid={testId}
         className="sr-only"
         onChange={(event) => {
           // A file input always has a FileList; null is for other input types.

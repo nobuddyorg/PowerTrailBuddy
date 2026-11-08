@@ -2,7 +2,7 @@
 import { fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { renderWithI18n } from '../fixtures.test-support';
+import { renderWithProviders } from '../fixtures.test-support';
 import { DataDialog } from '.';
 
 function renderDialog(
@@ -24,7 +24,7 @@ function renderDialog(
     onClose: vi.fn(),
     ...overrides,
   };
-  renderWithI18n(<DataDialog {...props} />);
+  renderWithProviders(<DataDialog {...props} />);
   return props;
 }
 
