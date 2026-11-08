@@ -378,10 +378,12 @@ and a later import that brings the cache back puts it back in the walk.
   the caches; text XML-escaped, characters XML cannot carry dropped
   (`withoutNotXmlCharacters`, shared with the parser),
   coordinates to six decimals. Saved as `powertrail-<rank>.gpx`.
-- `buildFieldNotes(entries)`: Geocaching.com's drafts format,
+- `buildFieldNotes(entries, message)`: Geocaching.com's drafts format,
   `geocache_visits.txt`: UTF-16LE with a byte order mark, CRLF lines of
-  `<code>,<YYYY-MM-DDTHH:MMZ>,<Found it|Didn't find it>,""`, UTC, oldest
-  first. Skipped caches are left out.
+  `<code>,<YYYY-MM-DDTHH:MMZ>,<Found it|Didn't find it>,"<message>"`, UTC,
+  oldest first. Skipped caches are left out. The one optional `message` goes
+  on every line, line breaks turned into spaces and `"` into `'`; it is typed
+  in the walk summary and not stored.
 
 ### `lib/geocache/health.ts`
 

@@ -180,7 +180,9 @@ with the next one. Caches you mark found are left out of every trail, even
 before your next Pocket Query.
 
 At the end, the summary shows your finds and DNFs, time and caches per hour.
-**Export field notes** saves `geocache_visits.txt`; upload it on
+Type a **log text** first if you want one: the same text goes on every log
+(line breaks become spaces, `"` becomes `'`), and it is not kept after the
+summary closes. **Export field notes** saves `geocache_visits.txt`; upload it on
 geocaching.com under **Drafts** (the link is beside the button) to log every
 visit at once. **Share** sends a short summary through your phone's share
 sheet. **Back to trails** ends the walk.

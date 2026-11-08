@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useId, useRef, useState } from 'react';
 
 import { useI18n } from '../../i18n/useI18n';
 import { buildFieldNotes } from '../../lib/export/fieldNotes';
@@ -10,9 +10,12 @@ import { paceKnown, visitEntries } from '../../lib/ui-logic/walkStats';
 import type { WalkPace, WalkProgress, WalkState } from '../../lib/walk/walk';
 import { Icon } from '../Icon';
 import { useToast } from '../Toast/ToastProvider';
-import { buttonClasses } from '../ui/classes';
+import { buttonClasses, FIELD_CLASSES } from '../ui/classes';
 import { downloadFile } from '../ui/download';
 import { useFocusOnMount } from '../ui/focus';
+
+/** Geocaching.com's limit for a log. */
+const MAX_LOG_LENGTH = 4000;
 
 interface WalkSummaryProps {
   walk: WalkState;
@@ -41,6 +44,8 @@ export function WalkSummary({
   const { t, locale } = useI18n();
   const toast = useToast();
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const messageId = useId();
+  const [message, setMessage] = useState('');
   useFocusOnMount(titleRef);
   const entries = visitEntries(walk);
   const counts = {
@@ -59,7 +64,7 @@ export function WalkSummary({
     downloadFile({
       name: 'geocache_visits.txt',
       // A copy on a plain ArrayBuffer, which is what Blob accepts.
-      data: Uint8Array.from(buildFieldNotes(entries)),
+      data: Uint8Array.from(buildFieldNotes(entries, message)),
       type: 'text/plain;charset=utf-16le',
     });
     toast.show(t('toast.notesSaved'));
@@ -110,6 +115,19 @@ export function WalkSummary({
       </dl>
       {entries.length > 0 && (
         <div className="space-y-2 rounded-2xl bg-card p-3 ring-1 ring-border/60">
+          <label htmlFor={messageId} className="block text-sm font-semibold">
+            {t('summary.messageLabel')}
+          </label>
+          <textarea
+            id={messageId}
+            data-testid="field-notes-message"
+            value={message}
+            onChange={(event) => setMessage(event.currentTarget.value)}
+            placeholder={t('summary.messagePlaceholder')}
+            maxLength={MAX_LOG_LENGTH}
+            rows={2}
+            className={FIELD_CLASSES}
+          />
           <button
             type="button"
             onClick={exportNotes}

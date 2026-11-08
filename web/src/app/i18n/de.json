@@ -353,6 +353,8 @@
     "shareText": "Powertrail-Tour mit PowerTrailBuddy: {found} von {total} Caches gefunden in {duration} ({rate} pro Stunde).",
     "found": "Gefunden",
     "dnf": "Nicht gefunden",
+    "messageLabel": "Logtext für alle Caches (optional)",
+    "messagePlaceholder": "z. B. DFDC",
     "exportNotes": "Field Notes exportieren",
     "notesHelp": "Speichert geocache_visits.txt. Lade sie auf geocaching.com unter „Entwürfe“ (Drafts) hoch, um alle Besuche auf einmal zu loggen.",
     "notesLink": "Entwürfe hochladen",

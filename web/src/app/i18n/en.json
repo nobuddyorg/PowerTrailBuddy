@@ -353,6 +353,8 @@
     "shareText": "Power trail walk with PowerTrailBuddy: {found} of {total} caches found in {duration} ({rate} per hour).",
     "found": "Found",
     "dnf": "Not found",
+    "messageLabel": "Log text for every cache (optional)",
+    "messagePlaceholder": "e.g. TFTC",
     "exportNotes": "Export field notes",
     "notesHelp": "Saves geocache_visits.txt. Upload it at geocaching.com under Drafts to log every visit at once.",
     "notesLink": "Upload drafts",
