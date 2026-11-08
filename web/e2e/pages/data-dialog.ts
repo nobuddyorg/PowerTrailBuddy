@@ -23,6 +23,9 @@ interface DataDialog {
     };
     importInput: Locator;
     lastImport: Locator;
+    links: {
+      uploadDrafts: Locator;
+    };
   };
 }
 
@@ -42,6 +45,9 @@ export function initDataDialog(page: Page): DataDialog {
     },
     importInput: root.getByTestId('import-input'),
     lastImport: root.getByTestId('last-import'),
+    links: {
+      uploadDrafts: root.getByTestId('upload-drafts-link'),
+    },
   };
   const confirm = page.getByTestId('confirm-dialog');
   const interactions = {

@@ -283,6 +283,8 @@
     "lastImport": "Letzter Import",
     "importHelp": "Weitere Pocket Query oder einen neueren Lauf importieren: Sie wird mit dem Vorhandenen zusammengeführt, neuere Daten gewinnen; ein Cache, den ein neuerer Lauf nicht mehr enthält, wird entfernt.",
     "import": "Weitere importieren",
+    "notesHelp": "Field Notes gespeichert, aber noch nicht hochgeladen? Logge alle Besuche auf einmal mit der Datei geocache_visits.txt.",
+    "notesLink": "Entwürfe hochladen",
     "privacy": "Alles wird nur in diesem Browser gespeichert.",
     "clear": "Alle Daten löschen"
   },

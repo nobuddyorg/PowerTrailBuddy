@@ -283,6 +283,8 @@
     "lastImport": "Last import",
     "importHelp": "Import another Pocket Query, or a newer run of one: it is merged with what is here and newer data wins; a cache a newer run no longer lists is removed.",
     "import": "Import more",
+    "notesHelp": "Saved your field notes but not uploaded them yet? Log every visit at once with the file geocache_visits.txt.",
+    "notesLink": "Upload drafts",
     "privacy": "Everything is stored in this browser only.",
     "clear": "Clear all data"
   },
