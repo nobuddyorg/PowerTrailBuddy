@@ -254,7 +254,7 @@ reaches a browser test that would pass online and hide the gap.
 ## Update the screenshots
 
 `docs/images/` holds the screenshots in the README and the user guide, taken
-from the built export in German, the default locale, on a desktop and a
+from the built export in English, the docs' language, on a desktop and a
 Pixel 7 viewport, over the real OpenStreetMap map. The data is a Pocket Query
 around Munich, anonymized: real coordinates, everything else invented. After a
 visible UI change:

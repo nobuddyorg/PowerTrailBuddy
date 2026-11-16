@@ -45,7 +45,7 @@ async function importData(page) {
 async function openWithData(browser, device) {
   const context = await browser.newContext({
     ...device,
-    locale: 'de-DE',
+    locale: 'en-GB',
     // The worker would cache tiles and data between contexts; each screenshot starts from a fresh install.
     serviceWorkers: 'block',
     permissions: ['geolocation'],
