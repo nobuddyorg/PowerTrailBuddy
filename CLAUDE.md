@@ -62,7 +62,10 @@ design-decisions.md, not here.
   outside request.
 - **Synthetic fixtures only.** Test data uses invented cache codes, names and
   coordinates. Never copy a real listing, a real Pocket Query, or a real
-  person's data into the repository.
+  person's data into the repository. The one exception is the docs
+  screenshots. They show real coordinates from a Pocket Query that
+  `web/scripts/anonymize-pocket-query.mjs` stripped of every name, code and
+  person. Only the images are committed, never the data.
 - Pure logic in `src/app/lib/` imports no React, Next, Leaflet, idb-keyval,
   `data/` or `components/`; only `src/app/data/` imports idb-keyval; only
   `src/app/components/Map/` imports Leaflet. dependency-cruiser enforces it.

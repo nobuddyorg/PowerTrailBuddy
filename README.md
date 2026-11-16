@@ -31,8 +31,9 @@ hour. Then it guides you through one, cache by cache, on a map.
   <img src="docs/images/phone-walk.png" alt="A walk on a phone, guiding to the next cache" width="200">
 </p>
 
-The screenshots use the bundled sample data; the map background is left
-plain, as they are taken without the tile server.
+The screenshots show the English interface on the OpenStreetMap map, with a
+Pocket Query around Munich whose cache names, codes, owners and logs are
+replaced by invented ones; only the coordinates are real.
 
 ## Features
 

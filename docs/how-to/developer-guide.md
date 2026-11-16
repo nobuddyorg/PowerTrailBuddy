@@ -254,18 +254,32 @@ reaches a browser test that would pass online and hide the gap.
 ## Update the screenshots
 
 `docs/images/` holds the screenshots in the README and the user guide, taken
-from the built export with the bundled sample data, in English, on a desktop
-and a Pixel 7 viewport. After a visible UI change:
+from the built export in English, the docs' language, on a desktop and a
+Pixel 7 viewport, over the real OpenStreetMap map. The data is a Pocket Query
+around Munich, anonymized: real coordinates, everything else invented. After a
+visible UI change:
 
 ```bash
 cd web
 npm run build
-npm run screenshots   # scripts/docs-screenshots.mjs; PLAYWRIGHT_CHROMIUM_EXECUTABLE as for the e2e suite
+npm run screenshots:anonymize -- ~/pq.zip /tmp/Muenchen.zip   # scripts/anonymize-pocket-query.mjs
+SCREENSHOTS_DATA=/tmp/Muenchen.zip npm run screenshots   # PLAYWRIGHT_CHROMIUM_EXECUTABLE as for the e2e suite
 ```
 
-The script serves the export itself, blocks the service worker and answers
-every tile request with a plain tile, so it contacts no other server and the
-map background stays empty. Commit the changed images.
+`anonymize-pocket-query.mjs` keeps each cache's coordinates, type,
+difficulty, terrain, size, state, log types and dates, and its parking areas.
+It replaces the codes with `GCSU…` ones, which no real cache can have, and
+invents the names, owners, hints, descriptions and log authors and texts.
+The output lives outside the repository and is never committed. Only the
+images are. Without `SCREENSHOTS_DATA` the script uses the bundled sample
+instead.
+
+The script serves the export itself, blocks the service worker, imports the
+data and waits for the map tiles. It fetches only from the tile server, as
+the app does. On the walk it places you 120 m south of the first cache.
+Compress the images with a PNG quantizer (for example
+`pngquant --quality 70-90`) and check that no real cache name, code or person
+shows. Then commit them.
 
 ## Deploy to GitHub Pages
 
