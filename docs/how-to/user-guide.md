@@ -95,7 +95,7 @@ iOS does not let web apps receive shared files; use **Import** there.
 
 ## Pick a trail
 
-<img src="../images/phone-trails.png" alt="The trail list on a phone: three numbered trails on the map above, ranked cards with caches per hour below" width="280">
+<img src="../images/phone-trails.png" alt="The trail list on a phone: a numbered trail on the map above, its card with caches per hour below" width="280">
 
 Trails are numbered best first: most caches per hour, then most caches. Each
 card shows its number of caches, walking distance and time, caches per hour,
@@ -189,7 +189,7 @@ sheet. **Back to trails** ends the walk.
 
 ## Change the trail settings
 
-<img src="../images/phone-settings.png" alt="The settings on a phone: language, install, presets and the trail limits" width="280">
+<img src="../images/phone-settings.png" alt="The settings on a phone: presets and the trail limits" width="280">
 
 Under **Settings** (full screen on a phone): a preset (**Standard**, **Classic power trail**,
 **Relaxed**) or your own largest gap between two caches and fewest caches per

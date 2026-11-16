@@ -1,4 +1,4 @@
-// Takes docs/images/'s screenshots of the built export with the bundled sample data; run by hand after `npm run build` (`npm run screenshots`), results committed.
+// Takes docs/images/'s screenshots of the built export on the real map, with SCREENSHOTS_DATA's Pocket Query or the sample; run by hand after `npm run build` (`npm run screenshots`), results committed.
 import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -8,13 +8,11 @@ import { chromium, devices } from '@playwright/test';
 const PORT = 4174;
 const BASE_URL = `http://127.0.0.1:${PORT}/PowerTrailBuddy/`;
 const imagesDirectory = new URL('../../docs/images/', import.meta.url);
+const DATA = process.env.SCREENSHOTS_DATA;
 
-// A plain land-coloured tile: the screenshots never fetch from the tile server, and the sample's area does not exist anyway.
-const PLAIN_TILE =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><rect width="256" height="256" fill="#f2efe9"/></svg>';
-
-// About 120 m from the start of the sample's first trail, so the walk has a distance and a bearing to show.
-const NEAR_THE_SAMPLE = { latitude: 50.6917, longitude: 9.5032, accuracy: 5 };
+// About 120 m south of the walk's first cache, so the walk has a distance and a bearing to show.
+const METERS_PER_DEGREE_OF_LATITUDE = 111_320;
+const WALKER_OFFSET_METERS = 120;
 
 const PHONE = { ...devices['Pixel 7'], deviceScaleFactor: 2 };
 const DESKTOP = {
@@ -34,33 +32,56 @@ async function waitForServer() {
   throw new Error(`${BASE_URL} did not answer; run \`npm run build\` first`);
 }
 
-async function openWithSample(browser, device) {
-  const context = await browser.newContext({
-    ...device,
-    locale: 'en-GB',
-    // The worker would fetch tiles itself; without it every tile request meets the route below.
-    serviceWorkers: 'block',
-    geolocation: NEAR_THE_SAMPLE,
-    permissions: ['geolocation'],
-  });
-  await context.route(/^https:\/\/tile\.openstreetmap\.org\//, (route) =>
-    route.fulfill({
-      contentType: 'image/svg+xml',
-      headers: { 'access-control-allow-origin': '*' },
-      body: PLAIN_TILE,
-    }),
-  );
-  const page = await context.newPage();
-  await page.goto(BASE_URL);
-  await page.getByTestId('try-sample').click();
+async function importData(page) {
+  if (DATA) {
+    await page.getByTestId('import-input').setInputFiles(DATA);
+  } else {
+    await page.getByTestId('try-sample').click();
+  }
   await page.getByTestId('trail-card').first().waitFor();
   await page.getByTestId('import-summary-dismiss').click();
+}
+
+async function openWithData(browser, device) {
+  const context = await browser.newContext({
+    ...device,
+    locale: 'de-DE',
+    // The worker would cache tiles and data between contexts; each screenshot starts from a fresh install.
+    serviceWorkers: 'block',
+    permissions: ['geolocation'],
+  });
+  const page = await context.newPage();
+  await page.goto(BASE_URL);
+  await importData(page);
   return { context, page };
 }
 
+async function standNearWalkTarget(context, page) {
+  const link = await page
+    .getByTestId('cache-navigate-link')
+    .getAttribute('href');
+  const [latitude, longitude] = /(-?\d+\.\d+),(-?\d+\.\d+)/
+    .exec(decodeURIComponent(link))
+    .slice(1)
+    .map(Number);
+  await context.setGeolocation({
+    latitude: latitude - WALKER_OFFSET_METERS / METERS_PER_DEGREE_OF_LATITUDE,
+    longitude,
+    accuracy: 5,
+  });
+}
+
 async function shoot(page, name) {
-  // Leaflet's fly-to and the sheet's snap animate for a moment after the click.
+  // Leaflet's fly-to and the sheet's snap animate for a moment, and then fetch their tiles.
   await page.waitForTimeout(800);
+  await page.waitForFunction(
+    () =>
+      document.querySelectorAll('.leaflet-tile:not(.leaflet-tile-loaded)')
+        .length === 0,
+    undefined,
+    { timeout: 30_000 },
+  );
+  await page.waitForTimeout(400);
   await page.screenshot({
     path: fileURLToPath(new URL(name, imagesDirectory)),
   });
@@ -68,7 +89,7 @@ async function shoot(page, name) {
 }
 
 async function phoneScreenshots(browser) {
-  const { context, page } = await openWithSample(browser, PHONE);
+  const { context, page } = await openWithData(browser, PHONE);
   await shoot(page, 'phone-trails.png');
 
   await page.getByTestId('trail-card').first().click();
@@ -77,10 +98,11 @@ async function phoneScreenshots(browser) {
 
   await page.getByTestId('start-walk').click();
   await page.getByTestId('walk-target').waitFor();
+  await standNearWalkTarget(context, page);
   await shoot(page, 'phone-walk.png');
   await context.close();
 
-  const settings = await openWithSample(browser, PHONE);
+  const settings = await openWithData(browser, PHONE);
   await settings.page.getByTestId('open-settings').click();
   await settings.page.getByTestId('settings-dialog').waitFor();
   await shoot(settings.page, 'phone-settings.png');
@@ -88,7 +110,7 @@ async function phoneScreenshots(browser) {
 }
 
 async function desktopScreenshots(browser) {
-  const { context, page } = await openWithSample(browser, DESKTOP);
+  const { context, page } = await openWithData(browser, DESKTOP);
   await page.getByTestId('trail-card').first().click();
   await page.getByTestId('trail-detail').waitFor();
   await shoot(page, 'desktop-trail.png');
