@@ -56,12 +56,15 @@
     "vitest": "^5.0.2"
   },
   "overrides": {
-    "qs": "6.16.0",
+    "qs": "6.17.1",
     "@babel/core": "7.29.7",
-    "minimatch": "10.2.6",
+    "minimatch": "11.0.8",
     "tmp": "0.2.7",
     "uuid": "^14.0.2",
     "sharp": "0.35.5",
+    "fast-uri": "3.1.9",
+    "zod": "4.6.7",
+    "compression": "1.8.2",
     "eslint-plugin-jsx-a11y": {
       "eslint": "$eslint"
     },
