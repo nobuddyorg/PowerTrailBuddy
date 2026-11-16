@@ -34,7 +34,7 @@ const OWNERS = [
   'Petling Pete',
 ];
 const HINTS = [
-  'Unter dem Stein am Pfosten',
+  'Stein am Pfosten',
   'Magnetisch',
   'Im Baum, Augenhöhe',
   'Hinter dem Schild',
